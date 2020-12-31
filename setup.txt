@@ -1,0 +1,17 @@
+create database if not exists gamedb;
+use gamedb;
+
+create table if not exists users(
+    socketId varchar(100),
+    lobbyId varchar(100),
+    userName varchar(100),
+    color varchar(100)
+);
+
+create table if not exists lobbies(
+    lobbyId varchar(100),
+    gameId varchar(100)
+);
+
+insert into lobbies values('a','b')
+

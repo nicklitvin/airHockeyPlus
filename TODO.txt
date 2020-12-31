@@ -1,0 +1,20 @@
+NOTES
+mysql -u root -p
+users(socket.id,lobby.id,name,color)
+lobbies(lobby.id,game)
+
+/home (create,join,about)
+/join (enterId)
+/lobby (chat,gameSelect,colorSelect)
+/about (patchNotes,ideaPoll)
+/gameXYZ
+
+TODO
+V0.0.2
+create/join lobby
+
+V0.0.3
+lobby chat/colors/game
+
+FOR LATER
+Circles as characters with design
