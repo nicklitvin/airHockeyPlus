@@ -10,8 +10,5 @@ create table if not exists users(
 
 create table if not exists lobbies(
     lobbyId varchar(100),
-    gameId varchar(100)
+    owner varchar(100)
 );
-
-insert into lobbies values('a','b')
-

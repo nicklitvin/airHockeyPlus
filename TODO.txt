@@ -1,7 +1,7 @@
 NOTES
 mysql -u root -p
-users(socket.id,lobby.id,name,color)
-lobbies(lobby.id,game)
+users(socket.id,lobby.id,name,color) ,ready
+lobbies(lobby.id,game,owner)
 
 /home (create,join,about)
 /join (enterId)
@@ -10,11 +10,15 @@ lobbies(lobby.id,game)
 /gameXYZ
 
 TODO
-V0.0.2
-create/join lobby
+V0.0.3 directing client to lobby
+    create dic {socket.id:socket}
 
-V0.0.3
-lobby chat/colors/game
+join lobby via link or page
+add chat + info
+
 
 FOR LATER
+send survey to players after game (game quality, site in general)
+window.location.href > get variable and send on automatic function in client.js
 Circles as characters with design
+
