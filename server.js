@@ -5,7 +5,8 @@ import express from 'express'
 import { createServer } from "http"
 import path from 'path'
 import { Server } from "socket.io"
-import db from './modules/db.js'
+import lobby from './modules/lobby.js'
+import users from './modules/users.js'
 
 var app = express()
 var server = createServer(app)
@@ -26,9 +27,12 @@ server.listen(5000, function() {})
 //SOCKET.ON
 io.on('connection', function(socket){
     socket.on('disconnect', () => {
-        db.removeUser(socket)
+        users.leaveLobby(socket)
     })
     socket.on('createLobby', () => {
-        db.newLobby(socket)
+        lobby.createLobby(socket)
+    })
+    socket.on('joinLobby', (lobbyId) =>{
+        users.joinLobby(socket,lobbyId)
     })
 })

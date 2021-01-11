@@ -1,24 +1,16 @@
 NOTES
-mysql -u root -p
-users(socket.id,lobby.id,name,color) ,ready
-lobbies(lobby.id,game,owner)
-
 /home (create,join,about)
-/join (enterId)
-/lobby (chat,gameSelect,colorSelect)
+/lobby (chat,gameSelect)
 /about (patchNotes,ideaPoll)
 /gameXYZ
 
 TODO
-V0.0.3 directing client to lobby
-    create dic {socket.id:socket}
-
-join lobby via link or page
-add chat + info
-
+V0.0.4 chat + names
+V0.0.5 setup cookies
 
 FOR LATER
 send survey to players after game (game quality, site in general)
 window.location.href > get variable and send on automatic function in client.js
 Circles as characters with design
+2d drawn characters interact in background 
 

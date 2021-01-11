@@ -1,9 +1,11 @@
-'use strict'
-var socket = io();
+'use strict'
+// import cookie from "/modules/cookies.js"
+var socket = io();
 
-// FUNCTIONS
-function createLobby(){
-    socket.emit('createLobby')
+function createLobby(){
+    socket.emit('createLobby')
 }
 
-
+socket.on('redirect', (a)=>{
+    window.location.href += a
+})
