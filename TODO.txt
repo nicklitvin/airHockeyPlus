@@ -5,8 +5,8 @@ NOTES
 /gameXYZ
 
 TODO
-V0.0.4 chat + names
-V0.0.5 setup cookies
+V0.0.5 naming + chat
+setup cookies
 
 FOR LATER
 send survey to players after game (game quality, site in general)

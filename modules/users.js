@@ -1,48 +1,55 @@
 'use strict'
 
-import lobby from "./lobby.js"
+class user{
+    constructor(socket,lobbyId){
+        this.lobbyId = lobbyId,
+        this.socket = socket
+    }
+}
 
-var idLength = 10
-// userId: {lobbyId,socket}
-var users = {}
-// socketId: userId
-var sockets = {}
+class sockUser{
+    constructor(userId){
+        this.userId = userId
+    }
+}
 
-function makeId(){
-    var id = ''
-    var hex = 'ghijklmnopqrstuvxyz'
-	while (true){
-        for (var a=0; a<idLength; a++){
-            id += hex[Math.floor(Math.random()*16)]
+export default class userManager{
+    constructor (){
+        this.users = {},
+        this.sockets = {},
+        this.idLength = 10
+    }
+
+    makeId(){
+        var hex = 'ghijklmnopqrstuvxyz'
+        var id = ''
+        while (true){
+            for (var a=0; a<this.idLength; a++){
+                id += hex[Math.floor(Math.random()*16)]
+            }
+            if (!Object.keys(this.users).includes(id)){
+                return (id)
+            }
         }
-		if (!Object.keys(users).includes(id)){
-			return (id)
-		}
-	}
-}
-
-export function joinLobby(mySocket,myLobbyId){
-    const userId = makeId()
-    users[userId] = {
-        lobbyId: myLobbyId,
-        socket: mySocket
     }
-    sockets[mySocket.id] = userId
-    // console.log('join',users)
-    lobby.joinLobby(userId,myLobbyId)
-}
 
-export function leaveLobby(socket){
-    if(Object.keys(sockets).includes(socket.id)){
-        var userId = sockets[socket.id]
-        lobby.leaveLobby(userId,users[userId].lobbyId)
-        delete sockets[socket.id]
-        delete users[userId]
-        // console.log('delete',users)
+    joinLobby(socket, lobbyId){
+        const userId = this.makeId()
+        this.users[userId] = new user(socket,lobbyId)
+        this.sockets[socket.id] = new sockUser(userId)
+        console.log('newUser',this.users)
+        return({'userId':userId,'lobbyId':lobbyId})
     }
-}
 
-export default{
-    joinLobby: joinLobby,
-    leaveLobby: leaveLobby
+    leaveLobby(socket){
+        if(Object.keys(this.sockets).includes(socket.id)){
+            const userId = this.sockets[socket.id].userId
+            const lobbyId = this.users[userId].lobbyId
+            delete this.sockets[socket.id]
+            delete this.users[userId]
+            console.log('deleteUser',this.users)
+            return({'userId':userId,'lobbyId':lobbyId})
+        }
+        return(0)
+    }
 }
