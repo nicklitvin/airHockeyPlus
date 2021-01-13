@@ -5,16 +5,17 @@ import express from 'express'
 import { createServer } from "http"
 import path from 'path'
 import { Server } from "socket.io"
-import lobbyManager from './modules/lobby.js'
-import userManager from './modules/users.js'
-import sock from './modules/sock.js'
+import LobbyManager from './modules/lobby.js'
+import SockManager from './modules/sock.js'
+import UserManager from './modules/users.js'
 
 var app = express()
 var server = createServer(app)
 const io = new Server(server)
 const __dirname = path.resolve()
-const lobbies = new lobbyManager()
-const users = new userManager()
+const lobbies = new LobbyManager()
+const users = new UserManager()
+const socks = new SockManager()
 
 // Static folder is accessible to client
 app.use('/',express.static(path.join(__dirname, 'static')))
@@ -30,19 +31,21 @@ server.listen(5000, function() {})
 //SOCKET.ON
 io.on('connection', function(socket){
     socket.on('disconnect', () => {
-        var dic = users.leaveLobby(socket)
-        if(dic){
-            lobbies.leaveLobby(dic.userId,dic.lobbyId)
+        var userId = socks.deleteSock(socket.id)
+        if (userId){
+            var lobbyId = users.deleteUser(userId)
+            lobbies.leaveLobby(userId,lobbyId)
         }
     })
 
     socket.on('createLobby', () => {
-        const lobbyId = lobbies.createLobby()
-        sock.toLobby(socket,lobbyId)
+        var lobbyId = lobbies.newLobby()
+        socks.toLobby(socket,lobbyId)
     })
 
     socket.on('joinLobby', (lobbyId) =>{
-        var dic = users.joinLobby(socket,lobbyId)
-        lobbies.joinLobby(dic.userId,dic.lobbyId)
+        var userId = users.newUser(socket,lobbyId)
+        socks.newSock(socket.id,userId)
+        lobbies.joinLobby(userId,lobbyId)
     })
 })

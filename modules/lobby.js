@@ -2,11 +2,11 @@
 
 class Lobby{
     constructor() {
-        this.users = []
+        this.userIds = []
     }
 }
 
-export default class lobbyManager{
+export default class LobbyManager{
     constructor(){
         this.lobbies = {},
         this.idLength = 1
@@ -25,7 +25,7 @@ export default class lobbyManager{
         }
     }
 
-    createLobby(){
+    newLobby(){
         const lobbyId = this.makeId()
         this.lobbies[lobbyId] = new Lobby
         console.log('newLobby',this.lobbies)
@@ -33,22 +33,22 @@ export default class lobbyManager{
     }
     
     deleteLobby(lobbyId){
-        if(this.lobbies[lobbyId].users.length == 0){
+        if(this.lobbies[lobbyId].userIds.length == 0){
             delete this.lobbies[lobbyId]
             console.log('deleteLobby',this.lobbies)
         }
     }
     
     joinLobby(userId,lobbyId){
-        this.lobbies[lobbyId].users.push(userId)
+        this.lobbies[lobbyId].userIds.push(userId)
         console.log('joinLobby',this.lobbies[lobbyId])
     }
     
     leaveLobby(userId,lobbyId){
-        for(var a in this.lobbies[lobbyId].users){
-            if (this.lobbies[lobbyId].users[a] == userId){
-                this.lobbies[lobbyId].users.splice(a,1)
-                console.log('leaveLobby',this.lobbies)
+        for(var a in this.lobbies[lobbyId].userIds){
+            if (this.lobbies[lobbyId].userIds[a] == userId){
+                this.lobbies[lobbyId].userIds.splice(a,1)
+                console.log('leaveLobby',this.lobbies[lobbyId].userIds)
                 this.deleteLobby(lobbyId)
                 return
             }

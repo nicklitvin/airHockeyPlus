@@ -2,6 +2,20 @@
     <body>
         <h1>Lobby</h1>
 
+        <label for='userName'>change name:</label><br>
+		<input type='text' id='userNameInput' maxlength= '12'><br>
+		<button onclick='chooseName()'>change name</button> 
+
+        <div id='chat'>
+			<div id='chatLogContainer'>
+				<div id='chatLog'>
+					<p>this is chat</p>
+				</div>
+			</div>
+			<input type='text' id='myMsg' name='myMsg' value=''>
+        </div>
+        
         <script src='/socket.io/socket.io.js'></script>
         <script src='/lobby/client.js'></script>
     </body>
+</html>

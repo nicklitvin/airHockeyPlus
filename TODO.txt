@@ -1,16 +1,26 @@
 NOTES
-/home (create,join,about)
+/home (create,about,settings)
 /lobby (chat,gameSelect)
 /about (patchNotes,ideaPoll)
 /gameXYZ
 
 TODO
-V0.0.5 naming + chat
-setup cookies
+V0.0.6 naming users
+V0.0.7 lobby chat
+
+Center: What will be your name? ___ / check name in server / return err OR make cookie + send info
+
 
 FOR LATER
+setup cookies
+-who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
+-startGame: 
+    for(userId in lobby), user.redirect, client.emit(UserId,name from cookie),
+    socket.on(remember) update user.socket, socket.userId
+
+name: gameNut
+kick players
 send survey to players after game (game quality, site in general)
-window.location.href > get variable and send on automatic function in client.js
 Circles as characters with design
 2d drawn characters interact in background 
 
