@@ -44,8 +44,26 @@ io.on('connection', function(socket){
     })
 
     socket.on('joinLobby', (lobbyId) =>{
-        var userId = users.newUser(socket,lobbyId)
-        socks.newSock(socket.id,userId)
-        lobbies.joinLobby(userId,lobbyId)
+        const userIds = lobbies.getUserIds(lobbyId)
+        const user = users.newUser(socket,lobbyId,userIds)
+        socks.newSock(user)
+        lobbies.joinLobby(user)
+    })
+
+    socket.on('nameUpdate', (userName) =>{
+        if(userName.length==0 || userName.length>12){
+            socks.nameError(socket)
+            return
+        }
+        const userId = socks.getUserId(socket.id)
+        const lobbyId = users.getLobbyId(userId)
+        const userIds = lobbies.getUserIds(lobbyId)
+        const nameChange = users.changeName(userIds,userId,userName)
+        if(nameChange){
+            socks.nameUpdate(socket,userName)
+        }
+        else{
+            socks.nameError(socket)
+        }
     })
 })

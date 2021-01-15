@@ -5,13 +5,33 @@ export default class SockManager{
         this.socks = {}
     }
 
+    getUserId(socketId){
+        return(this.socks[socketId])
+    }
+
+    nameUpdate(socket,userName){
+        socket.emit('nameUpdate',userName)
+    }
+
+    nameError(socket){
+        socket.emit('nameError','nameError')
+    }
+
+    nameTaken(socket){
+        socket.emit('nameError','nameTaken')
+    }
+
     toLobby(socket,lobbyId){
         var a = `lobby/?a=${lobbyId}`
         socket.emit('redirect',a)
     }
 
-    newSock(socketId,userId){
-        this.socks[socketId] = userId
+    newSock(user){
+        const socket = user.socket
+        this.socks[user.socket.id] = user.userId
+        socket.emit('newCookie',user.userId)
+        socket.emit('lobbyUpdate',user.lobbyId)
+        socket.emit('nameUpdate',user.name)
         console.log('newSock',this.socks)
     }
 

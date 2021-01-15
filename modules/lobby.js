@@ -25,6 +25,10 @@ export default class LobbyManager{
         }
     }
 
+    getUserIds(lobbyId){
+        return(this.lobbies[lobbyId].userIds)
+    }
+
     newLobby(){
         const lobbyId = this.makeId()
         this.lobbies[lobbyId] = new Lobby
@@ -39,9 +43,9 @@ export default class LobbyManager{
         }
     }
     
-    joinLobby(userId,lobbyId){
-        this.lobbies[lobbyId].userIds.push(userId)
-        console.log('joinLobby',this.lobbies[lobbyId])
+    joinLobby(user){
+        this.lobbies[user.lobbyId].userIds.push(user.userId)
+        console.log('joinLobby',this.lobbies[user.lobbyId])
     }
     
     leaveLobby(userId,lobbyId){

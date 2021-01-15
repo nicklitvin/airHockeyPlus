@@ -5,14 +5,11 @@ NOTES
 /gameXYZ
 
 TODO
-V0.0.6 naming users
 V0.0.7 lobby chat
-
-Center: What will be your name? ___ / check name in server / return err OR make cookie + send info
-
+V0.0.8 playerList + owner
 
 FOR LATER
-setup cookies
+error page if lobby doesn't exist
 -who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
 -startGame: 
     for(userId in lobby), user.redirect, client.emit(UserId,name from cookie),

@@ -1,9 +1,11 @@
 'use strict'
 
 class User{
-    constructor(socket,lobbyId){
+    constructor(userId,socket,lobbyId,name){
+        this.userId = userId
         this.socket = socket
         this.lobbyId = lobbyId
+        this.name = name
     }
 }
 
@@ -26,11 +28,42 @@ export default class UserManager{
         }
     }
 
-    newUser(socket,lobbyId){
+    getLobbyId(userId){
+        return(this.users[userId].lobbyId)
+    }
+
+    getNames(userIds){
+        var names = []
+        for(var a of userIds){
+            names.push(this.users[a].name)
+        }
+        return(names)
+    }
+
+    makeName(userIds){
+        var names = this.getNames(userIds)
+        while(true){
+            var name = 'player' + Math.floor(Math.random()*999)
+            if(!names.includes(name)){
+                return(name)
+            }
+        }
+    }
+
+    changeName(userIds,userId,userName){
+        var names = this.getNames(userIds)
+        if(!names.includes(userName)){
+            this.users[userId].name = userName
+            return(1)
+        }
+    }
+
+    newUser(socket,lobbyId,userIds){
         const userId = this.makeId()
-        this.users[userId] = new User(socket,lobbyId)
+        const name = this.makeName(userIds)
+        this.users[userId] = new User(userId,socket,lobbyId,name)
         console.log('newUser',this.users)
-        return(userId)
+        return(this.users[userId])
     }
 
     deleteUser(userId){
