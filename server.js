@@ -63,7 +63,21 @@ io.on('connection', function(socket){
             socks.nameUpdate(socket,userName)
         }
         else{
-            socks.nameError(socket)
+            socks.nameTaken(socket)
+        }
+    })
+
+    socket.on('newChat', (chat)=>{
+        if(chat.length == 0 || chat.length >500){
+            socks.chatError(socket)
+        }
+        const userId = socks.getUserId(socket.id)
+        const lobbyId = users.getLobbyId(userId)
+        const userIds = lobbies.getUserIds(lobbyId)
+        chat = users.getName(userId) +': ' + chat
+        for(var a of userIds){
+            const socket = users.getSocket(a)
+            socks.newChat(socket,chat)
         }
     })
 })

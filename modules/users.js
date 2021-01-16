@@ -28,6 +28,13 @@ export default class UserManager{
         }
     }
 
+    getName(userId){
+        return(this.users[userId].name)
+    }
+    getSocket(userId){
+        return(this.users[userId].socket)
+    }
+
     getLobbyId(userId){
         return(this.users[userId].lobbyId)
     }

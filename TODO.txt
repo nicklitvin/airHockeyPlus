@@ -5,11 +5,10 @@ NOTES
 /gameXYZ
 
 TODO
-V0.0.7 lobby chat
 V0.0.8 playerList + owner
 
 FOR LATER
-error page if lobby doesn't exist
+create error page if lobby doesn't exist
 -who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
 -startGame: 
     for(userId in lobby), user.redirect, client.emit(UserId,name from cookie),

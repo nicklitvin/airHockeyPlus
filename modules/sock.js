@@ -5,6 +5,14 @@ export default class SockManager{
         this.socks = {}
     }
 
+    chatError(socket){
+        socket.emit('chatError','chatError')
+    }
+
+    newChat(socket,chat){
+        socket.emit('newChat',chat)
+    }
+
     getUserId(socketId){
         return(this.socks[socketId])
     }

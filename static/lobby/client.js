@@ -1,6 +1,6 @@
 'use strict'
 import cookie from '/modules/cookies.js'
-const socket = io();
+const socket = io()
 
 function joinLobby(){
     const url = window.location.href
@@ -10,10 +10,20 @@ function joinLobby(){
 joinLobby()
 
 function chooseName(){
-    const userName = document.getElementById('userNameInput').value
-    socket.emit('nameUpdate',userName)
+    socket.emit('nameUpdate',userNameInput.value)
+    nameError.style.display = 'none'
 }
 window.chooseName = chooseName
+
+window.addEventListener('keypress', (a)=>{
+    if(document.activeElement.id == 'myMsgInput' && myMsgInput.value && a.key == 'Enter'){
+        socket.emit('newChat',myMsgInput.value)
+        myMsgInput.value = ''
+        chatError.style.display ='none'
+    }
+})
+
+// SOCKET.ON
 
 socket.on('newCookie', (userId) =>{
     const url = window.location.href
@@ -22,34 +32,33 @@ socket.on('newCookie', (userId) =>{
 })
 
 socket.on('lobbyUpdate', (lobbyId) => {
-    const lobbyTitle = document.getElementById('lobbyTitle')
     lobbyTitle.innerHTML = 'lobby ' + lobbyId
 })
 
 socket.on('nameUpdate', (userName) =>{
-    const nameTitle = document.getElementById('nameTitle')
     nameTitle.innerHTML = 'and you are ' + userName
+    userNameInput.value = ''
 })
 
 socket.on('nameError', (err) =>{
-    const nameError = document.getElementById('nameError')
     nameError.innerHTML = err
+    nameError.style.display = 'block'
 })
 
-// socket.on('chatMsg', function(name,msg,colorCode){
-// 	// if near bottom of chat, scroll to bot if new message, calculate before adding msg
-// 	var atBot = 0
-// 	if (chatLog.scrollHeight - chatLog.scrollTop - chatLogContainer.clientHeight < 25){
-// 		atBot = 1
-// 	}
-// 	var chatMsg = document.createElement('p')
-// 	chatMsg.innerHTML = name + ': ' + msg
-// 	chatMsg.style.color = colorCode
-// 	chatMsg.classList.add('chatMsgClass')
-// 	chatMsg.id = chatMsgCount
-// 	chatLog.appendChild(chatMsg)
-// 	chatMsgCount += 1
-// 	if (atBot == 1){
-// 		chatLog.scrollTop = chatLog.scrollHeight - chatLogContainer.clientHeight
-// 	}
-// })
+socket.on('newChat', (msg)=>{
+    var atBot = 0
+	if (chatLog.scrollHeight - chatLog.scrollTop - chatLogContainer.clientHeight < 25){
+		atBot = 1
+    }
+    var newChat = document.createElement('p')
+    newChat.innerHTML = msg
+    chatLog.appendChild(newChat)
+	if (atBot == 1){
+		chatLog.scrollTop = chatLog.scrollHeight - chatLogContainer.clientHeight
+	}
+})
+
+socket.on('chatError', (err)=>{
+    document.getElementById('chatError').innerHTML = err
+    chatError.style.display ='block'
+})

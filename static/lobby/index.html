@@ -1,21 +1,29 @@
 <html>
+    <head>
+        <link href="/lobby/styles.css" rel='stylesheet'>
+    </head>
+
     <body>
         <h1 id='lobbyTitle'></h1>
         <h2 id='nameTitle'></h2>
 
-        <label for='userName'>change name:</label><br>
-		<input type='text' id='userNameInput' maxlength= '12'><br>
-        <button onclick='chooseName()'>change name</button>
-        <p id='nameError'></p>
+        <div id='userNameDiv'>
+            <label for='userName'>change name:</label><br>
+            <input type='text' id='userNameInput' maxlength= '12'><br>
+            <button onclick='chooseName()'>change name</button><br>
+            <p id='nameError'></p><br>
+        </div>
 
-        <div id='chat'>
+        <div id='chatDiv'>
 			<div id='chatLogContainer'>
 				<div id='chatLog'>
 					<p>this is chat</p>
 				</div>
 			</div>
-			<input type='text' id='myMsg' name='myMsg' value=''>
+			<input type='text' id='myMsgInput' maxlength ='500' value=''>
         </div>
+        <p id='chatError'></p>
+        
         <script src='/socket.io/socket.io.js'></script>
         <script type='module' src='/modules/cookies.js'></script>
         <script type='module' src='/lobby/client.js'></script>
