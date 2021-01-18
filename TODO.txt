@@ -5,10 +5,12 @@ NOTES
 /gameXYZ
 
 TODO
-V0.0.8 playerList + owner
+V0.0.9 create error page if lobby doesn't exist
+V0.0.10 game selection
+V0.0.11 ready button + redirect if all ready
 
 FOR LATER
-create error page if lobby doesn't exist
+if owner alone refreshes, crash cause lobby gets deleted
 -who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
 -startGame: 
     for(userId in lobby), user.redirect, client.emit(UserId,name from cookie),

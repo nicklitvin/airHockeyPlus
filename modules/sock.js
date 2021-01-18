@@ -5,6 +5,10 @@ export default class SockManager{
         this.socks = {}
     }
 
+    playerUpdate(socket,text){
+        socket.emit('playerUpdate',text)
+    }
+
     chatError(socket){
         socket.emit('chatError','chatError')
     }

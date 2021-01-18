@@ -31,6 +31,7 @@ export default class UserManager{
     getName(userId){
         return(this.users[userId].name)
     }
+    
     getSocket(userId){
         return(this.users[userId].socket)
     }
@@ -69,7 +70,7 @@ export default class UserManager{
         const userId = this.makeId()
         const name = this.makeName(userIds)
         this.users[userId] = new User(userId,socket,lobbyId,name)
-        console.log('newUser',this.users)
+        console.log('newUser',this.users[userId])
         return(this.users[userId])
     }
 

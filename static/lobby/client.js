@@ -24,6 +24,9 @@ window.addEventListener('keypress', (a)=>{
 })
 
 // SOCKET.ON
+socket.on('playerUpdate', (text)=>{
+    playerListDiv.innerHTML = text
+})
 
 socket.on('newCookie', (userId) =>{
     const url = window.location.href

@@ -28,13 +28,39 @@ app.get('/', function(request, response) {
 // Listen to requests
 server.listen(5000, function() {})
 
+function updateRoom(lobbyId,userIds=0){
+    if(!userIds){
+        userIds = lobbies.getUserIds(lobbyId)
+    }
+    var lobbyOwner = lobbies.getOwner(lobbyId)
+    var text = 'players: <br>'
+    for(var a of userIds){
+        if(a == lobbyOwner){
+            text += users.getName(a) + ' [party leader] <br>'
+        }
+        else{
+            text += users.getName(a) + ' <br>'
+        }
+    }
+    for(var a of userIds){
+        const socket = users.getSocket(a)
+        socks.playerUpdate(socket,text)
+    }
+}
+
 //SOCKET.ON
 io.on('connection', function(socket){
     socket.on('disconnect', () => {
         var userId = socks.deleteSock(socket.id)
         if (userId){
             var lobbyId = users.deleteUser(userId)
-            lobbies.leaveLobby(userId,lobbyId)
+            //if room not deleted
+            if(!lobbies.leaveLobby(userId,lobbyId)){
+                if(lobbies.getOwner(lobbyId)==userId){
+                    lobbies.newOwner(lobbyId)
+                }
+                updateRoom(lobbyId)
+            }
         }
     })
 
@@ -44,10 +70,18 @@ io.on('connection', function(socket){
     })
 
     socket.on('joinLobby', (lobbyId) =>{
+        let newOwner
         const userIds = lobbies.getUserIds(lobbyId)
+        if(userIds.length == 0){
+            newOwner = 1
+        }
         const user = users.newUser(socket,lobbyId,userIds)
         socks.newSock(user)
         lobbies.joinLobby(user)
+        if(newOwner){
+            lobbies.newOwner(lobbyId)
+        }
+        updateRoom(lobbyId)
     })
 
     socket.on('nameUpdate', (userName) =>{
@@ -61,6 +95,7 @@ io.on('connection', function(socket){
         const nameChange = users.changeName(userIds,userId,userName)
         if(nameChange){
             socks.nameUpdate(socket,userName)
+            updateRoom(lobbyId)
         }
         else{
             socks.nameTaken(socket)

@@ -3,6 +3,7 @@
 class Lobby{
     constructor() {
         this.userIds = []
+        this.owner = 0
     }
 }
 
@@ -25,6 +26,14 @@ export default class LobbyManager{
         }
     }
 
+    newOwner(lobbyId){
+        this.lobbies[lobbyId].owner = this.lobbies[lobbyId].userIds[0]
+    }
+
+    getOwner(lobbyId){
+        return(this.lobbies[lobbyId].owner)
+    }
+
     getUserIds(lobbyId){
         return(this.lobbies[lobbyId].userIds)
     }
@@ -40,6 +49,7 @@ export default class LobbyManager{
         if(this.lobbies[lobbyId].userIds.length == 0){
             delete this.lobbies[lobbyId]
             console.log('deleteLobby',this.lobbies)
+            return(1)
         }
     }
     
@@ -53,8 +63,7 @@ export default class LobbyManager{
             if (this.lobbies[lobbyId].userIds[a] == userId){
                 this.lobbies[lobbyId].userIds.splice(a,1)
                 console.log('leaveLobby',this.lobbies[lobbyId].userIds)
-                this.deleteLobby(lobbyId)
-                return
+                return(this.deleteLobby(lobbyId))
             }
         }
     }
