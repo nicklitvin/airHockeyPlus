@@ -24,6 +24,11 @@ window.addEventListener('keypress', (a)=>{
 })
 
 // SOCKET.ON
+socket.on('lobbyError', (a)=>{
+    const url = window.location.href.split('/?')[0]
+    window.location.href = url + a
+})
+
 socket.on('playerUpdate', (text)=>{
     playerListDiv.innerHTML = text
 })

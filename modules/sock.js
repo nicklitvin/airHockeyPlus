@@ -5,6 +5,10 @@ export default class SockManager{
         this.socks = {}
     }
 
+    errorPage(socket){
+        socket.emit('lobbyError','/error')
+    }
+
     playerUpdate(socket,text){
         socket.emit('playerUpdate',text)
     }

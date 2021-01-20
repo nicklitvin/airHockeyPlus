@@ -26,6 +26,12 @@ export default class LobbyManager{
         }
     }
 
+    lobbyExist(lobbyId){
+        if(Object.keys(this.lobbies).includes(lobbyId)){
+            return(1)
+        }
+    }
+
     newOwner(lobbyId){
         this.lobbies[lobbyId].owner = this.lobbies[lobbyId].userIds[0]
     }
