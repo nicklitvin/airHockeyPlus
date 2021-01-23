@@ -45,4 +45,8 @@ io.on('connection', function(socket){
     socket.on('newChat', (chat)=>{
         room.newChat(socket,chat)
     })
+
+    socket.on('gameChange', (game)=>{
+        room.gameChange(socket,game)
+    })
 })

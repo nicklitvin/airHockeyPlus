@@ -5,6 +5,14 @@ export default class SockManager{
         this.socks = {}
     }
 
+    gameUpdate(socket,game){
+        socket.emit('gameUpdate',game)
+    }
+
+    newOwner(socket,games,game){
+        socket.emit('newOwner',games,game)
+    }
+
     errorPage(socket){
         socket.emit('lobbyError','/error')
     }

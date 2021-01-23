@@ -2,14 +2,36 @@
 import LobbyManager from './lobby.js'
 import SockManager from './sock.js'
 import UserManager from './users.js'
+import gameLibrary from './gameLib.js'
 
 const lobbies = new LobbyManager()
 const users = new UserManager()
 const socks = new SockManager()
+const gameLib = new gameLibrary()
 
 export default class RoomControl{
     constructor(){
         this.recentUsers = {}
+    }
+
+    gameUpdate(lobbyId,game){
+        const userIds = lobbies.getUserIds(lobbyId)
+        for(var a of userIds){
+            const socket = users.getSocket(a)
+            socks.gameUpdate(socket,game)
+        }
+    }
+
+    gameChange(socket,game){
+        if(gameLib.getNames().includes(game)){
+            const userId = socks.getUserId(socket.id)
+            const lobbyId = users.getLobbyId(userId)
+            lobbies.changeGame(lobbyId,game)
+            this.gameUpdate(lobbyId,game)
+        }
+        else{
+            console.log('gameChangeError')
+        }
     }
 
     newChat(socket,chat){
@@ -61,6 +83,9 @@ export default class RoomControl{
         if(newOwner){
             lobbies.newOwner(lobbyId)
         }
+        else{
+            socks.gameUpdate(socket,lobbies.getGame(lobbyId))
+        }
         this.updateRoom(lobbyId)
     }
 
@@ -100,6 +125,12 @@ export default class RoomControl{
         for(var a of userIds){
             const socket = users.getSocket(a)
             socks.playerUpdate(socket,text)
+        }
+        if(lobbies.isNewOwner(lobbyId)){
+            const lobbyGame = lobbies.getGame(lobbyId)
+            const allGames = gameLib.getNames()
+            const socket = users.getSocket(lobbyOwner)
+            socks.newOwner(socket,allGames,lobbyGame)
         }
     }
 }

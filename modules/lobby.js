@@ -4,6 +4,9 @@ class Lobby{
     constructor() {
         this.userIds = []
         this.owner = 0
+        this.newOwner = 0
+        this.game = 0
+        this.newGame = 0
     }
 }
 
@@ -26,6 +29,14 @@ export default class LobbyManager{
         }
     }
 
+    changeGame(lobbyId,game){
+        this.lobbies[lobbyId].game = game
+    }
+
+    getGame(lobbyId){
+        return(this.lobbies[lobbyId].game)
+    }
+
     lobbyExist(lobbyId){
         if(Object.keys(this.lobbies).includes(lobbyId)){
             return(1)
@@ -34,6 +45,14 @@ export default class LobbyManager{
 
     newOwner(lobbyId){
         this.lobbies[lobbyId].owner = this.lobbies[lobbyId].userIds[0]
+        this.lobbies[lobbyId].newOwner = 1
+    }
+
+    isNewOwner(lobbyId){
+        if(this.lobbies[lobbyId].newOwner){
+            this.lobbies[lobbyId].newOwner = 0
+            return(1)
+        }
     }
 
     getOwner(lobbyId){

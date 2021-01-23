@@ -14,4 +14,8 @@
 #myMsgInput{
 	width: 275px;
 }
+#gameInfoSelect{
+	display: none;
+}
+
 p { margin:0 }

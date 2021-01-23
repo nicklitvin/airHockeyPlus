@@ -5,17 +5,21 @@ NOTES
 /gameXYZ
 
 TODO
-V0.0.10 game selection
-V0.0.11 ready button + redirect if all ready
+V0.0.11 ready button + redirect if all ready and game selected
+.12 owner kick players, make owner buttons
+.1.0 clean up code
 
 FOR LATER
+users need to know game when enetering room
+name change limit
+<option value=''>, give leader array of options to select from
 if owner alone refreshes, crash cause lobby gets deleted
 -who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
 -startGame: 
     for(userId in lobby), user.redirect, client.emit(UserId,name from cookie),
     socket.on(remember) update user.socket, socket.userId
 
-name: gameNut
+name: gameNut, shadows
 kick players
 send survey to players after game (game quality, site in general)
 Circles as characters with design

@@ -16,6 +16,16 @@
 
         <div id='playerListDiv'></div><br>
 
+        <div id='gameInfoDiv'>
+            <div id='gameInfoSelect'>
+                <label for='gameName'>select game: </label>
+                <select id='gameName' onchange='gameChange()'>
+                    <option id='gameNameBlank'></option>
+                </select>
+            </div>
+            <p id='gameInfoP'></p>
+        </div><br>
+
         <div id='chatDiv'>
 			<div id='chatLogContainer'>
 				<div id='chatLog'>

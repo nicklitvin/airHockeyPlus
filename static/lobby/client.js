@@ -15,6 +15,44 @@ function chooseName(){
 }
 window.chooseName = chooseName
 
+function newChat(msg){
+    var atBot = 0
+	if (chatLog.scrollHeight - chatLog.scrollTop - chatLogContainer.clientHeight < 25){
+		atBot = 1
+    }
+    var newChat = document.createElement('p')
+    newChat.innerHTML = msg
+    chatLog.appendChild(newChat)
+	if (atBot == 1){
+		chatLog.scrollTop = chatLog.scrollHeight - chatLogContainer.clientHeight
+	}
+}
+
+function uOwner(games,game){
+    for(var a of games){
+        var gameOption = document.createElement('option')
+        gameOption.innerHTML = a
+        gameOption.value = a
+        gameInfoP.style.display = 'none'
+        gameName.appendChild(gameOption)
+    }
+    if(game){
+        gameNameBlank.style.display = 'none'
+        gameName.value = game
+    }
+    gameInfoSelect.style.display = 'block'
+}
+
+function gameChange(){
+    gameNameBlank.style.display = 'none'
+    socket.emit('gameChange',gameName.value)
+}
+window.gameChange = gameChange
+
+function updateGame(game){
+    gameInfoP.innerHTML = 'selected game: ' + game
+}
+
 window.addEventListener('keypress', (a)=>{
     if(document.activeElement.id == 'myMsgInput' && myMsgInput.value && a.key == 'Enter'){
         socket.emit('newChat',myMsgInput.value)
@@ -24,6 +62,14 @@ window.addEventListener('keypress', (a)=>{
 })
 
 // SOCKET.ON
+socket.on('gameUpdate', (game)=>{
+    updateGame(game)
+})
+
+socket.on('newOwner', (games,game)=>{
+    uOwner(games,game)
+})
+
 socket.on('lobbyError', (a)=>{
     const url = window.location.href.split('/?')[0]
     window.location.href = url + a
@@ -54,16 +100,7 @@ socket.on('nameError', (err) =>{
 })
 
 socket.on('newChat', (msg)=>{
-    var atBot = 0
-	if (chatLog.scrollHeight - chatLog.scrollTop - chatLogContainer.clientHeight < 25){
-		atBot = 1
-    }
-    var newChat = document.createElement('p')
-    newChat.innerHTML = msg
-    chatLog.appendChild(newChat)
-	if (atBot == 1){
-		chatLog.scrollTop = chatLog.scrollHeight - chatLogContainer.clientHeight
-	}
+    newChat(msg)
 })
 
 socket.on('chatError', (err)=>{
