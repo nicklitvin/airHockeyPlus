@@ -5,14 +5,16 @@ NOTES
 /gameXYZ
 
 TODO
-V0.0.11 ready button + redirect if all ready and game selected
-.12 owner kick players, make owner buttons
+.12 cookie verification in game
+.13 owner kick players, make owner buttons
 .1.0 clean up code
 
 FOR LATER
+selected game: none (no game selected)
+cant ready unless game chosen, unready all if game change
+button appearance changes when ready (green/red)
 users need to know game when enetering room
 name change limit
-<option value=''>, give leader array of options to select from
 if owner alone refreshes, crash cause lobby gets deleted
 -who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
 -startGame: 

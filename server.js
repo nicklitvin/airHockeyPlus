@@ -49,4 +49,8 @@ io.on('connection', function(socket){
     socket.on('gameChange', (game)=>{
         room.gameChange(socket,game)
     })
+
+    socket.on('readyChange', ()=>{
+        room.readyChange(socket)
+    })
 })

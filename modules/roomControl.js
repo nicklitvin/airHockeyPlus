@@ -14,10 +14,45 @@ export default class RoomControl{
         this.recentUsers = {}
     }
 
+    startGame(lobbyId){
+        console.log('startingGame')
+        const userIds = lobbies.getUserIds(lobbyId)
+        const game = lobbies.getGame(lobbyId)
+        for(var userId of userIds){
+            const socket = users.getSocket(userId)
+            socks.toGame(socket,game,lobbyId)
+        }
+    }
+
+    weReady(lobbyId){
+        const userIds = lobbies.getUserIds(lobbyId)
+        for(var userId of userIds){
+            if(!users.isReady(userId)){
+                return
+            }
+        }
+        if(lobbies.getGame(lobbyId)){
+            this.startGame(lobbyId) 
+        }
+    }
+
+    readyChange(socket){
+        const userId = socks.getUserId(socket.id)
+        const lobbyId = users.getLobbyId(userId)
+        if(!lobbies.getGame(lobbyId)){
+            return
+        } 
+        var readyUp = users.readyChange(userId)
+        this.updateRoom(lobbyId)
+        if(readyUp){
+            this.weReady(lobbyId)
+        }
+    }
+
     gameUpdate(lobbyId,game){
         const userIds = lobbies.getUserIds(lobbyId)
-        for(var a of userIds){
-            const socket = users.getSocket(a)
+        for(var userId of userIds){
+            const socket = users.getSocket(userId)
             socks.gameUpdate(socket,game)
         }
     }
@@ -26,11 +61,20 @@ export default class RoomControl{
         if(gameLib.getNames().includes(game)){
             const userId = socks.getUserId(socket.id)
             const lobbyId = users.getLobbyId(userId)
+            this.unreadyUsers(lobbyId)
             lobbies.changeGame(lobbyId,game)
             this.gameUpdate(lobbyId,game)
+            this.updateRoom(lobbyId)
         }
         else{
             console.log('gameChangeError')
+        }
+    }
+
+    unreadyUsers(lobbyId){
+        const userIds = lobbies.getUserIds(lobbyId)
+        for(var userId of userIds){
+            users.unready(userId)
         }
     }
 
@@ -42,8 +86,8 @@ export default class RoomControl{
         const lobbyId = users.getLobbyId(userId)
         const userIds = lobbies.getUserIds(lobbyId)
         chat = users.getName(userId) +': ' + chat
-        for(var a of userIds){
-            const socket = users.getSocket(a)
+        for(var userId1 of userIds){
+            const socket = users.getSocket(userId1)
             socks.newChat(socket,chat)
         }
     }
@@ -114,16 +158,21 @@ export default class RoomControl{
         }
         var lobbyOwner = lobbies.getOwner(lobbyId)
         var text = 'players: <br>'
-        for(var a of userIds){
-            if(a == lobbyOwner){
-                text += users.getName(a) + ' [party leader] <br>'
+        for(var userId of userIds){
+            var mark = '(X)'
+            var ready = users.isReady(userId)
+            if(ready){
+                mark = '(✓)' //checkmark
+            }
+            if(userId == lobbyOwner){
+                text += users.getName(userId) + mark + ' [party leader] <br>'
             }
             else{
-                text += users.getName(a) + ' <br>'
+                text += users.getName(userId) + mark + ' <br>'
             }
         }
-        for(var a of userIds){
-            const socket = users.getSocket(a)
+        for(var userId of userIds){
+            const socket = users.getSocket(userId)
             socks.playerUpdate(socket,text)
         }
         if(lobbies.isNewOwner(lobbyId)){

@@ -6,6 +6,7 @@ class User{
         this.socket = socket
         this.lobbyId = lobbyId
         this.name = name
+        this.ready = 0
     }
 }
 
@@ -13,6 +14,23 @@ export default class UserManager{
     constructor (){
         this.users = {},
         this.idLength = 10
+    }
+
+    unready(userId){
+        this.users[userId].ready = 0
+    }
+
+    isReady(userId){
+        return(this.users[userId].ready)
+    }
+
+    readyChange(userId){
+        if(this.users[userId].ready){
+            this.users[userId].ready = 0
+            return
+        }
+        this.users[userId].ready = 1
+        return(1)
     }
 
     makeId(){

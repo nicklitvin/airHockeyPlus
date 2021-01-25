@@ -3,8 +3,8 @@ import cookie from '/modules/cookies.js'
 const socket = io()
 
 function joinLobby(){
-    const url = window.location.href
-    const lobbyId = url.substring(url.lastIndexOf('a=')+2)
+    const lobbyId = window.location.href.split('a=')[1]
+// url.substring(url.lastIndexOf('a=')+2)
     socket.emit('joinLobby',lobbyId)
 }
 joinLobby()
@@ -14,6 +14,11 @@ function chooseName(){
     nameError.style.display = 'none'
 }
 window.chooseName = chooseName
+
+function readyChange(){
+    socket.emit('readyChange')
+}
+window.readyChange = readyChange
 
 function newChat(msg){
     var atBot = 0
@@ -50,7 +55,14 @@ function gameChange(){
 window.gameChange = gameChange
 
 function updateGame(game){
-    gameInfoP.innerHTML = 'selected game: ' + game
+    if(game){
+        readyButton.style.display = 'block'
+        gameInfoP.innerHTML = 'selected game: ' + game
+    }
+}
+
+function redirect(extra){
+    window.location.href = window.location.href.split('lobby/')[0] + extra
 }
 
 window.addEventListener('keypress', (a)=>{
@@ -62,6 +74,10 @@ window.addEventListener('keypress', (a)=>{
 })
 
 // SOCKET.ON
+socket.on('redirect', (url)=>{
+    redirect(url)
+})
+
 socket.on('gameUpdate', (game)=>{
     updateGame(game)
 })

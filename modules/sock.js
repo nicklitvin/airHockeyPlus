@@ -5,6 +5,16 @@ export default class SockManager{
         this.socks = {}
     }
 
+    toGame(socket,game,lobbyId){
+        const url = `${game}/?a=${lobbyId}`
+        socket.emit('redirect',url)
+    }
+
+    toLobby(socket,lobbyId){
+        var url = `lobby/?a=${lobbyId}`
+        socket.emit('redirect',url)
+    }
+
     gameUpdate(socket,game){
         socket.emit('gameUpdate',game)
     }
@@ -43,11 +53,6 @@ export default class SockManager{
 
     nameTaken(socket){
         socket.emit('nameError','nameTaken')
-    }
-
-    toLobby(socket,lobbyId){
-        var a = `lobby/?a=${lobbyId}`
-        socket.emit('redirect',a)
     }
 
     newSock(user){
