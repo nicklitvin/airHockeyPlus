@@ -10,42 +10,35 @@ const socks = new SockManager()
 const gameLib = new gameLibrary()
 
 export default class RoomControl{
-    constructor(){
-        this.recentUsers = {}
-    }
+    constructor(){}
 
-    startGame(lobbyId){
-        console.log('startingGame')
-        const userIds = lobbies.getUserIds(lobbyId)
-        const game = lobbies.getGame(lobbyId)
-        for(var userId of userIds){
-            const socket = users.getSocket(userId)
-            socks.toGame(socket,game,lobbyId)
-        }
-    }
-
-    weReady(lobbyId){
-        const userIds = lobbies.getUserIds(lobbyId)
-        for(var userId of userIds){
-            if(!users.isReady(userId)){
-                return
+    disconnect(socket){
+        const userId = socks.getUserId(socket.id)
+        if(userId){
+            socks.deleteSock(socket.id)
+            const lobbyId = users.getLobbyId(userId)
+            //if ingame
+            if(lobbies.gameBegun(lobbyId)){
+                console.log('leaving started game')
+            }
+            //if inlobby
+            else{
+                this.deleteUser(userId,lobbyId)
             }
         }
-        if(lobbies.getGame(lobbyId)){
-            this.startGame(lobbyId) 
-        }
     }
 
-    readyChange(socket){
-        const userId = socks.getUserId(socket.id)
-        const lobbyId = users.getLobbyId(userId)
-        if(!lobbies.getGame(lobbyId)){
-            return
-        } 
-        var readyUp = users.readyChange(userId)
-        this.updateRoom(lobbyId)
-        if(readyUp){
-            this.weReady(lobbyId)
+    deleteUser(userId,lobbyId){
+        users.deleteUser(userId)
+        const deleted = lobbies.leaveLobby(userId,lobbyId)
+        //make new owner if owner left
+        if(!deleted && !lobbies.getOwner(lobbyId)){
+            const newOwner = lobbies.newOwner(lobbyId)
+            const socket = users.getSocket(newOwner)
+            this.ownerView(socket,lobbyId)
+        }
+        if(!deleted){
+            this.updatePlayerList(lobbyId)
         }
     }
 
@@ -61,10 +54,12 @@ export default class RoomControl{
         if(gameLib.getNames().includes(game)){
             const userId = socks.getUserId(socket.id)
             const lobbyId = users.getLobbyId(userId)
+            //unready all cause new game
             this.unreadyUsers(lobbyId)
+            this.updatePlayerList(lobbyId)
+            //update game text
             lobbies.changeGame(lobbyId,game)
             this.gameUpdate(lobbyId,game)
-            this.updateRoom(lobbyId)
         }
         else{
             console.log('gameChangeError')
@@ -75,6 +70,45 @@ export default class RoomControl{
         const userIds = lobbies.getUserIds(lobbyId)
         for(var userId of userIds){
             users.unready(userId)
+        }
+    }
+
+    startGame(lobbyId){
+        console.log('startingGame')
+        lobbies.goingInGame(lobbyId)
+        const userIds = lobbies.getUserIds(lobbyId)
+        const game = lobbies.getGame(lobbyId)
+        for(var userId of userIds){
+            const socket = users.getSocket(userId)
+            socks.toGame(socket,game,lobbyId)
+        }
+    }
+
+    weReady(lobbyId){
+        const userIds = lobbies.getUserIds(lobbyId)
+        //check if everyone ready
+        for(var userId of userIds){
+            if(!users.isReady(userId)){
+                return
+            }
+        }
+        //start game
+        if(lobbies.getGame(lobbyId)){
+            this.startGame(lobbyId) 
+        }
+    }
+
+    readyChange(socket){
+        const userId = socks.getUserId(socket.id)
+        const lobbyId = users.getLobbyId(userId)
+        //can't ready if no game selected
+        if(!lobbies.getGame(lobbyId)){
+            return
+        } 
+        var readyUp = users.readyChange(userId)
+        this.updatePlayerList(lobbyId)
+        if(readyUp){
+            this.weReady(lobbyId)
         }
     }
 
@@ -93,6 +127,7 @@ export default class RoomControl{
     }
 
     updateName(socket,userName){
+        //check name eligibility
         if(userName.length==0 || userName.length>12){
             socks.nameError(socket)
             return
@@ -103,65 +138,26 @@ export default class RoomControl{
         const nameChange = users.changeName(userIds,userId,userName)
         if(nameChange){
             socks.nameUpdate(socket,userName)
-            this.updateRoom(lobbyId)
+            this.updatePlayerList(lobbyId)
         }
         else{
             socks.nameTaken(socket)
         }
     }
 
-    joinLobby(socket,lobbyId){
-        let newOwner
-        const exist = lobbies.lobbyExist(lobbyId)
-        if(!exist){
-            socks.errorPage(socket)
-            return
-        }
+    ownerView(socket,lobbyId){
+        const lobbyGame = lobbies.getGame(lobbyId)
+        const allGames = gameLib.getNames()
+        socks.newOwner(socket,allGames,lobbyGame)
+    }
+
+    makeLobbyText(lobbyId){
+        var text = 'players: <br>'  
+        const lobbyOwner = lobbies.getOwner(lobbyId)
         const userIds = lobbies.getUserIds(lobbyId)
-        if(userIds.length == 0){
-            newOwner = 1
-        }
-        const user = users.newUser(socket,lobbyId,userIds)
-        socks.newSock(user)
-        lobbies.joinLobby(user)
-        if(newOwner){
-            lobbies.newOwner(lobbyId)
-        }
-        else{
-            socks.gameUpdate(socket,lobbies.getGame(lobbyId))
-        }
-        this.updateRoom(lobbyId)
-    }
-
-    createLobby(socket){
-        var lobbyId = lobbies.newLobby()
-        socks.toLobby(socket,lobbyId)
-    }
-
-    disconnect(socket){
-        var userId = socks.deleteSock(socket.id)
-        if (userId){
-            var lobbyId = users.deleteUser(userId)
-            //if room not deleted
-            if(!lobbies.leaveLobby(userId,lobbyId)){
-                if(lobbies.getOwner(lobbyId)==userId){
-                    lobbies.newOwner(lobbyId)
-                }
-                this.updateRoom(lobbyId)
-            }
-        }
-    }
-
-    updateRoom(lobbyId,userIds=0){
-        if(!userIds){
-            userIds = lobbies.getUserIds(lobbyId)
-        }
-        var lobbyOwner = lobbies.getOwner(lobbyId)
-        var text = 'players: <br>'
         for(var userId of userIds){
             var mark = '(X)'
-            var ready = users.isReady(userId)
-            if(ready){
+            if(users.isReady(userId)){
                 mark = '(✓)' //checkmark
             }
             if(userId == lobbyOwner){
@@ -171,15 +167,47 @@ export default class RoomControl{
                 text += users.getName(userId) + mark + ' <br>'
             }
         }
+        return(text)
+    }
+
+    updatePlayerList(lobbyId){
+        const text = this.makeLobbyText(lobbyId)
+        const userIds = lobbies.getUserIds(lobbyId)
         for(var userId of userIds){
             const socket = users.getSocket(userId)
             socks.playerUpdate(socket,text)
         }
-        if(lobbies.isNewOwner(lobbyId)){
-            const lobbyGame = lobbies.getGame(lobbyId)
-            const allGames = gameLib.getNames()
-            const socket = users.getSocket(lobbyOwner)
-            socks.newOwner(socket,allGames,lobbyGame)
+    }
+
+    addUser(socket,lobbyId){
+        //create user
+        const userIds = lobbies.getUserIds(lobbyId)
+        const user = users.newUser(socket,lobbyId,userIds)
+        socks.newSock(user)
+        lobbies.joinLobby(user.userId,lobbyId)
+        //make owner if alone
+        if(lobbies.getUserIds(lobbyId).length == 1){
+            lobbies.newOwner(lobbyId)
+            this.ownerView(user.socket,lobbyId)
+        }
+        this.updatePlayerList(lobbyId)
+    }
+
+    joinLobby(socket,lobbyId){
+        // check if possible to join
+        const exist = lobbies.lobbyExist(lobbyId)
+        if(!exist || lobbies.gameBegun(lobbyId)){
+            socks.errorPage(socket)
+            return
+        }
+        //add user TODO: remember user
+        this.addUser(socket,lobbyId)
+    }
+
+    createLobby(socket=0){
+        const lobbyId = lobbies.newLobby()
+        if(socket){
+            socks.toLobby(socket,lobbyId)
         }
     }
 }

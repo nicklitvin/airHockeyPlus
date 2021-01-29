@@ -4,7 +4,6 @@ const socket = io()
 
 function joinLobby(){
     const lobbyId = window.location.href.split('a=')[1]
-// url.substring(url.lastIndexOf('a=')+2)
     socket.emit('joinLobby',lobbyId)
 }
 joinLobby()
@@ -33,15 +32,15 @@ function newChat(msg){
 	}
 }
 
-function uOwner(games,game){
-    for(var a of games){
+function uOwner(games,currGame){
+    for(var game of games){
         var gameOption = document.createElement('option')
-        gameOption.innerHTML = a
-        gameOption.value = a
+        gameOption.innerHTML = game
+        gameOption.value = game
         gameInfoP.style.display = 'none'
         gameName.appendChild(gameOption)
     }
-    if(game){
+    if(currGame){
         gameNameBlank.style.display = 'none'
         gameName.value = game
     }
@@ -74,25 +73,22 @@ window.addEventListener('keypress', (a)=>{
 })
 
 // SOCKET.ON
-socket.on('redirect', (url)=>{
-    redirect(url)
-})
-
-socket.on('gameUpdate', (game)=>{
-    updateGame(game)
-})
 
 socket.on('newOwner', (games,game)=>{
     uOwner(games,game)
 })
 
-socket.on('lobbyError', (a)=>{
-    const url = window.location.href.split('/?')[0]
-    window.location.href = url + a
-})
-
 socket.on('playerUpdate', (text)=>{
     playerListDiv.innerHTML = text
+})
+
+socket.on('nameUpdate', (userName) =>{
+    nameTitle.innerHTML = 'and you are ' + userName
+    userNameInput.value = ''
+})
+
+socket.on('lobbyUpdate', (lobbyId) => {
+    lobbyTitle.innerHTML = 'lobby ' + lobbyId
 })
 
 socket.on('newCookie', (userId) =>{
@@ -101,13 +97,17 @@ socket.on('newCookie', (userId) =>{
     cookie.set('userId',userId,lobbyId)
 })
 
-socket.on('lobbyUpdate', (lobbyId) => {
-    lobbyTitle.innerHTML = 'lobby ' + lobbyId
+socket.on('redirect', (url)=>{
+    redirect(url)
 })
 
-socket.on('nameUpdate', (userName) =>{
-    nameTitle.innerHTML = 'and you are ' + userName
-    userNameInput.value = ''
+socket.on('gameUpdate', (game)=>{
+    updateGame(game)
+})
+
+socket.on('lobbyError', (a)=>{
+    const url = window.location.href.split('/?')[0]
+    window.location.href = url + a
 })
 
 socket.on('nameError', (err) =>{

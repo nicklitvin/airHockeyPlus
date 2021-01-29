@@ -1,29 +1,23 @@
 NOTES
 /home (create,about,settings)
-/lobby (chat,gameSelect)
+/lobby (chat,gameSelect,gameInfo)
 /about (patchNotes,ideaPoll)
-/gameXYZ
 
 TODO
-.12 cookie verification in game
-.13 owner kick players, make owner buttons
-.1.0 clean up code
+.13 cookie verification in game
 
 FOR LATER
-selected game: none (no game selected)
-cant ready unless game chosen, unready all if game change
+delete cookie if gone too long
+specify error using cookies, roomcontrol save cookie w/ error
+owner kick players, make owner buttons
+if game start, don't delete room, don't let anyone in
 button appearance changes when ready (green/red)
-users need to know game when enetering room
 name change limit
 if owner alone refreshes, crash cause lobby gets deleted
--who's ready? user.ready = 1, sum(for(userId in lobby who's ready))
--startGame: 
-    for(userId in lobby), user.redirect, client.emit(UserId,name from cookie),
-    socket.on(remember) update user.socket, socket.userId
-
-name: gameNut, shadows
-kick players
 send survey to players after game (game quality, site in general)
+
+STYLE
+name: gameNut, shadows
 Circles as characters with design
 2d drawn characters interact in background 
 

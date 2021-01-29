@@ -30,27 +30,27 @@ io.on('connection', function(socket){
         room.disconnect(socket)
     })
 
-    socket.on('createLobby', () => {
-        room.createLobby(socket)
+    socket.on('readyChange', ()=>{
+        room.readyChange(socket)
     })
-
-    socket.on('joinLobby', (lobbyId) =>{
-        room.joinLobby(socket,lobbyId)
+    
+    socket.on('gameChange', (game)=>{
+        room.gameChange(socket,game)
+    })
+    
+    socket.on('newChat', (chat)=>{
+        room.newChat(socket,chat)
     })
 
     socket.on('nameUpdate', (userName) =>{
         room.updateName(socket,userName)
     })
 
-    socket.on('newChat', (chat)=>{
-        room.newChat(socket,chat)
+    socket.on('joinLobby', (lobbyId) =>{
+        room.joinLobby(socket,lobbyId)
     })
-
-    socket.on('gameChange', (game)=>{
-        room.gameChange(socket,game)
-    })
-
-    socket.on('readyChange', ()=>{
-        room.readyChange(socket)
+    
+    socket.on('createLobby', () => {
+        room.createLobby(socket)
     })
 })

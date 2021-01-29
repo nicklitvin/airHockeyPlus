@@ -15,15 +15,7 @@ export default class UserManager{
         this.users = {},
         this.idLength = 10
     }
-
-    unready(userId){
-        this.users[userId].ready = 0
-    }
-
-    isReady(userId){
-        return(this.users[userId].ready)
-    }
-
+    
     readyChange(userId){
         if(this.users[userId].ready){
             this.users[userId].ready = 0
@@ -33,35 +25,42 @@ export default class UserManager{
         return(1)
     }
 
-    makeId(){
-        var hex = 'ghijklmnopqrstuvxyz'
-        var userId = ''
-        while (true){
-            for (var a=0; a<this.idLength; a++){
-                userId += hex[Math.floor(Math.random()*16)]
-            }
-            if (!Object.keys(this.users).includes(userId)){
-                return(userId)
-            }
-        }
+    getSocket(userId){
+        return(this.users[userId].socket)
     }
 
     getName(userId){
         return(this.users[userId].name)
     }
+
+    getUserIds(){
+        return(Object.keys(this.users))
+    }
     
-    getSocket(userId){
-        return(this.users[userId].socket)
+    unready(userId){
+        this.users[userId].ready = 0
     }
 
     getLobbyId(userId){
         return(this.users[userId].lobbyId)
     }
 
+    changeName(userIds,userId,userName){
+        var names = this.getNames(userIds)
+        if(!names.includes(userName)){
+            this.users[userId].name = userName
+            return(1)
+        }
+    }
+
+    isReady(userId){
+        return(this.users[userId].ready)
+    }
+    
     getNames(userIds){
         var names = []
-        for(var a of userIds){
-            names.push(this.users[a].name)
+        for(var userId of userIds){
+            names.push(this.users[userId].name)
         }
         return(names)
     }
@@ -76,11 +75,16 @@ export default class UserManager{
         }
     }
 
-    changeName(userIds,userId,userName){
-        var names = this.getNames(userIds)
-        if(!names.includes(userName)){
-            this.users[userId].name = userName
-            return(1)
+    makeId(){
+        const hex = 'ghijklmnopqrstuvxyz'
+        var userId = ''
+        while (true){
+            for (var a=0; a<this.idLength; a++){
+                userId += hex[Math.floor(Math.random()*16)]
+            }
+            if (!Object.keys(this.users).includes(userId)){
+                return(userId)
+            }
         }
     }
 
@@ -93,9 +97,7 @@ export default class UserManager{
     }
 
     deleteUser(userId){
-        var lobbyId = this.users[userId].lobbyId
         delete this.users[userId]
         console.log('deleteUser',this.users)
-        return(lobbyId)
     }
 }

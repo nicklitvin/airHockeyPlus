@@ -4,9 +4,8 @@ class Lobby{
     constructor() {
         this.userIds = []
         this.owner = 0
-        this.newOwner = 0
         this.game = 0
-        this.newGame = 0
+        this.inGame = 0
     }
 }
 
@@ -14,6 +13,24 @@ export default class LobbyManager{
     constructor(){
         this.lobbies = {},
         this.idLength = 1
+    }
+
+    changeGame(lobbyId,game){
+        this.lobbies[lobbyId].game = game
+    }
+
+    gameBegun(lobbyId){
+        return(this.lobbies[lobbyId].inGame)
+    }
+
+    lobbyExist(lobbyId){
+        if(Object.keys(this.lobbies).includes(lobbyId)){
+            return(1)
+        }
+    }
+
+    goingInGame(lobbyId){
+        this.lobbies[lobbyId].inGame = 1
     }
 
     makeId(){
@@ -29,47 +46,36 @@ export default class LobbyManager{
         }
     }
 
-    changeGame(lobbyId,game){
-        this.lobbies[lobbyId].game = game
-    }
-
     getGame(lobbyId){
         return(this.lobbies[lobbyId].game)
     }
 
-    lobbyExist(lobbyId){
-        if(Object.keys(this.lobbies).includes(lobbyId)){
-            return(1)
-        }
-    }
-
-    newOwner(lobbyId){
-        this.lobbies[lobbyId].owner = this.lobbies[lobbyId].userIds[0]
-        this.lobbies[lobbyId].newOwner = 1
-    }
-
-    isNewOwner(lobbyId){
-        if(this.lobbies[lobbyId].newOwner){
-            this.lobbies[lobbyId].newOwner = 0
-            return(1)
-        }
-    }
-
     getOwner(lobbyId){
         return(this.lobbies[lobbyId].owner)
+    }
+    
+    newOwner(lobbyId){
+        const newOwner = this.lobbies[lobbyId].userIds[0]
+        this.lobbies[lobbyId].owner = newOwner
+        return(newOwner)
     }
 
     getUserIds(lobbyId){
         return(this.lobbies[lobbyId].userIds)
     }
 
+    joinLobby(userId,lobbyId){
+        this.lobbies[lobbyId].userIds.push(userId)
+        console.log('joinLobby',this.lobbies[lobbyId])
+    }
+
     newLobby(){
         const lobbyId = this.makeId()
         this.lobbies[lobbyId] = new Lobby
-        console.log('newLobby',this.lobbies)
+        console.log('newLobby',this.lobbies[lobbyId])
         return(lobbyId)
     }
-    
+
     deleteLobby(lobbyId){
         if(this.lobbies[lobbyId].userIds.length == 0){
             delete this.lobbies[lobbyId]
@@ -78,12 +84,12 @@ export default class LobbyManager{
         }
     }
     
-    joinLobby(user){
-        this.lobbies[user.lobbyId].userIds.push(user.userId)
-        console.log('joinLobby',this.lobbies[user.lobbyId])
-    }
-    
     leaveLobby(userId,lobbyId){
+        //delete if owner
+        if(this.lobbies[lobbyId].owner == userId){
+            this.lobbies[lobbyId].owner = 0
+        }
+        //delete from userIds
         for(var a in this.lobbies[lobbyId].userIds){
             if (this.lobbies[lobbyId].userIds[a] == userId){
                 this.lobbies[lobbyId].userIds.splice(a,1)
