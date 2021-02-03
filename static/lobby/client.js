@@ -4,7 +4,8 @@ const socket = io()
 
 function joinLobby(){
     const lobbyId = window.location.href.split('a=')[1]
-    socket.emit('joinLobby',lobbyId)
+    const userId = cookie.get('userId')
+    socket.emit('joinLobby',lobbyId,userId)
 }
 joinLobby()
 
@@ -42,7 +43,7 @@ function uOwner(games,currGame){
     }
     if(currGame){
         gameNameBlank.style.display = 'none'
-        gameName.value = game
+        gameName.value = currGame
     }
     gameInfoSelect.style.display = 'block'
 }
@@ -74,6 +75,10 @@ window.addEventListener('keypress', (a)=>{
 
 // SOCKET.ON
 
+socket.on('deleteCookie', ()=>{
+    cookie.set('userId','')
+})
+
 socket.on('newOwner', (games,game)=>{
     uOwner(games,game)
 })
@@ -83,18 +88,18 @@ socket.on('playerUpdate', (text)=>{
 })
 
 socket.on('nameUpdate', (userName) =>{
+    console.log('updatingName')
     nameTitle.innerHTML = 'and you are ' + userName
     userNameInput.value = ''
 })
 
 socket.on('lobbyUpdate', (lobbyId) => {
+    console.log('updatingLobby')
     lobbyTitle.innerHTML = 'lobby ' + lobbyId
 })
 
 socket.on('newCookie', (userId) =>{
-    const url = window.location.href
-    const lobbyId = url.substring(url.lastIndexOf('a=')+2)
-    cookie.set('userId',userId,lobbyId)
+    cookie.set('userId',userId)
 })
 
 socket.on('redirect', (url)=>{

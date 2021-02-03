@@ -7,6 +7,7 @@ class User{
         this.lobbyId = lobbyId
         this.name = name
         this.ready = 0
+        this.inGame = 0
     }
 }
 
@@ -15,7 +16,35 @@ export default class UserManager{
         this.users = {},
         this.idLength = 10
     }
+
+    getUser(userId){
+        const user = this.users[userId]
+        return({
+            'socket': user.socket,
+            'userId': user.userId,
+            'lobbyId': user.lobbyId,
+            'name': user.name
+        })
+    }
+
+    notInGame(userId){
+        this.users[userId].inGame = 0
+    }
+
+    isInGame(userId){
+        return(this.users[userId].inGame)
+    }
+
+    joinGame(userId){
+        this.users[userId].inGame = 1
+    }
     
+    updateSock(userId,socket){
+        this.users[userId].socket = socket
+    }
+
+    //
+
     readyChange(userId){
         if(this.users[userId].ready){
             this.users[userId].ready = 0

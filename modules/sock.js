@@ -5,6 +5,14 @@ export default class SockManager{
         this.socks = {}
     }
 
+    deleteCookie(socket){
+        socket.emit('deleteCookie')
+    }
+
+    sendCookie(socket,userId){
+        socket.emit('newCookie',userId)
+    }
+
     nameUpdate(socket,userName){
         socket.emit('nameUpdate',userName)
     }
@@ -21,13 +29,17 @@ export default class SockManager{
         socket.emit('playerUpdate',text)
     }
 
-    newSock(user){
+    newSock(socketId,userId){
+        this.socks[socketId] = userId
+        console.log('newSock',this.socks)
+    }
+
+    joinLobby(user,game){
         const socket = user.socket
-        this.socks[user.socket.id] = user.userId
-        socket.emit('newCookie',user.userId)
+        this.newSock(user.socket.id,user.userId)
         socket.emit('lobbyUpdate',user.lobbyId)
         socket.emit('nameUpdate',user.name)
-        console.log('newSock',this.socks)
+        socket.emit('gameUpdate',game)
     }
 
     errorPage(socket){

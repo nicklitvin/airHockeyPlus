@@ -15,6 +15,13 @@ export default class LobbyManager{
         this.idLength = 1
     }
 
+    endGame(lobbyId){
+        this.lobbies[lobbyId].inGame = 0
+        console.log('gameEnded')
+    }
+
+    //
+
     changeGame(lobbyId,game){
         this.lobbies[lobbyId].game = game
     }
@@ -31,6 +38,7 @@ export default class LobbyManager{
 
     goingInGame(lobbyId){
         this.lobbies[lobbyId].inGame = 1
+        console.log('gameStarted')
     }
 
     makeId(){
@@ -66,7 +74,6 @@ export default class LobbyManager{
 
     joinLobby(userId,lobbyId){
         this.lobbies[lobbyId].userIds.push(userId)
-        console.log('joinLobby',this.lobbies[lobbyId])
     }
 
     newLobby(){

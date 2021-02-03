@@ -26,6 +26,14 @@ server.listen(5000, function() {})
 
 //SOCKET.ON
 io.on('connection', function(socket){
+    socket.on('endGame', ()=>{
+        room.endGame(socket)
+    })
+
+    socket.on('joinGame', (userId,lobbyId)=>{
+        room.joinGame(socket,userId,lobbyId)
+    })
+
     socket.on('disconnect', () => {
         room.disconnect(socket)
     })
@@ -46,8 +54,8 @@ io.on('connection', function(socket){
         room.updateName(socket,userName)
     })
 
-    socket.on('joinLobby', (lobbyId) =>{
-        room.joinLobby(socket,lobbyId)
+    socket.on('joinLobby', (lobbyId,userId) =>{
+        room.joinLobby(socket,lobbyId,userId)
     })
     
     socket.on('createLobby', () => {

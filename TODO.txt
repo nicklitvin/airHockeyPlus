@@ -1,23 +1,19 @@
 NOTES
 /home (create,about,settings)
 /lobby (chat,gameSelect,gameInfo)
-/about (patchNotes,ideaPoll)
+/about (patchNotes,ideaPollResults)
 
 TODO
-.13 cookie verification in game
-
-FOR LATER
-delete cookie if gone too long
+client.js/make one redirect function for all
 specify error using cookies, roomcontrol save cookie w/ error
 owner kick players, make owner buttons
-if game start, don't delete room, don't let anyone in
+
+FOR LATER
+create copy of user info for game || subclass with func using parent object
+[not returned] add to playerlist
+delete cookie if gone too long
 button appearance changes when ready (green/red)
 name change limit
 if owner alone refreshes, crash cause lobby gets deleted
 send survey to players after game (game quality, site in general)
-
-STYLE
-name: gameNut, shadows
-Circles as characters with design
-2d drawn characters interact in background 
 
