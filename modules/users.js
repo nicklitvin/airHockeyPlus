@@ -121,12 +121,12 @@ export default class UserManager{
         const userId = this.makeId()
         const name = this.makeName(userIds)
         this.users[userId] = new User(userId,socket,lobbyId,name)
-        console.log('newUser',this.users[userId])
+        // console.log('newUser',this.users[userId])
         return(this.users[userId])
     }
 
     deleteUser(userId){
         delete this.users[userId]
-        console.log('deleteUser',this.users)
+        // console.log('deleteUser',this.users)
     }
 }

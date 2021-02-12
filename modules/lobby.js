@@ -17,10 +17,8 @@ export default class LobbyManager{
 
     endGame(lobbyId){
         this.lobbies[lobbyId].inGame = 0
-        console.log('gameEnded')
+        // console.log('gameEnded')
     }
-
-    //
 
     changeGame(lobbyId,game){
         this.lobbies[lobbyId].game = game
@@ -38,7 +36,7 @@ export default class LobbyManager{
 
     goingInGame(lobbyId){
         this.lobbies[lobbyId].inGame = 1
-        console.log('gameStarted')
+        // console.log('gameStarted')
     }
 
     makeId(){
@@ -79,14 +77,14 @@ export default class LobbyManager{
     newLobby(){
         const lobbyId = this.makeId()
         this.lobbies[lobbyId] = new Lobby
-        console.log('newLobby',this.lobbies[lobbyId])
+        // console.log('newLobby',this.lobbies[lobbyId])
         return(lobbyId)
     }
 
     deleteLobby(lobbyId){
         if(this.lobbies[lobbyId].userIds.length == 0){
             delete this.lobbies[lobbyId]
-            console.log('deleteLobby',this.lobbies)
+            // console.log('deleteLobby',this.lobbies)
             return(1)
         }
     }
@@ -100,7 +98,7 @@ export default class LobbyManager{
         for(var a in this.lobbies[lobbyId].userIds){
             if (this.lobbies[lobbyId].userIds[a] == userId){
                 this.lobbies[lobbyId].userIds.splice(a,1)
-                console.log('leaveLobby',this.lobbies[lobbyId].userIds)
+                // console.log('leaveLobby',this.lobbies[lobbyId].userIds)
                 return(this.deleteLobby(lobbyId))
             }
         }

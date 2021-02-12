@@ -8,3 +8,6 @@ function createLobby(){
 socket.on('redirect', (url)=>{
     window.location.href += url
 })
+
+//TEMPORARY
+createLobby()

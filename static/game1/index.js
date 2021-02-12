@@ -21,8 +21,3 @@ function redirect(extra){
 socket.on('redirect', (extra)=>{
     redirect(extra)
 })
-
-socket.on('lobbyError', (extra)=>{
-    redirect(extra)
-    // window.location.href = window.location.href.split('game')[0] + extra
-})

@@ -5,13 +5,13 @@ import express from 'express'
 import { createServer } from "http"
 import path from 'path'
 import { Server } from "socket.io"
-import RoomControl from './modules/roomControl.js'
+import MainControl from './modules/mainControl.js'
 
 var app = express()
 var server = createServer(app)
 const io = new Server(server)
 const __dirname = path.resolve()
-const room = new RoomControl()
+const control = new MainControl(io)
 
 // Static folder is accessible to client
 app.use('/',express.static(path.join(__dirname, 'static')))
@@ -24,41 +24,3 @@ app.get('/', function(request, response) {
 // Listen to requests
 server.listen(5000, function() {})
 
-//SOCKET.ON
-io.on('connection', function(socket){
-    socket.on('endGame', ()=>{
-        room.endGame(socket)
-    })
-
-    socket.on('joinGame', (userId,lobbyId)=>{
-        room.joinGame(socket,userId,lobbyId)
-    })
-
-    socket.on('disconnect', () => {
-        room.disconnect(socket)
-    })
-
-    socket.on('readyChange', ()=>{
-        room.readyChange(socket)
-    })
-    
-    socket.on('gameChange', (game)=>{
-        room.gameChange(socket,game)
-    })
-    
-    socket.on('newChat', (chat)=>{
-        room.newChat(socket,chat)
-    })
-
-    socket.on('nameUpdate', (userName) =>{
-        room.updateName(socket,userName)
-    })
-
-    socket.on('joinLobby', (lobbyId,userId) =>{
-        room.joinLobby(socket,lobbyId,userId)
-    })
-    
-    socket.on('createLobby', () => {
-        room.createLobby(socket)
-    })
-})

@@ -1,88 +1,118 @@
 'use strict'
-import LobbyManager from './lobby.js'
-import SockManager from './sock.js'
-import UserManager from './users.js'
-import gameLibrary from './gameLib.js'
-
-const lobbies = new LobbyManager()
-const users = new UserManager()
-const socks = new SockManager()
-const gameLib = new gameLibrary()
 
 export default class RoomControl{
-    constructor(){}
+    constructor(io,gameControl,lobbies,users,socks,gameLib){
+        this.gameControl = gameControl
+        this.lobbies = lobbies
+        this.users = users
+        this.socks = socks
+        this.gameLib = gameLib
+
+        io.on('connection', (socket)=>{
+            socket.on('endGame', ()=>{
+                this.endGame(socket)
+            })
+            socket.on('joinGame', (userId,lobbyId)=>{
+                this.joinGame(socket,userId,lobbyId)
+            })
+            socket.on('disconnect', () => {
+                this.disconnect(socket)
+            })
+            socket.on('readyChange', ()=>{
+                this.readyChange(socket)
+            })
+            socket.on('gameChange', (game)=>{
+                this.gameChange(socket,game)
+            })
+            socket.on('newChat', (chat)=>{
+                this.newChat(socket,chat)
+            })
+            socket.on('nameUpdate', (userName) =>{
+                this.updateName(socket,userName)
+            })
+            socket.on('joinLobby', (lobbyId,userId) =>{
+                this.joinLobby(socket,lobbyId,userId)
+            })
+            socket.on('createLobby', () => {
+                this.createLobby(socket)
+            })
+        })
+    }
 
     //TEMPORARY
     endGame(socket){
-        const userId = socks.getUserId(socket.id)
-        const lobbyId = users.getLobbyId(userId)
-        const userIds = lobbies.getUserIds(lobbyId)
+        const userId = this.socks.getUserId(socket.id)
+        const lobbyId = this.users.getLobbyId(userId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
         for(var userId1 of userIds){
-            const socket1 = users.getSocket(userId1)
-            users.readyChange(userId1)
-            socks.toLobby(socket1,lobbyId)
+            const socket1 = this.users.getSocket(userId1)
+            this.users.readyChange(userId1)
+            this.socks.toLobby(socket1,lobbyId)
         }
-        lobbies.endGame(lobbyId)
+        this.lobbies.endGame(lobbyId)
     }   
 
     joinGame(socket,userId,lobbyId){
-        if(lobbies.lobbyExist(lobbyId) && lobbies.getUserIds(lobbyId).includes(userId)){
-            users.joinGame(userId)
-            socks.newSock(socket.id,userId)
-            users.updateSock(userId,socket)
+        if(this.lobbies.lobbyExist(lobbyId) && this.lobbies.getUserIds(lobbyId).includes(userId)){
+            this.users.joinGame(userId)
+            this.socks.newSock(socket.id,userId)
+            this.users.updateSock(userId,socket)
             return
         }
-        socks.errorPage(socket)
+        this.socks.errorPage(socket)
     }
 
     updateGame(lobbyId,game){
-        const userIds = lobbies.getUserIds(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
         for(var userId of userIds){
-            const socket = users.getSocket(userId)
-            socks.gameUpdate(socket,game)
+            const socket = this.users.getSocket(userId)
+            this.socks.gameUpdate(socket,game)
         }
     }
 
     gameChange(socket,game){
-        if(gameLib.getNames().includes(game)){
-            const userId = socks.getUserId(socket.id)
-            const lobbyId = users.getLobbyId(userId)
+        if(this.gameLib.getNames().includes(game)){
+            const userId = this.socks.getUserId(socket.id)
+            const lobbyId = this.users.getLobbyId(userId)
             
             this.unreadyUsers(lobbyId)
-            lobbies.changeGame(lobbyId,game)
+            this.lobbies.changeGame(lobbyId,game)
             this.updateGame(lobbyId,game)
         }
         else{
-            console.log('gameChangeError')
+            // console.log('gameChangeError')
         }
     }
 
     unreadyUsers(lobbyId){
-        const userIds = lobbies.getUserIds(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
         for(var userId of userIds){
-            users.unready(userId)
+            this.users.unready(userId)
         }
         this.updatePlayerList(lobbyId)
     }
 
     startGame(lobbyId){
-        const userIds = lobbies.getUserIds(lobbyId)
-        const game = lobbies.getGame(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
+        const game = this.lobbies.getGame(lobbyId)
 
-        lobbies.goingInGame(lobbyId)
-        for(var userId of userIds){
-            const socket = users.getSocket(userId)
-            users.joinGame(userId)
-            socks.sendCookie(socket,userId)
-            socks.toGame(socket,game,lobbyId)
+        if(game){
+            this.lobbies.goingInGame(lobbyId)
+            this.gameControl.newGame(lobbyId,userIds)
+            for(var userId of userIds){
+                const socket = this.users.getSocket(userId)
+                this.users.joinGame(userId)
+                this.socks.sendCookie(socket,userId)
+                this.socks.toGame(socket,game,lobbyId)
+            }
         }
     }
 
     weReady(lobbyId){
-        const userIds = lobbies.getUserIds(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
         //check if everyone ready
         for(var userId of userIds){
-            if(!users.isReady(userId)){
+            if(!this.users.isReady(userId)){
                 return
             }
         }
@@ -90,13 +120,13 @@ export default class RoomControl{
     }
 
     readyChange(socket){
-        const userId = socks.getUserId(socket.id)
-        const lobbyId = users.getLobbyId(userId)
+        const userId = this.socks.getUserId(socket.id)
+        const lobbyId = this.users.getLobbyId(userId)
         //can't ready if no game selected
-        if(!lobbies.getGame(lobbyId)){
+        if(!this.lobbies.getGame(lobbyId)){
             return
         } 
-        var readyUp = users.readyChange(userId)
+        var readyUp = this.users.readyChange(userId)
         this.updatePlayerList(lobbyId)
         if(readyUp){
             this.weReady(lobbyId)
@@ -105,56 +135,56 @@ export default class RoomControl{
 
     newChat(socket,chat){
         if(chat.length == 0 || chat.length >500){
-            socks.chatError(socket)
+            this.socks.chatError(socket)
         }
-        const userId = socks.getUserId(socket.id)
-        const lobbyId = users.getLobbyId(userId)
-        const userIds = lobbies.getUserIds(lobbyId)
-        chat = users.getName(userId) +': ' + chat
+        const userId = this.socks.getUserId(socket.id)
+        const lobbyId = this.users.getLobbyId(userId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
+        chat = this.users.getName(userId) +': ' + chat
         for(var userId1 of userIds){
-            const socket1 = users.getSocket(userId1)
-            socks.newChat(socket1,chat)
+            const socket1 = this.users.getSocket(userId1)
+            this.socks.newChat(socket1,chat)
         }
     }
 
     updateName(socket,userName){
         if(userName.length==0 || userName.length>12){
-            socks.nameError(socket)
+            this.socks.nameError(socket)
             return
         }
-        const userId = socks.getUserId(socket.id)
-        const lobbyId = users.getLobbyId(userId)
-        const userIds = lobbies.getUserIds(lobbyId)
-        const nameChange = users.changeName(userIds,userId,userName)
+        const userId = this.socks.getUserId(socket.id)
+        const lobbyId = this.users.getLobbyId(userId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
+        const nameChange = this.users.changeName(userIds,userId,userName)
         if(nameChange){
-            socks.nameUpdate(socket,userName)
+            this.socks.nameUpdate(socket,userName)
             this.updatePlayerList(lobbyId)
         }
         else{
-            socks.nameTaken(socket)
+            this.socks.nameTaken(socket)
         }
     }
 
     ownerView(socket,lobbyId){
-        const lobbyGame = lobbies.getGame(lobbyId)
-        const allGames = gameLib.getNames()
-        socks.newOwner(socket,allGames,lobbyGame)
+        const lobbyGame = this.lobbies.getGame(lobbyId)
+        const allGames = this.gameLib.getNames()
+        this.socks.newOwner(socket,allGames,lobbyGame)
     }
 
     makeLobbyText(lobbyId){
         var text = 'players: <br>'  
-        const lobbyOwner = lobbies.getOwner(lobbyId)
-        const userIds = lobbies.getUserIds(lobbyId)
+        const lobbyOwner = this.lobbies.getOwner(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
         for(var userId of userIds){
             var mark = '(X)'
-            if(users.isReady(userId)){
+            if(this.users.isReady(userId)){
                 mark = '(✓)' //checkmark
             }
             if(userId == lobbyOwner){
-                text += users.getName(userId) + mark + ' [party leader] <br>'
+                text += this.users.getName(userId) + mark + ' [party leader] <br>'
             }
             else{
-                text += users.getName(userId) + mark + ' <br>'
+                text += this.users.getName(userId) + mark + ' <br>'
             }
         }
         return(text)
@@ -162,61 +192,60 @@ export default class RoomControl{
 
     updatePlayerList(lobbyId){
         const text = this.makeLobbyText(lobbyId)
-        const userIds = lobbies.getUserIds(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
         for(var userId of userIds){
-            const socket = users.getSocket(userId)
-            socks.playerUpdate(socket,text)
+            const socket = this.users.getSocket(userId)
+            this.socks.playerUpdate(socket,text)
         }
     }
 
     returningUser(socket,lobbyId,userId){
-        if(lobbies.getOwner(lobbyId) == userId){
+        if(this.lobbies.getOwner(lobbyId) == userId){
             this.ownerView(socket,lobbyId)
         }
-        users.updateSock(userId,socket)
+        this.users.updateSock(userId,socket)
 
-        const user = users.getUser(userId)
-        const game = lobbies.getGame(lobbyId)
+        const user = this.users.getUser(userId)
+        const game = this.lobbies.getGame(lobbyId)
         
-        socks.joinLobby(user,game)
-        users.notInGame(userId)
-        socks.deleteCookie(socket)
+        this.socks.joinLobby(user,game)
+        this.users.notInGame(userId)
+        this.socks.deleteCookie(socket)
         this.updatePlayerList(lobbyId)
     }
 
     isNewOwner(socket,lobbyId){
-        if(lobbies.getUserIds(lobbyId).length == 1){
-            lobbies.newOwner(lobbyId)
+        if(this.lobbies.getUserIds(lobbyId).length == 1){
+            this.lobbies.newOwner(lobbyId)
             this.ownerView(socket,lobbyId)
         }
     }
 
     addUser(socket,lobbyId){
-        const userIds = lobbies.getUserIds(lobbyId)
-        const user = users.newUser(socket,lobbyId,userIds)
-        const game = lobbies.getGame(lobbyId)
+        const userIds = this.lobbies.getUserIds(lobbyId)
+        const user = this.users.newUser(socket,lobbyId,userIds)
+        const game = this.lobbies.getGame(lobbyId)
 
-        socks.deleteCookie(socket)
-        socks.joinLobby(user,game)
-        lobbies.joinLobby(user.userId,lobbyId)
+        this.socks.deleteCookie(socket)
+        this.socks.joinLobby(user,game)
+        this.lobbies.joinLobby(user.userId,lobbyId)
         this.isNewOwner(user.socket,lobbyId)
         this.updatePlayerList(lobbyId)
-        
     }
 
-    canJoin(lobbyId){
-        const exist = lobbies.lobbyExist(lobbyId)
-        if(!exist || lobbies.gameBegun(lobbyId)){
-            socks.errorPage(socket)
+    canJoin(socket,lobbyId){
+        const exist = this.lobbies.lobbyExist(lobbyId)
+        if(!exist || this.lobbies.gameBegun(lobbyId)){
+            this.socks.errorPage(socket)
             return
         }
         return(1)
     }
 
     joinLobby(socket,lobbyId,userId){
-        if(this.canJoin(lobbyId)){
+        if(this.canJoin(socket,lobbyId)){
             //returning user
-            if(userId && lobbies.getUserIds(lobbyId).includes(userId)){
+            if(userId && this.lobbies.getUserIds(lobbyId).includes(userId)){
                 this.returningUser(socket,lobbyId,userId)
             }
             //new user
@@ -227,20 +256,20 @@ export default class RoomControl{
     }
 
     createLobby(socket=0){
-        const lobbyId = lobbies.newLobby()
+        const lobbyId = this.lobbies.newLobby()
         if(socket){
-            socks.toLobby(socket,lobbyId)
+            this.socks.toLobby(socket,lobbyId)
         }
     }
 
     disconnect(socket){
-        const userId = socks.getUserId(socket.id)
+        const userId = this.socks.getUserId(socket.id)
         if(userId){
-            const lobbyId = users.getLobbyId(userId)
-            socks.deleteSock(socket.id)
+            const lobbyId = this.users.getLobbyId(userId)
+            this.socks.deleteSock(socket.id)
             //if ingame
-            if(users.isInGame(userId)){
-                console.log('leaving started game')
+            if(this.users.isInGame(userId)){
+                // console.log('leaving started game')
             }
             //if inlobby
             else{
@@ -250,15 +279,15 @@ export default class RoomControl{
     }
 
     deleteUser(userId,lobbyId){
-        const deleted = lobbies.leaveLobby(userId,lobbyId)
-        users.deleteUser(userId)
+        const deleted = this.lobbies.leaveLobby(userId,lobbyId)
+        this.users.deleteUser(userId)
         //make new owner if owner left
-        if(!deleted && !lobbies.getOwner(lobbyId)){
-            const newOwner = lobbies.newOwner(lobbyId)
-            const socket = users.getSocket(newOwner)
+        if(!deleted && !this.lobbies.getOwner(lobbyId)){
+            const newOwner = this.lobbies.newOwner(lobbyId)
+            const socket = this.users.getSocket(newOwner)
             this.ownerView(socket,lobbyId)
         }
-        //just update playerList
+        //update playerList
         if(!deleted){
             this.updatePlayerList(lobbyId)
         }

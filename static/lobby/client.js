@@ -2,12 +2,17 @@
 import cookie from '/modules/cookies.js'
 const socket = io()
 
+//TEMPORARY
+joinLobby()
+gameChange()
+readyChange()
+
 function joinLobby(){
     const lobbyId = window.location.href.split('a=')[1]
     const userId = cookie.get('userId')
     socket.emit('joinLobby',lobbyId,userId)
 }
-joinLobby()
+// joinLobby()
 
 function chooseName(){
     socket.emit('nameUpdate',userNameInput.value)
@@ -50,7 +55,8 @@ function uOwner(games,currGame){
 
 function gameChange(){
     gameNameBlank.style.display = 'none'
-    socket.emit('gameChange',gameName.value)
+    socket.emit('gameChange','game1')
+    // socket.emit('gameChange',gameName.value)
 }
 window.gameChange = gameChange
 
@@ -88,13 +94,13 @@ socket.on('playerUpdate', (text)=>{
 })
 
 socket.on('nameUpdate', (userName) =>{
-    console.log('updatingName')
+    // console.log('updatingName')
     nameTitle.innerHTML = 'and you are ' + userName
     userNameInput.value = ''
 })
 
 socket.on('lobbyUpdate', (lobbyId) => {
-    console.log('updatingLobby')
+    // console.log('updatingLobby')
     lobbyTitle.innerHTML = 'lobby ' + lobbyId
 })
 
@@ -108,11 +114,6 @@ socket.on('redirect', (url)=>{
 
 socket.on('gameUpdate', (game)=>{
     updateGame(game)
-})
-
-socket.on('lobbyError', (a)=>{
-    const url = window.location.href.split('/?')[0]
-    window.location.href = url + a
 })
 
 socket.on('nameError', (err) =>{

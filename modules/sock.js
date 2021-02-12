@@ -31,7 +31,7 @@ export default class SockManager{
 
     newSock(socketId,userId){
         this.socks[socketId] = userId
-        console.log('newSock',this.socks)
+        // console.log('newSock',this.socks)
     }
 
     joinLobby(user,game){
@@ -43,7 +43,7 @@ export default class SockManager{
     }
 
     errorPage(socket){
-        socket.emit('lobbyError','/error')
+        socket.emit('redirect','lobby/error')
     }
 
     toLobby(socket,lobbyId){
@@ -85,7 +85,7 @@ export default class SockManager{
     deleteSock(socketId){
         if(Object.keys(this.socks).includes(socketId)){
             delete this.socks[socketId]
-            console.log('deleteSock',this.socks)
+            // console.log('deleteSock',this.socks)
         }
     }
 }

@@ -4,16 +4,15 @@ NOTES
 /about (patchNotes,ideaPollResults)
 
 TODO
-client.js/make one redirect function for all
-specify error using cookies, roomcontrol save cookie w/ error
-owner kick players, make owner buttons
+V0.1.1 player move
 
 FOR LATER
-create copy of user info for game || subclass with func using parent object
+roomControl.joinGame check if correct game
+specify error using cookies, roomcontrol save cookie w/ error
+owner kick players, make owner buttons
 [not returned] add to playerlist
-delete cookie if gone too long
 button appearance changes when ready (green/red)
-name change limit
-if owner alone refreshes, crash cause lobby gets deleted
+name change limit per minute
+fix? if owner alone refreshes, crash cause lobby gets deleted
 send survey to players after game (game quality, site in general)
 
