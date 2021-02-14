@@ -1,10 +1,12 @@
 'use strict'
 
 class Player{
-    constructor(userName){
+    constructor(userId,userName){
+        this.userId = userId,
         this.userName = userName,
-        this.x = 0,
-        this.y = 0
+        this.x = 4,
+        this.y = 3,
+        this.radius = .5
     }
 }
 
@@ -16,6 +18,10 @@ export default class PlayerManager{
 
     addPlayer(userId){
         const userName = this.users.getName(userId)
-        this.players[userId] = new Player(userName)
+        this.players[userId] = new Player(userId,userName)
+    }
+
+    getInfo(userId){
+        return(this.players[userId])
     }
 }

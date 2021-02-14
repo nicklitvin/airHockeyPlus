@@ -43,8 +43,6 @@ export default class UserManager{
         this.users[userId].socket = socket
     }
 
-    //
-
     readyChange(userId){
         if(this.users[userId].ready){
             this.users[userId].ready = 0

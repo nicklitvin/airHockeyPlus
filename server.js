@@ -24,3 +24,7 @@ app.get('/', function(request, response) {
 // Listen to requests
 server.listen(5000, function() {})
 
+//runGame
+setInterval(() => {
+    control.runGame1()
+}, 1000/60)

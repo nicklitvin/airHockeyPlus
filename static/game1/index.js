@@ -1,5 +1,6 @@
 'use strict'
 const socket = io();
+
 import cookie from '/modules/cookies.js'
 
 function joinGame(){
@@ -18,6 +19,63 @@ function redirect(extra){
     window.location.href = window.location.href.split('game')[0] + extra
 }
 
+function drawGame(gameInfo){
+    var canvas = document.getElementById('canvas')
+    var context = canvas.getContext('2d')
+    context.clearRect(0, 0 , canvas.width, canvas.height)
+
+    for(var player of Object.keys(gameInfo)){
+        context.arc(
+            gameInfo[player].x/16*canvas.width,
+            gameInfo[player].y/9*canvas.height,
+            gameInfo[player].radius/9*canvas.height,
+            0,
+            2 * Math.PI
+        )
+    context.fill()
+    }
+}
+
+function resizeCanvas(){
+    var canvas = document.getElementById('canvas')
+    var w_adjust = 0
+	var h_adjust = 0
+
+    if(window.innerWidth == window.innerHeight*16/9){
+        canvas.height = window.innerHeight
+        canvas.width = window.innerWidth
+    }
+    //not enough horizontal stretch
+    else if (window.innerWidth < window.innerHeight*16/9){
+        canvas.width = window.innerWidth
+        canvas.height = window.innerWidth*9/16
+        h_adjust = (window.innerHeight - canvas.height)/2
+    }   
+    //too much horizontal stretch
+    else if (window.innerWidth > window.innerHeight*16/9){
+        canvas.height = window.innerHeight
+        canvas.width = window.innerHeight*16/9
+        w_adjust = (window.innerWidth - canvas.width)/2
+    }
+    canvas.style.top = h_adjust
+    canvas.style.bottom = window.innerHeight-h_adjust
+    canvas.style.left = w_adjust
+    canvas.style.right = window.innerWidth-w_adjust
+    canvas.style.position = 'absolute'
+}
+resizeCanvas()
+
+
+//SOCKET.ON
+
 socket.on('redirect', (extra)=>{
     redirect(extra)
 })
+
+socket.on('gameUpdate', (gameInfo)=>{
+    drawGame(gameInfo)
+})
+
+// EVENTS
+
+window.addEventListener('resize', resizeCanvas)

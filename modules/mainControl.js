@@ -25,4 +25,8 @@ export default class MainControl{
             this.gameLib
         )
     }
+
+    runGame1(){
+        this.gameControl.runGame1()
+    }
 }

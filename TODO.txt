@@ -4,7 +4,7 @@ NOTES
 /about (patchNotes,ideaPollResults)
 
 TODO
-V0.1.1 player move
+V0.1.2 player movement
 
 FOR LATER
 roomControl.joinGame check if correct game
