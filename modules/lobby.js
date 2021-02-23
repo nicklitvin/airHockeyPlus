@@ -40,9 +40,9 @@ export default class LobbyManager{
     }
 
     makeId(){
-        var id = ''
         var hex = '0123456789abcdef'
         while (true){
+            var id = ''
             for (var a=0; a<this.idLength; a++){
                 id += hex[Math.floor(Math.random()*16)]
             }
@@ -104,3 +104,4 @@ export default class LobbyManager{
         }
     }
 }
+

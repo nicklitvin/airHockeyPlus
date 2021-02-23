@@ -3,10 +3,11 @@
 import PlayerManager from './game1Player.js'
 
 class Game{
-    constructor(users,userIds){
+    constructor(userIds){
         this.userIds = userIds,
         this.serverH = 9,
-        this.serverW = 16
+        this.serverW = 16,
+        this.speed = 0.1
     }
 }
 
@@ -15,6 +16,20 @@ export default class Game1Control{
         this.users = users,
         this.players = new PlayerManager(this.users,users),
         this.games = {}
+
+        io.on('connection', (socket)=>{
+            socket.on('game1Move', (userId,move)=>{
+                this.movePlayer(userId,move)
+            })
+        })
+    }
+
+    movePlayer(userId,move){
+        const lobbyId = this.users.getLobbyId(userId)
+        const speed = this.games[lobbyId].speed
+        const serverH = this.games[lobbyId].serverH
+        const serverW = this.games[lobbyId].serverW
+        this.players.move(userId,speed,move,serverW,serverH)
     }
 
     sendGame(userIds,playerInfo){
@@ -42,7 +57,7 @@ export default class Game1Control{
     }
 
     newGame(lobbyId,userIds){
-        this.games[lobbyId] = new Game(this.users,userIds)
+        this.games[lobbyId] = new Game(userIds)
         for(var userId of userIds){
             this.players.addPlayer(userId)
         }

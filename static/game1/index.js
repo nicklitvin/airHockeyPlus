@@ -20,20 +20,61 @@ function redirect(extra){
 }
 
 function drawGame(gameInfo){
-    var canvas = document.getElementById('canvas')
-    var context = canvas.getContext('2d')
-    context.clearRect(0, 0 , canvas.width, canvas.height)
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     for(var player of Object.keys(gameInfo)){
-        context.arc(
+        ctx.beginPath()
+        ctx.arc(
             gameInfo[player].x/16*canvas.width,
             gameInfo[player].y/9*canvas.height,
             gameInfo[player].radius/9*canvas.height,
             0,
             2 * Math.PI
         )
-    context.fill()
+    ctx.fill()
     }
+}
+
+var move = {
+    left: false,
+    right: false,
+    up: false,
+    down: false
+}
+
+function sendMove(){
+    const userId = cookie.get('userId')
+    socket.emit('game1Move',userId,move)
+}
+function newMove(key){
+    if(key == 'w'){
+        move['up'] = true
+    }
+    if(key == 'a'){
+        move['left'] = true
+    }
+    if(key == 's'){
+        move['down'] = true
+    }
+    if(key == 'd'){
+        move['right'] = true
+    }    
+}
+function noMove(key){
+    if(key == 'w'){
+        move['up'] = false
+    }
+    if(key == 'a'){
+        move['left'] = false
+    }
+    if(key == 's'){
+        move['down'] = false
+    }
+    if(key == 'd'){
+        move['right'] = false
+    }    
 }
 
 function resizeCanvas(){
@@ -74,8 +115,19 @@ socket.on('redirect', (extra)=>{
 
 socket.on('gameUpdate', (gameInfo)=>{
     drawGame(gameInfo)
+    sendMove()
 })
 
 // EVENTS
-
 window.addEventListener('resize', resizeCanvas)
+
+window.addEventListener('keydown', (event)=>{
+    if(['w','a','s','d'].includes(event.key)){
+        newMove(event.key)
+    }
+})
+window.addEventListener('keyup', (event)=>{
+    if(['w','a','s','d'].includes(event.key)){
+        noMove(event.key)
+    }
+})

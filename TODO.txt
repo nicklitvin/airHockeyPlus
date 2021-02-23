@@ -2,11 +2,17 @@ NOTES
 /home (create,about,settings)
 /lobby (chat,gameSelect,gameInfo)
 /about (patchNotes,ideaPollResults)
+90-120fps is fluid, track timestamps for server/client
 
 TODO
-V0.1.2 player movement
+V0.1.3 player impulse walls/players
 
 FOR LATER
+make diagonal magnitude = speed?
+fluid motion, have move stored on server in players{}
+consider sending userId during game instead of socket>getuserIdbysocketid
+if blocked cookies, special error
+separate game.js(canvas stuff) from index.js
 roomControl.joinGame check if correct game
 specify error using cookies, roomcontrol save cookie w/ error
 owner kick players, make owner buttons

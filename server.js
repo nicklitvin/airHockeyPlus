@@ -27,4 +27,4 @@ server.listen(5000, function() {})
 //runGame
 setInterval(() => {
     control.runGame1()
-}, 1000/60)
+}, 1000/90)
