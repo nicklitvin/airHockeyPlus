@@ -6,7 +6,10 @@ class Player{
         this.userName = userName,
         this.x = 4,
         this.y = 3,
-        this.radius = .5
+        this.dx = 0,
+        this.dy = 0,
+        this.radius = .5,
+        this.impulse = 1
     }
 }
 
@@ -16,38 +19,89 @@ export default class PlayerManager{
         this.players = {}
     }
 
+    resolveFriction(userId){
+        var player = this.players[userId]
+        if(Math.abs(player.dx) < 0.01){
+            player.dx = 0
+        }
+        if(player.dx){
+            player.dx /= 1.1
+        }
+        if(Math.abs(player.dy) < 0.01){
+            player.dy = 0
+        }
+        if(player.dy){
+            player.dy /= 1.1
+        }
+    }
+
+    resolveBounce(userId,serverH,serverW){
+        const player = this.players[userId]
+        if(player.dx>0){
+            this.move(userId,player.dx,{'right':true},serverW,serverH)
+        }
+        if(player.dx<0){
+            this.move(userId,-player.dx,{'left':true},serverW,serverH)
+        }
+        if(player.dy>0){
+            this.move(userId,player.dy,{'down':true},serverW,serverH)
+        }
+        if(player.dy<0){
+            this.move(userId,-player.dy,{'up':true},serverW,serverH)
+        }
+        this.resolveFriction(userId)
+    }
+
+    bounce(userId,way,magnitude){
+        if(way == 'horizontal'){
+            this.players[userId].dx += magnitude
+        }
+        if(way == 'vertical'){
+            this.players[userId].dy += magnitude
+        }
+    }
+
+    getCoordinates(userId){
+        return({'x':this.players[userId].x,'y':this.players[userId].y})
+    }
+
     move(userId,speed,move,serverW,serverH){
-        const radius = this.players[userId].radius
+        const player = this.players[userId]
+        const radius = player.radius
         if(move['up']){
-            if(this.players[userId].y-radius-speed < 0){
-                this.players[userId].y = radius
+            if(player.y-radius-speed < 0){
+                player.y = radius
+                player.dy *= -1
             }
             else{
-                this.players[userId].y -= speed
+                player.y -= speed
             }
         }
         if(move['down']){
-            if(this.players[userId].y+radius+speed > serverH){
-                this.players[userId].y = serverH - radius
+            if(player.y+radius+speed > serverH){
+                player.y = serverH - radius
+                player.dy *= -1
             }
             else{
-                this.players[userId].y += speed
+                player.y += speed
             }
         }
         if(move['left']){
-            if(this.players[userId].x-radius-speed < 0){
-                this.players[userId].x = radius
+            if(player.x-radius-speed < 0){
+                player.x = radius
+                player.dx *= -1
             }
             else{
-                this.players[userId].x -= speed
+                player.x -= speed
             }
         }
         if(move['right']){
-            if(this.players[userId].x+radius+speed > serverW){
-                this.players[userId].x = serverW - radius
+            if(player.x+radius+speed > serverW){
+                player.x = serverW - radius
+                player.dx *= -1
             }
             else{
-                this.players[userId].x += speed
+                player.x += speed
             }
         }
     }

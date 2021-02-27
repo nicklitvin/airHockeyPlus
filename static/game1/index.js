@@ -33,6 +33,7 @@ function drawGame(gameInfo){
             0,
             2 * Math.PI
         )
+        console.log(gameInfo[player].x/16*canvas.width,gameInfo[player].y/9*canvas.height)
     ctx.fill()
     }
 }
@@ -124,6 +125,10 @@ window.addEventListener('resize', resizeCanvas)
 window.addEventListener('keydown', (event)=>{
     if(['w','a','s','d'].includes(event.key)){
         newMove(event.key)
+    }
+    if(event.code == 'Space'){
+        const userId = cookie.get('userId')
+        socket.emit('game1Impulse',userId)
     }
 })
 window.addEventListener('keyup', (event)=>{

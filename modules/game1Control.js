@@ -7,7 +7,8 @@ class Game{
         this.userIds = userIds,
         this.serverH = 9,
         this.serverW = 16,
-        this.speed = 0.1
+        this.speed = 0.1,
+        this.impulseMagnitude = 1.3
     }
 }
 
@@ -21,7 +22,47 @@ export default class Game1Control{
             socket.on('game1Move', (userId,move)=>{
                 this.movePlayer(userId,move)
             })
+            socket.on('game1Impulse', (userId)=>{
+                this.impulsePlayer(userId)
+            })
         })
+    }
+
+    bounceControl(userIds){
+        for(var userId of userIds){
+            const lobbyId = this.users.getLobbyId(userId)
+            const serverH = this.games[lobbyId].serverH
+            const serverW = this.games[lobbyId].serverW
+            this.players.resolveBounce(userId,serverH,serverW)
+        }
+    }
+
+    impulsePlayer(userId){
+        const loc = this.players.getCoordinates(userId)
+        const lobbyId = this.users.getLobbyId(userId)
+        const serverH = this.games[lobbyId].serverH
+        const serverW = this.games[lobbyId].serverW
+        const impMagn = this.games[lobbyId].impulseMagnitude
+
+        const yDist = Math.min(serverH-loc.y,loc.y)
+        const xDist = Math.min(serverW-loc.x,loc.x)
+
+        if(yDist < 2){ 
+            if(serverH-loc.y<loc.y){
+                this.players.bounce(userId,'vertical',yDist-impMagn)
+            }
+            else{
+                this.players.bounce(userId,'vertical',impMagn-yDist)
+            }
+        }
+        if(xDist < 2){ 
+            if(serverW-loc.x<loc.x){
+                this.players.bounce(userId,'horizontal',xDist-impMagn)
+            }
+            else{
+                this.players.bounce(userId,'horizontal',impMagn-xDist)
+            }
+        }
     }
 
     movePlayer(userId,move){
@@ -44,6 +85,7 @@ export default class Game1Control{
             const playerInfo = this.getPlayerInfo(lobbyId)
             const userIds = this.games[lobbyId].userIds
             this.sendGame(userIds,playerInfo)
+            this.bounceControl(userIds)
         }
     }
 

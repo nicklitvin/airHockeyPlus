@@ -5,9 +5,13 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-V0.1.3 player impulse walls/players
+V0.1.4 playerPlayer impulse
 
 FOR LATER
+create timer for impulse
+make impulse force reduction with wall more constant
+limit info being sent to client about players
+pythag theorem for player2player impulse
 make diagonal magnitude = speed?
 fluid motion, have move stored on server in players{}
 consider sending userId during game instead of socket>getuserIdbysocketid
@@ -19,6 +23,6 @@ owner kick players, make owner buttons
 [not returned] add to playerlist
 button appearance changes when ready (green/red)
 name change limit per minute
-fix? if owner alone refreshes, crash cause lobby gets deleted
+if owner alone refreshes, error cause lobby gets deleted
 send survey to players after game (game quality, site in general)
 
