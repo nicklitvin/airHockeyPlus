@@ -33,12 +33,13 @@ function drawGame(gameInfo){
             0,
             2 * Math.PI
         )
-        console.log(gameInfo[player].x/16*canvas.width,gameInfo[player].y/9*canvas.height)
+        // console.log(gameInfo[player].x/16*canvas.width,gameInfo[player].y/9*canvas.height)
     ctx.fill()
     }
 }
 
 var move = {
+    change: 0,
     left: false,
     right: false,
     up: false,
@@ -52,15 +53,19 @@ function sendMove(){
 function newMove(key){
     if(key == 'w'){
         move['up'] = true
+        move['change'] = 1
     }
     if(key == 'a'){
         move['left'] = true
+        move['change'] = 1
     }
     if(key == 's'){
         move['down'] = true
+        move['change'] = 1
     }
     if(key == 'd'){
         move['right'] = true
+        move['change'] = 1
     }    
 }
 function noMove(key){
@@ -76,6 +81,13 @@ function noMove(key){
     if(key == 'd'){
         move['right'] = false
     }    
+    for(var a of Object.keys(move)){
+        if(a!='change' && move[a]==true){
+            console.log(move[a])
+            return
+        }
+    }
+    move['change'] = 0
 }
 
 function resizeCanvas(){
@@ -116,7 +128,9 @@ socket.on('redirect', (extra)=>{
 
 socket.on('gameUpdate', (gameInfo)=>{
     drawGame(gameInfo)
-    sendMove()
+    if(move['change']){
+        sendMove()
+    }
 })
 
 // EVENTS

@@ -8,7 +8,8 @@ class Game{
         this.serverH = 9,
         this.serverW = 16,
         this.speed = 0.1,
-        this.impulseMagnitude = 1.3
+        this.impulseMagnitude = 1,
+        this.impulseRadius = 2
     }
 }
 
@@ -37,32 +38,91 @@ export default class Game1Control{
         }
     }
 
-    impulsePlayer(userId){
+    wallBounce(userId,lobbyId){
         const loc = this.players.getCoordinates(userId)
-        const lobbyId = this.users.getLobbyId(userId)
+        const impMagn = this.games[lobbyId].impulseMagnitude
         const serverH = this.games[lobbyId].serverH
         const serverW = this.games[lobbyId].serverW
-        const impMagn = this.games[lobbyId].impulseMagnitude
-
+        
+        //closest to which wall
         const yDist = Math.min(serverH-loc.y,loc.y)
         const xDist = Math.min(serverW-loc.x,loc.x)
 
         if(yDist < 2){ 
             if(serverH-loc.y<loc.y){
-                this.players.bounce(userId,'vertical',yDist-impMagn)
+                // yDist-impMagn
+                this.players.bounce(userId,'vertical',-impMagn)
+                // console.log('bounceUp')
             }
             else{
-                this.players.bounce(userId,'vertical',impMagn-yDist)
+                // impMagn-yDist
+                this.players.bounce(userId,'vertical',impMagn)
+                // console.log('bounceDown')
             }
         }
         if(xDist < 2){ 
             if(serverW-loc.x<loc.x){
-                this.players.bounce(userId,'horizontal',xDist-impMagn)
+                // xDist-impMagn
+                this.players.bounce(userId,'horizontal',-impMagn)
+                // console.log('bounceLeft')
             }
             else{
-                this.players.bounce(userId,'horizontal',impMagn-xDist)
+                // impMagn-xDist
+                this.players.bounce(userId,'horizontal',impMagn)
+                // console.log('bounceRight')
             }
         }
+    }
+
+    giveBounce(lobbyId,player,loc,dist){
+        const impMagn = this.games[lobbyId].impulseMagnitude
+        const angle = Math.atan(Math.abs(player.y-loc.y)/Math.abs(player.x-loc.x))
+        let dy
+        let dx
+
+        //push up
+        if(player.y>loc.y){
+            dy = Math.sin(angle)*impMagn
+        }
+        //push down
+        if(player.y<loc.y){
+            dy = -Math.sin(angle)*impMagn
+        }
+        //push right
+        if(player.x>loc.x){
+            dx = Math.cos(angle)*impMagn
+        }       
+        //push left
+        if(player.x<loc.x){
+            dx = -Math.cos(angle)*impMagn
+        }
+
+        this.players.bounce(player.userId,'horizontal',dx)
+        this.players.bounce(player.userId,'vertical',dy)
+    }
+
+    playerBounce(userId,lobbyId){
+        const loc = this.players.getCoordinates(userId)
+        const playerInfo = this.getPlayerInfo(lobbyId)
+        const impulseRadius = this.games[lobbyId].impulseRadius
+
+        for(var userId1 of Object.keys(playerInfo)){
+            if(userId1 == userId){
+                continue
+            }
+            const player = playerInfo[userId1]
+            const dist = ( (loc.x-player.x)**2 + (loc.y-player.y)**2 )**1/2
+            if(dist < impulseRadius){
+                this.giveBounce(lobbyId,player,loc,dist)
+            }
+        }
+    }
+
+    impulsePlayer(userId){
+        const lobbyId = this.users.getLobbyId(userId)
+
+        this.wallBounce(userId,lobbyId)
+        this.playerBounce(userId,lobbyId)
     }
 
     movePlayer(userId,move){

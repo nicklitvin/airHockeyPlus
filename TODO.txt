@@ -5,9 +5,15 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-V0.1.4 playerPlayer impulse
+V0.1.5 PvP collision
 
 FOR LATER
+lobby errors
+    if person leaves and the rest are ready, game doesnt start
+    sequence of events (gameChange for leader occurs before enabled selection?)
+    object object appears once game starts
+    check if owner is changing game not hacker
+
 create timer for impulse
 make impulse force reduction with wall more constant
 limit info being sent to client about players

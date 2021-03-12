@@ -5,7 +5,7 @@ const socket = io()
 //TEMPORARY
 joinLobby()
 gameChange()
-readyChange()
+// readyChange()
 
 function joinLobby(){
     const lobbyId = window.location.href.split('a=')[1]
@@ -56,11 +56,13 @@ function uOwner(games,currGame){
 function gameChange(){
     gameNameBlank.style.display = 'none'
     socket.emit('gameChange','game1')
+    console.log('updatingGame')
     // socket.emit('gameChange',gameName.value)
 }
 window.gameChange = gameChange
 
 function updateGame(game){
+    console.log('updatingGame with' + game)
     if(game){
         readyButton.style.display = 'block'
         gameInfoP.innerHTML = 'selected game: ' + game
