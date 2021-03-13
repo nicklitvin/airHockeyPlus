@@ -26,6 +26,10 @@ export default class MainControl{
         )
     }
 
+    TESTaddPlayers(userIds){
+        this.gameControl.TESTaddPlayers(userIds)
+    }
+
     runGame1(){
         this.gameControl.runGame1()
     }

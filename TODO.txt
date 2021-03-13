@@ -5,7 +5,7 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-V0.1.5 PvP collision
+V0.1.6 PvP Collision
 
 FOR LATER
 lobby errors
@@ -14,6 +14,7 @@ lobby errors
     object object appears once game starts
     check if owner is changing game not hacker
 
+reduce radius depending on player count
 create timer for impulse
 make impulse force reduction with wall more constant
 limit info being sent to client about players

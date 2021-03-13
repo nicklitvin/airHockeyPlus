@@ -9,7 +9,8 @@ class Game{
         this.serverW = 16,
         this.speed = 0.1,
         this.impulseMagnitude = 1,
-        this.impulseRadius = 2
+        this.impulseRadius = 2,
+        this.spawnRadius = 4
     }
 }
 
@@ -130,7 +131,8 @@ export default class Game1Control{
         const speed = this.games[lobbyId].speed
         const serverH = this.games[lobbyId].serverH
         const serverW = this.games[lobbyId].serverW
-        this.players.move(userId,speed,move,serverW,serverH)
+        
+        this.players.processMove(userId,speed,move,serverW,serverH)
     }
 
     sendGame(userIds,playerInfo){
@@ -158,11 +160,39 @@ export default class Game1Control{
         return(playerInfo)
     }
 
+    addPlayers(lobbyId,userIds){
+        const angleInt = 2*Math.PI/Object.keys(userIds).length
+        const spawnRadius = this.games[lobbyId].spawnRadius
+        const serverW = this.games[lobbyId].serverW
+        const serverH = this.games[lobbyId].serverH
+        var angle = 0
+        
+        for(var userId of userIds){
+            var x = Math.cos(angle)*spawnRadius+serverW/2
+            var y = Math.sin(angle)*spawnRadius+serverH/2
+            this.players.addPlayer(userId,x,y)
+            angle += angleInt
+        }
+    }
+
+    TESTaddPlayers(userIds){
+        const angleInt = 2*Math.PI/Object.keys(userIds).length
+        const spawnRadius = 4
+        const serverW = 16
+        const serverH = 9
+        var angle = 0
+        
+        for(var _ of userIds){
+            var x = Math.cos(angle)*spawnRadius+serverW/2
+            var y = Math.sin(angle)*spawnRadius+serverH/2
+            console.log(angle,x,y)
+            angle += angleInt
+        }
+    }
+
     newGame(lobbyId,userIds){
         this.games[lobbyId] = new Game(userIds)
-        for(var userId of userIds){
-            this.players.addPlayer(userId)
-        }
+        this.addPlayers(lobbyId,userIds)
     }
 }
 

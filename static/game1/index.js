@@ -83,7 +83,7 @@ function noMove(key){
     }    
     for(var a of Object.keys(move)){
         if(a!='change' && move[a]==true){
-            console.log(move[a])
+            // console.log(move[a])
             return
         }
     }

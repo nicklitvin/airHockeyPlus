@@ -1,11 +1,11 @@
 'use strict'
 
 class Player{
-    constructor(userId,userName){
+    constructor(userId,userName,x,y){
         this.userId = userId,
         this.userName = userName,
-        this.x = 4,
-        this.y = 3,
+        this.x = x,
+        this.y = y,
         this.dx = 0,
         this.dy = 0,
         this.radius = .5,
@@ -65,9 +65,26 @@ export default class PlayerManager{
         return({'x':this.players[userId].x,'y':this.players[userId].y})
     }
 
+    processMove(userId,speed,move,serverW,serverH){
+        if(move['up'] && move['down']){
+            move['up'] = false
+            move['down'] = false
+        }
+        if(move['left'] && move['right']){
+            move['left'] = false
+            move['right'] = false
+        }
+        //diagonal move
+        if( (move['up'] || move['down']) && (move['left']||move['right']) ){
+            speed *= Math.sqrt(2)/2
+        }
+        this.move(userId,speed,move,serverW,serverH)
+    }
+
     move(userId,speed,move,serverW,serverH){
         const player = this.players[userId]
         const radius = player.radius
+
         if(move['up']){
             if(player.y-radius-speed < 0){
                 player.y = radius
@@ -106,9 +123,9 @@ export default class PlayerManager{
         }
     }
 
-    addPlayer(userId){
+    addPlayer(userId,x,y){
         const userName = this.users.getName(userId)
-        this.players[userId] = new Player(userId,userName)
+        this.players[userId] = new Player(userId,userName,x,y)
     }
 
     getInfo(userId){
