@@ -5,7 +5,7 @@ const socket = io()
 //TEMPORARY
 joinLobby()
 gameChange()
-readyChange()
+// readyChange()
 
 function joinLobby(){
     const lobbyId = window.location.href.split('a=')[1]

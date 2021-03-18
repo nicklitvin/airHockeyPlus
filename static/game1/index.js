@@ -21,8 +21,8 @@ function redirect(extra){
 
 function drawGame(gameInfo){
     const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     for(var player of Object.keys(gameInfo)){
         ctx.beginPath()

@@ -121,6 +121,7 @@ export default class PlayerManager{
                 player.x += speed
             }
         }
+        // return({'x':player.x,'y':player.y})
     }
 
     addPlayer(userId,x,y){
