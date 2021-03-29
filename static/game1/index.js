@@ -19,23 +19,60 @@ function redirect(extra){
     window.location.href = window.location.href.split('game')[0] + extra
 }
 
-function drawGame(gameInfo){
+function drawPlayers(playerInfo){
     const canvas = document.getElementById('canvas')
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    for(var player of Object.keys(gameInfo)){
+    for(var player of Object.keys(playerInfo)){
         ctx.beginPath()
         ctx.arc(
-            gameInfo[player].x/16*canvas.width,
-            gameInfo[player].y/9*canvas.height,
-            gameInfo[player].radius/9*canvas.height,
+            playerInfo[player].x/16*canvas.width,
+            playerInfo[player].y/9*canvas.height,
+            playerInfo[player].radius/9*canvas.height,
             0,
             2 * Math.PI
         )
         // console.log(gameInfo[player].x/16*canvas.width,gameInfo[player].y/9*canvas.height)
     ctx.fill()
     }
+}
+
+function drawBall(ball){
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+
+    ctx.beginPath()
+    ctx.arc(
+        ball.x/16*canvas.width,
+        ball.y/9*canvas.height,
+        ball.radius/9*canvas.height,
+        0,
+        2 * Math.PI
+    )
+    ctx.fill()
+}
+
+function drawGame(gameInfo){
+    drawPlayers(gameInfo['players'])
+    drawBall(gameInfo['ball'])
+
+    // const canvas = document.getElementById('canvas')
+    // const ctx = canvas.getContext('2d')
+    // ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // for(var player of Object.keys(gameInfo)){
+    //     ctx.beginPath()
+    //     ctx.arc(
+    //         gameInfo[player].x/16*canvas.width,
+    //         gameInfo[player].y/9*canvas.height,
+    //         gameInfo[player].radius/9*canvas.height,
+    //         0,
+    //         2 * Math.PI
+    //     )
+    //     // console.log(gameInfo[player].x/16*canvas.width,gameInfo[player].y/9*canvas.height)
+    // ctx.fill()
+    // }
 }
 
 var move = {

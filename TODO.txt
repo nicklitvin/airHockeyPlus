@@ -5,7 +5,9 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-V0.1.7 black hole
+V0.1.8 create sensitive goals
+V0.1.9 team selection
+V0.1.10 scoring
 
 FOR LATER
 lobby errors
@@ -14,6 +16,10 @@ lobby errors
     object object appears once game starts
     check if owner is changing game not hacker
 
+unite physics engine for players and balls
+black hole
+    if x,y within radius of hole, suck it in
+    respawn at corner, move along wall if no available, can blink in
 glitch: bounce doesn't always go all the way to the bot wall, works for others
 create more accuracte collision mechanic
 reduce radius depending on player count

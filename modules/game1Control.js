@@ -1,6 +1,7 @@
 'user strict'
 
 import PlayerManager from './game1Player.js'
+import BallManager from './game1Hole.js'
 
 class Game{
     constructor(userIds,contacts){
@@ -9,7 +10,7 @@ class Game{
         this.serverH = 9,
         this.serverW = 16,
         this.speed = 0.1,
-        this.impulseMagnitude = 1,
+        this.impulseMagnitude = .5,
         this.impulseRadius = 2,
         this.spawnRadius = 4,
         this.bounceStrength = 0.1
@@ -20,6 +21,7 @@ export default class Game1Control{
     constructor(io,users){
         this.users = users,
         this.players = new PlayerManager(this.users,users),
+        this.balls = new BallManager(),
         this.games = {}
 
         io.on('connection', (socket)=>{
@@ -31,6 +33,30 @@ export default class Game1Control{
             })
         })
     }
+
+    ballContact(lobbyId,player,ball){
+        const strength = this.games[lobbyId].bounceStrength
+        const angle = Math.atan(Math.abs(player.y-ball.y)/Math.abs(player.x-ball.x))
+        const dx = Math.cos(angle)*strength
+        const dy = Math.sin(angle)*strength
+
+        // push down
+        if (player.y<ball.y){
+            this.balls.bounce(lobbyId,'vertical',dy)
+        }
+        // push up
+        if (player.y>ball.y){
+            this.balls.bounce(lobbyId,'vertical',-dy)
+        }
+        // push right
+        if (player.x<ball.x){
+            this.balls.bounce(lobbyId,'horizontal',dx)
+        }
+        // push left
+        if (player.x>ball.x){
+            this.balls.bounce(lobbyId,'horizontal',-dx)
+        }
+    }    
 
     playerContact(lobbyId,player,target){
         const strength = this.games[lobbyId].bounceStrength
@@ -66,10 +92,15 @@ export default class Game1Control{
             const serverH = this.games[lobbyId].serverH
             const serverW = this.games[lobbyId].serverW
             this.players.resolveBounce(userId,serverH,serverW)
+            this.checkBallCollision(userId,lobbyId)
         }
 
         for(var lobbyId of Object.keys(this.games)){
             const contacts = this.games[lobbyId].contacts
+            const serverW = this.games[lobbyId].serverW
+            const serverH = this.games[lobbyId].serverH
+            this.balls.resolveBounce(lobbyId,serverH,serverW)
+
             if(!contacts){
                 continue
             }
@@ -111,11 +142,11 @@ export default class Game1Control{
         }
     }
 
-    giveImpulse(lobbyId,target,player){
+    giveImpulse(lobbyId,target,player,ball=0){
         const impMagn = this.games[lobbyId].impulseMagnitude
         const angle = Math.atan(Math.abs(target.y-player.y)/Math.abs(target.x-player.x))
-        let dy
-        let dx
+        var dy = 0
+        let dx = 0
 
         //push down
         if(target.y>player.y){
@@ -133,25 +164,40 @@ export default class Game1Control{
         if(target.x<player.x){
             dx = -Math.cos(angle)*impMagn
         }
-
+        if(ball){
+            this.balls.bounce(lobbyId,'horizontal',dx)
+            this.balls.bounce(lobbyId,'vertical',dy)   
+            return
+        }
         this.players.bounce(target.userId,'horizontal',dx)
         this.players.bounce(target.userId,'vertical',dy)
     }
 
     impulseCheck(userId,lobbyId){
         const playerLoc = this.players.getCoordinates(userId)
-        const playerInfo = this.getPlayerInfo(lobbyId)
+        const targetsInfo = this.getPlayerInfo(lobbyId)
         const impulseRadius = this.games[lobbyId].impulseRadius
 
-        for(var userId1 of Object.keys(playerInfo)){
+        for(var userId1 of Object.keys(targetsInfo)){
             if(userId1 == userId){
                 continue
             }
-            const target = playerInfo[userId1]
+            const target = targetsInfo[userId1]
             const dist = ( (playerLoc.x-target.x)**2 + (playerLoc.y-target.y)**2 )**1/2
             if(dist < impulseRadius){
                 this.giveImpulse(lobbyId,target,playerLoc)
             }
+        }
+    }
+
+    ballImpulseCheck(userId,lobbyId){
+        const playerLoc = this.players.getCoordinates(userId)
+        const target = this.balls.getInfo(lobbyId)
+        const dist = ( (playerLoc.x-target.x)**2 + (playerLoc.y-target.y)**2 )**1/2
+        const impulseRadius = this.games[lobbyId].impulseRadius
+
+        if(dist < impulseRadius){
+            this.giveImpulse(lobbyId,target,playerLoc,1)
         }
     }
 
@@ -160,6 +206,7 @@ export default class Game1Control{
 
         this.wallBounce(userId,lobbyId)
         this.impulseCheck(userId,lobbyId)
+        this.ballImpulseCheck(userId,lobbyId)
     }
 
     movePlayer(userId,move){
@@ -173,6 +220,7 @@ export default class Game1Control{
         for(var targetId of contacts){
             this.checkCollision(userId,targetId,lobbyId)
         }
+        this.checkBallCollision(userId,lobbyId)
     }
 
     userContacts(userId,lobbyId){
@@ -182,10 +230,20 @@ export default class Game1Control{
         return(userIds) 
     }
 
+    checkBallCollision(userId,lobbyId){
+        const player = this.players.getInfo(userId)
+        const ball = this.balls.getInfo(lobbyId)
+        const dist = ( (player.x-ball.x)**2 + (player.y-ball.y)**2 )**(1/2)
+        if(dist < ball.radius+player.radius){
+            this.ballContact(lobbyId,player,ball)
+        }
+    }
+
     checkCollision(userId,targetId,lobbyId){
         const player = this.players.getInfo(userId)
         const target = this.players.getInfo(targetId)
         const dist = ( (player.x-target.x)**2 + (player.y-target.y)**2 )**(1/2)
+        
         if(dist < target.radius+player.radius){
             this.playerContact(lobbyId,player,target)
         }        
@@ -201,9 +259,12 @@ export default class Game1Control{
     runGame1(){
         for(var lobbyId of Object.keys(this.games)){
             const playerInfo = this.getPlayerInfo(lobbyId)
+            const ballInfo = this.balls.getInfo(lobbyId)
             const userIds = this.games[lobbyId].userIds
-            this.sendGame(userIds,playerInfo)
+            const allInfo = {'players':playerInfo,'ball':ballInfo}
+            
             this.bounceControl(userIds)
+            this.sendGame(userIds,allInfo)
         }
     }
 
@@ -261,10 +322,17 @@ export default class Game1Control{
         return(contacts)
     }
 
+    addBall(lobbyId){
+        const x = this.games[lobbyId].serverW/2
+        const y = this.games[lobbyId].serverH/2
+        this.balls.newBall(lobbyId,x,y)
+    }
+
     newGame(lobbyId,userIds){
         const contacts = this.makeContacts(userIds)
         this.games[lobbyId] = new Game(userIds,contacts)
         this.addPlayers(lobbyId,userIds)
-    }
+        this.addBall(lobbyId)
+    }   
 }
 
