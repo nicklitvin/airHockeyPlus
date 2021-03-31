@@ -1,5 +1,3 @@
-'use strict'
-
 // Dependencies
 import express from 'express'
 import { createServer } from "http"
@@ -28,5 +26,3 @@ server.listen(5000, function() {})
 setInterval(() => {
     control.runGame1()
 }, 1000/90)
-
-// control.TESTaddPlayers([1,2,3,4,5,6,7,8,9,10])

@@ -1,4 +1,3 @@
-'use strict'
 import cookie from '/modules/cookies.js'
 const socket = io()
 
@@ -56,13 +55,11 @@ function uOwner(games,currGame){
 function gameChange(){
     gameNameBlank.style.display = 'none'
     socket.emit('gameChange','game1')
-    console.log('updatingGame')
     // socket.emit('gameChange',gameName.value)
 }
 window.gameChange = gameChange
 
 function updateGame(game){
-    console.log('updatingGame with' + game)
     if(game){
         readyButton.style.display = 'block'
         gameInfoP.innerHTML = 'selected game: ' + game

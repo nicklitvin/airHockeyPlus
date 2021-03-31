@@ -5,9 +5,8 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-V0.1.8 create sensitive goals
-V0.1.9 team selection
-V0.1.10 scoring
+team selection
+scoring
 
 FOR LATER
 lobby errors
@@ -15,8 +14,10 @@ lobby errors
     sequence of events (gameChange for leader occurs before enabled selection?)
     object object appears once game starts
     check if owner is changing game not hacker
-
-unite physics engine for players and balls
+disable cornering of ball
+only impulse off walls if in contact with wall, maybe launch direction ui
+make goals into an object
+configuration contains all preset values {x:?,y:?,radius:? ...}
 black hole
     if x,y within radius of hole, suck it in
     respawn at corner, move along wall if no available, can blink in
@@ -24,12 +25,8 @@ glitch: bounce doesn't always go all the way to the bot wall, works for others
 create more accuracte collision mechanic
 reduce radius depending on player count
 create timer for impulse
-make impulse force reduction with wall more constant
 limit info being sent to client about players
-pythag theorem for player2player impulse
-make diagonal magnitude = speed?
 fluid motion, have move stored on server in players{}
-consider sending userId during game instead of socket>getuserIdbysocketid
 if blocked cookies, special error
 separate game.js(canvas stuff) from index.js
 roomControl.joinGame check if correct game

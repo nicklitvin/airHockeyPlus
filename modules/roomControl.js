@@ -1,4 +1,3 @@
-'use strict'
 
 export default class RoomControl{
     constructor(io,gameControl,lobbies,users,socks,gameLib){
@@ -57,6 +56,7 @@ export default class RoomControl{
             this.users.joinGame(userId)
             this.socks.newSock(socket.id,userId)
             this.users.updateSock(userId,socket)
+            // this.gameControl.setupGame(socket,lobbyId)
             return
         }
         this.socks.errorPage(socket)
