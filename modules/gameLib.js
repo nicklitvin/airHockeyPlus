@@ -1,4 +1,3 @@
-'use strict'
 export default class gameLibrary{
     constructor(){
         this.games = {

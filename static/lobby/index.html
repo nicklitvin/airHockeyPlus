@@ -16,6 +16,13 @@
 
         <div id='playerListDiv'></div><br>
 
+        <div id='teamSelectDiv'>
+            <label for='teamSelect'>choose team: </label>
+            <select id='teamSelect' onchange='teamChange()'>
+                <option id='teamOptionBlank'></option>
+            </select>
+        </div>
+
         <div id='gameInfoDiv'>
             <div id='gameInfoSelect'>
                 <label for='gameName'>select game: </label>
@@ -25,6 +32,8 @@
             </div>
             <p id='gameInfoP'>no game selected</p>
         </div><br>
+
+        <p id='teamSelectError'></p>
 
         <button id='readyButton' onclick='readyChange()'>ready</button><br>
 

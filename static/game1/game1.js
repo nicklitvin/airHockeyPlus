@@ -1,4 +1,3 @@
-
 const socket = io();
 
 import cookie from '/modules/cookies.js'
@@ -64,7 +63,8 @@ function drawPlayers(playerInfo){
             0,
             2 * Math.PI
         )
-    ctx.fill()
+        ctx.fillStyle = playerInfo[player].team
+        ctx.fill()
     }
 }
 
@@ -80,20 +80,20 @@ function drawBall(ball){
         0,
         2 * Math.PI
     )
+    ctx.fillStyle = 'black'
     ctx.fill()
 }
 
 function drawGoals(goals){
     const canvas = document.getElementById('canvas')
     const ctx = canvas.getContext('2d')
-    console.log(goals)
 
     for(var id of Object.keys(goals)){
         const x = goals[id].x/16*canvas.width
         const y = goals[id].y/9*canvas.height
         const width = goals[id].width/16*canvas.width
         const height = goals[id].height/9*canvas.height
-
+        ctx.fillStyle = goals[id].color
         ctx.fillRect(x,y,width,height)
     }
 }
@@ -106,17 +106,13 @@ function drawGame(gameInfo){
 
 // MOVE PLAYER
 
+var impulse = 0
 var move = {
     change: 0,
     left: false,
     right: false,
     up: false,
     down: false
-}
-
-function sendMove(){
-    const userId = cookie.get('userId')
-    socket.emit('game1Move',userId,move)
 }
 
 function newMove(key){
@@ -168,8 +164,13 @@ socket.on('redirect', (extra)=>{
 
 socket.on('gameUpdate', (gameInfo)=>{
     drawGame(gameInfo)
+
+    const userId = cookie.get('userId')
     if(move['change']){
-        sendMove()
+        socket.emit('game1Move',userId,move)
+    }
+    if(impulse){
+        socket.emit('game1Impulse',userId)
     }
 })
 
@@ -182,12 +183,14 @@ window.addEventListener('keydown', (event)=>{
         newMove(event.key)
     }
     if(event.code == 'Space'){
-        const userId = cookie.get('userId')
-        socket.emit('game1Impulse',userId)
+        impulse = 1
     }
 })
 window.addEventListener('keyup', (event)=>{
     if(['w','a','s','d'].includes(event.key)){
         noMove(event.key)
+    }
+    if(event.code == 'Space'){
+        impulse = 0
     }
 })

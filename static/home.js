@@ -1,4 +1,3 @@
-
 const socket = io();
 
 function createLobby(){

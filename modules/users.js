@@ -1,5 +1,3 @@
-'use strict'
-
 class User{
     constructor(userId,socket,lobbyId,name){
         this.userId = userId
@@ -8,6 +6,7 @@ class User{
         this.name = name
         this.ready = 0
         this.inGame = 0
+        this.team = 0
     }
 }
 
@@ -17,30 +16,8 @@ export default class UserManager{
         this.idLength = 10
     }
 
-    getUser(userId){
-        const user = this.users[userId]
-        return({
-            'socket': user.socket,
-            'userId': user.userId,
-            'lobbyId': user.lobbyId,
-            'name': user.name
-        })
-    }
-
-    notInGame(userId){
-        this.users[userId].inGame = 0
-    }
-
-    isInGame(userId){
-        return(this.users[userId].inGame)
-    }
-
-    joinGame(userId){
-        this.users[userId].inGame = 1
-    }
-    
-    updateSock(userId,socket){
-        this.users[userId].socket = socket
+    getInfo(userId){
+        return(this.users[userId])
     }
 
     readyChange(userId){
@@ -52,24 +29,8 @@ export default class UserManager{
         return(1)
     }
 
-    getSocket(userId){
-        return(this.users[userId].socket)
-    }
-
-    getName(userId){
-        return(this.users[userId].name)
-    }
-
     getUserIds(){
         return(Object.keys(this.users))
-    }
-    
-    unready(userId){
-        this.users[userId].ready = 0
-    }
-
-    getLobbyId(userId){
-        return(this.users[userId].lobbyId)
     }
 
     changeName(userIds,userId,userName){
@@ -78,10 +39,6 @@ export default class UserManager{
             this.users[userId].name = userName
             return(1)
         }
-    }
-
-    isReady(userId){
-        return(this.users[userId].ready)
     }
     
     getNames(userIds){

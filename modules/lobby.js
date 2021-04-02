@@ -1,5 +1,3 @@
-'use strict'
-
 class Lobby{
     constructor() {
         this.userIds = []
@@ -11,32 +9,23 @@ class Lobby{
 
 export default class LobbyManager{
     constructor(){
-        this.lobbies = {},
+        this.lobbies = {}
         this.idLength = 1
+        this.teams = ['orange','blue']
     }
 
-    endGame(lobbyId){
-        this.lobbies[lobbyId].inGame = 0
-        // console.log('gameEnded')
+    getInfo(lobbyId){
+        return(this.lobbies[lobbyId])
     }
 
-    changeGame(lobbyId,game){
-        this.lobbies[lobbyId].game = game
-    }
-
-    gameBegun(lobbyId){
-        return(this.lobbies[lobbyId].inGame)
+    getTeams(){
+        return(this.teams)
     }
 
     lobbyExist(lobbyId){
         if(Object.keys(this.lobbies).includes(lobbyId)){
             return(1)
         }
-    }
-
-    goingInGame(lobbyId){
-        this.lobbies[lobbyId].inGame = 1
-        // console.log('gameStarted')
     }
 
     makeId(){
@@ -51,27 +40,11 @@ export default class LobbyManager{
             }
         }
     }
-
-    getGame(lobbyId){
-        return(this.lobbies[lobbyId].game)
-    }
-
-    getOwner(lobbyId){
-        return(this.lobbies[lobbyId].owner)
-    }
     
-    newOwner(lobbyId){
+    findNewOwner(lobbyId){
         const newOwner = this.lobbies[lobbyId].userIds[0]
         this.lobbies[lobbyId].owner = newOwner
         return(newOwner)
-    }
-
-    getUserIds(lobbyId){
-        return(this.lobbies[lobbyId].userIds)
-    }
-
-    joinLobby(userId,lobbyId){
-        this.lobbies[lobbyId].userIds.push(userId)
     }
 
     newLobby(){

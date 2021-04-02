@@ -5,15 +5,19 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-team selection
 scoring
+endScreen and return
+bug fixes
 
 FOR LATER
 lobby errors
     if person leaves and the rest are ready, game doesnt start
-    sequence of events (gameChange for leader occurs before enabled selection?)
     object object appears once game starts
     check if owner is changing game not hacker
+bug: rightclicking in game messes up move 
+dont generate entire player list repeatedly
+transition to jQuery
+closeRoom power to joiners in lobby
 disable cornering of ball
 only impulse off walls if in contact with wall, maybe launch direction ui
 make goals into an object

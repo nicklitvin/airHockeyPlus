@@ -3,7 +3,7 @@ const socket = io()
 
 //TEMPORARY
 joinLobby()
-gameChange()
+// gameChange()
 // readyChange()
 
 function joinLobby(){
@@ -20,9 +20,17 @@ function chooseName(){
 window.chooseName = chooseName
 
 function readyChange(){
+    teamSelectError.innerHTML = ''
     socket.emit('readyChange')
 }
 window.readyChange = readyChange
+
+function teamChange(){
+    teamSelectError.innerHTML = ''
+    socket.emit('joinTeam',teamSelect.value)
+    teamOptionBlank.style.display = 'none'
+}
+window.teamChange = teamChange
 
 function newChat(msg){
     var atBot = 0
@@ -70,6 +78,46 @@ function redirect(extra){
     window.location.href = window.location.href.split('lobby/')[0] + extra
 }
 
+function newTeamChoices(choices){
+    deleteTeamChoices()
+    addTeamChoices(choices)
+}
+
+function deleteTeamChoices(){
+    //delete by queryselectorall by class
+}
+
+function addTeamChoices(choices){
+    for(var choice of choices){
+        var teamOption = document.createElement('option')
+        teamOption.innerHTML = choice
+        teamOption.value = choice
+        teamOption.style.display = 'block'
+        teamSelect.appendChild(teamOption)
+    }
+}
+
+function deletePlayerList(){
+    const playerList = document.getElementById('playerListDiv').querySelectorAll('.playerListClass')
+    console.log(playerList)
+    for(var id of playerList){
+        id.remove()
+    }
+}
+
+function makePlayerList(txt){
+    deletePlayerList()
+
+    for(var i=0; i<txt.length-1; i++){
+        var line = document.createElement('p')
+        line.innerHTML = txt[i] 
+        line.style.color = txt[i+1]
+        line.classList.add('playerListClass')
+        playerListDiv.appendChild(line)
+        i += 1
+    }
+}
+
 window.addEventListener('keypress', (a)=>{
     if(document.activeElement.id == 'myMsgInput' && myMsgInput.value && a.key == 'Enter'){
         socket.emit('newChat',myMsgInput.value)
@@ -80,6 +128,18 @@ window.addEventListener('keypress', (a)=>{
 
 // SOCKET.ON
 
+socket.on('forceColor', (txt)=>{
+    teamSelectError.innerHTML = txt
+})
+
+socket.on('noTeamSelected', (txt)=>{
+    teamSelectError.innerHTML = txt
+})
+
+socket.on('teamOptions', (choices)=>{
+    newTeamChoices(choices)
+})
+
 socket.on('deleteCookie', ()=>{
     cookie.set('userId','')
 })
@@ -88,8 +148,9 @@ socket.on('newOwner', (games,game)=>{
     uOwner(games,game)
 })
 
-socket.on('playerUpdate', (text)=>{
-    playerListDiv.innerHTML = text
+socket.on('playerUpdate', (txt)=>{
+    makePlayerList(txt)
+    // playerListDiv.innerHTML = txt
 })
 
 socket.on('nameUpdate', (userName) =>{

@@ -1,16 +1,16 @@
-
 class Player{
-    constructor(userId,userName,x,y,serverH,serverW){
+    constructor(userId,userName,x,y,serverH,serverW,team){
         this.userId = userId,
-        this.userName = userName,
-        this.x = x,
-        this.y = y,
-        this.dx = 0,
-        this.dy = 0,
-        this.radius = .5,
+        this.userName = userName
+        this.x = x
+        this.y = y
+        this.dx = 0
+        this.dy = 0
+        this.radius = .5
         this.impulse = 1
-        this.serverH = serverH,
+        this.serverH = serverH
         this.serverW = serverW
+        this.team = team
     }
 }
 
@@ -20,9 +20,9 @@ export default class PlayerManager{
         this.players = {}
     }
 
-    addPlayer(userId,x,y,serverH,serverW){
-        const userName = this.users.getName(userId)
-        this.players[userId] = new Player(userId,userName,x,y,serverH,serverW)
+    addPlayer(userId,x,y,serverH,serverW,team){
+        const userName = this.users.getInfo(userId).userName
+        this.players[userId] = new Player(userId,userName,x,y,serverH,serverW,team)
     }
 
     getInfo(userId){

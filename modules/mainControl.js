@@ -1,5 +1,3 @@
-'use strict'
-
 import RoomControl from './roomControl.js'
 import Game1Control from './game1Control.js'
 
@@ -15,10 +13,10 @@ export default class MainControl{
         this.socks = new SockManager()
         this.gameLib = new gameLibrary()
 
-        this.gameControl = new Game1Control(io,this.users)
+        this.game1Control = new Game1Control(io,this.users)
         this.room = new RoomControl(
             io,
-            this.gameControl,
+            this.game1Control,
             this.lobbies,
             this.users,
             this.socks,
@@ -26,11 +24,7 @@ export default class MainControl{
         )
     }
 
-    TESTaddPlayers(userIds){
-        this.gameControl.TESTaddPlayers(userIds)
-    }
-
     runGame1(){
-        this.gameControl.runGame1()
+        this.game1Control.runGame1()
     }
 }

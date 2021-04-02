@@ -1,8 +1,14 @@
-'use strict'
-
 export default class SockManager{
     constructor(){
         this.socks = {}
+    }
+
+    noTeamSelected(socket){
+        socket.emit('noTeamSelected','noTeamSelected')
+    }
+
+    forceColor(socket,team){
+        socket.emit('forceTeam',team,`can't change team if ready`)
     }
 
     deleteCookie(socket){
@@ -34,25 +40,22 @@ export default class SockManager{
         // console.log('newSock',this.socks)
     }
 
-    joinLobby(user,game){
+    joinLobby(user,game,teams){
         const socket = user.socket
         this.newSock(user.socket.id,user.userId)
         socket.emit('lobbyUpdate',user.lobbyId)
         socket.emit('nameUpdate',user.name)
         socket.emit('gameUpdate',game)
+        socket.emit('teamOptions',teams)
     }
 
     errorPage(socket){
-        socket.emit('redirect','lobby/error')
+        socket.emit('redirect','/error')
     }
 
     toLobby(socket,lobbyId){
         const url = `lobby/?a=${lobbyId}`
         socket.emit('redirect',url)
-    }
-
-    updateSock(socketId,userId){
-        this.socks[socketId] = userId
     }
 
     toGame(socket,game,lobbyId){
@@ -72,14 +75,14 @@ export default class SockManager{
         socket.emit('newChat',chat)
     }
 
+    nameTaken(socket){
+        socket.emit('nameError','nameTaken')
+    }
+
     getUserId(socketId){
         if(Object.keys(this.socks).includes(socketId)){
             return(this.socks[socketId])
         }
-    }
-
-    nameTaken(socket){
-        socket.emit('nameError','nameTaken')
     }
 
     deleteSock(socketId){

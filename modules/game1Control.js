@@ -1,4 +1,3 @@
-
 import PlayerManager from './game1Player.js'
 import Ball from './game1Ball.js'
 import PhysicsManager from './game1Physics.js'
@@ -14,7 +13,6 @@ class Game{
         this.impulseRadius = 1.5
         this.spawnRadius = 4
         this.bounceStrength = 0.1
-
         this.goalHeight = 1.5
         this.goalWidth = 0.2
 
@@ -124,7 +122,7 @@ export default class Game1Control{
 
     impulsePlayer(userId){
         const user = this.players.getInfo(userId)
-        const lobbyId = this.users.getLobbyId(userId)
+        const lobbyId = this.users.getInfo(userId).lobbyId
         const impRadius = this.games[lobbyId].impulseRadius
 
         this.wallBounce(user,lobbyId)
@@ -135,9 +133,9 @@ export default class Game1Control{
     // PLAYER MOVEMENT
     
     movePlayer(userId,move){
-        const lobbyId = this.users.getLobbyId(userId)
-        const speed = this.games[lobbyId].speed
         const userInfo = this.players.getInfo(userId)
+        const lobbyId = this.users.getInfo(userId).lobbyId
+        const speed = this.games[lobbyId].speed
         const moveInfo = this.players.processMove(move,speed)
 
         this.resolveMove(userInfo,moveInfo)
@@ -245,7 +243,6 @@ export default class Game1Control{
     bouncePlayers(lobbyId){
         for (var userId of this.games[lobbyId].userIds){
             const userInfo = this.players.getInfo(userId)
-            // check if physics updates info
             this.physics.resolveBounce(userInfo)
         }
     }
@@ -281,8 +278,8 @@ export default class Game1Control{
         const goalX = this.serverW-width
         const highEnd = this.serverH/2-height/2
 
-        goalInfo[0] = {'x':0,'y':highEnd,'width':width,'height':height}
-        goalInfo[1] = {'x':goalX,'y':highEnd,'width':width,'height':height}
+        goalInfo[0] = {'x':0,'y':highEnd,'width':width,'height':height, 'color':'orange'}
+        goalInfo[1] = {'x':goalX,'y':highEnd,'width':width,'height':height, 'color':'blue'}
         return(goalInfo)
     }
 
@@ -308,7 +305,7 @@ export default class Game1Control{
 
     sendGame(lobbyId,allInfo){
         for(var userId of this.games[lobbyId].userIds){
-            const socket = this.users.getSocket(userId)
+            const socket = this.users.getInfo(userId).socket
             socket.emit('gameUpdate',allInfo)
         }
     }
@@ -317,8 +314,6 @@ export default class Game1Control{
         for(var lobbyId of Object.keys(this.games)){
             this.bounceControl(lobbyId)
             this.collisionControl(lobbyId)
-            // const userIds = this.games[lobbyId].userIds
-            // this.bounceControl(userIds)
 
             const allInfo = this.getAllInfo(lobbyId)
             this.sendGame(lobbyId,allInfo)
@@ -333,9 +328,10 @@ export default class Game1Control{
         var angle = 0
         
         for(var userId of userIds){
-            var x = Math.cos(angle)*spawnRadius+this.serverW/2
-            var y = Math.sin(angle)*spawnRadius+this.serverH/2
-            this.players.addPlayer(userId,x,y,this.serverH,this.serverW)
+            const x = Math.cos(angle)*spawnRadius+this.serverW/2
+            const y = Math.sin(angle)*spawnRadius+this.serverH/2
+            const team = this.users.getInfo(userId).team
+            this.players.addPlayer(userId,x,y,this.serverH,this.serverW,team)
             angle += angleInt
         }
     }
@@ -359,7 +355,6 @@ export default class Game1Control{
         const x = this.serverW/2
         const y = this.serverH/2
         this.games[lobbyId].ball = new Ball(x,y,this.serverH,this.serverW)
-        // this.balls.newBall(lobbyId,x,y)
     }
 
     newGame(lobbyId,userIds){
