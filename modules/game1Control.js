@@ -1,9 +1,11 @@
+'use strict'
 import PlayerManager from './game1Player.js'
 import Ball from './game1Ball.js'
 import PhysicsManager from './game1Physics.js'
+import Goals from './game1Goal.js'
 
 class Game{
-    constructor(userIds,contacts){
+    constructor(userIds,contacts,teams){
         this.userIds = userIds
         this.contacts = contacts
         this.serverH = 9
@@ -17,16 +19,18 @@ class Game{
         this.goalWidth = 0.2
 
         this.ball = 0
+        this.goals = 0
+        this.teams = teams
     }
 }
 
 export default class Game1Control{
     constructor(io,users){
-        this.users = users,
-        this.players = new PlayerManager(this.users,users),
-        this.serverH = 9,
-        this.serverW = 16,
+        this.users = users
+        this.players = new PlayerManager(this.users,users)
         this.physics = new PhysicsManager()
+        this.serverH = 9
+        this.serverW = 16
         this.games = {}
 
         io.on('connection', (socket)=>{
@@ -199,8 +203,8 @@ export default class Game1Control{
         }
     }
 
-    ballCollision(player,ball,lobbyId){
-        const strength = this.games[lobbyId].bounceStrength
+    ballCollision(player,ball,lobby){
+        const strength = lobby.bounceStrength
         const angle = Math.atan(Math.abs(player.y-ball.y)/Math.abs(player.x-ball.x))
         const dx = Math.cos(angle)*strength
         const dy = Math.sin(angle)*strength
@@ -221,14 +225,18 @@ export default class Game1Control{
         else if (player.x>ball.x){
             this.physics.addDx(ball,-dx)
         }
+
+        const goal = lobby.goals.getGoals()[player.team]
+        goal.lastBallToucher = player.userId
     }  
 
     ballCollisionCheck(lobbyId){
         const ball = this.games[lobbyId].ball
-        for(var userId of this.games[lobbyId].userIds){
+        const lobby = this.games[lobbyId]
+        for(var userId of lobby.userIds){
             const player = this.players.getInfo(userId)
             if(this.checkCollision(player,ball)){
-                this.ballCollision(player,ball,lobbyId)
+                this.ballCollision(player,ball,lobby)
             }
         }
     }
@@ -247,21 +255,33 @@ export default class Game1Control{
         }
     }
 
-    isGoal(lobbyId,ball){
-        const lowEnd = this.serverH/2+this.games[lobbyId].goalHeight/2
-        const highEnd = this.serverH/2-this.games[lobbyId].goalHeight/2
-        if( (ball.x==ball.radius) && (ball.y > highEnd) && (ball.y < lowEnd)){
-            console.log('goalLeft')
+    countGoal(lobby,scoringTeam){
+        const goal = lobby.goals.getGoals()[scoringTeam]
+        goal.goalsScored += 1
+        const scorer = this.players.getInfo(goal.lastBallToucher)
+        if(scorer){
+            scorer.goals += 1
         }
-        if( (ball.x==this.serverW-ball.radius)&&(ball.y>highEnd)&&(ball.y<lowEnd)){
-            console.log('goalRight')
+        this.resetPositions(lobby)
+    }
+
+    isGoal(lobby){
+        const ball = lobby.ball
+        const goals = lobby.goals.getGoals()
+        if( (ball.x==ball.radius) && (ball.y > goals['orange'].y) &&
+                 (ball.y < goals['orange'].y+goals['orange'].height)){
+            this.countGoal(lobby,'blue')
+        }
+        if( (ball.x==this.serverW-ball.radius) && (ball.y>goals['blue'].y) && 
+                (ball.y<goals['blue'].y+goals['blue'].height)){
+            this.countGoal(lobby,'orange')
         }
     }
 
     bounceBall(lobbyId){
-        const ball = this.games[lobbyId].ball
-        this.physics.resolveBounce(ball)
-        this.isGoal(lobbyId,ball)
+        const lobby = this.games[lobbyId]
+        this.physics.resolveBounce(lobby.ball)
+        this.isGoal(lobby)
     }
 
     bounceControl(lobbyId){
@@ -269,19 +289,31 @@ export default class Game1Control{
         this.bounceBall(lobbyId)
     }
 
-    // RUN AND SEND GAME
+    // GAME EVENTS
+    
+    resetPositions(lobby){
+        var angle = 0
+        const angleInt = 2*Math.PI/Object.keys(lobby.userIds).length
+        const spawnRadius = lobby.spawnRadius
 
-    getGoalInfo(lobbyId){
-        var goalInfo = {}
-        const height = this.games[lobbyId].goalHeight
-        const width = this.games[lobbyId].goalWidth
-        const goalX = this.serverW-width
-        const highEnd = this.serverH/2-height/2
+        for(var userId of lobby.userIds){
+            const position = this.makePosition(spawnRadius,angle)
+            const player = this.players.getInfo(userId)
 
-        goalInfo[0] = {'x':0,'y':highEnd,'width':width,'height':height, 'color':'orange'}
-        goalInfo[1] = {'x':goalX,'y':highEnd,'width':width,'height':height, 'color':'blue'}
-        return(goalInfo)
+            player.x = position.x 
+            player.y = position.y
+            player.dx = 0
+            player.dy = 0
+
+            angle += angleInt
+        }
+        lobby.ball.x = this.serverW/2
+        lobby.ball.y = this.serverH/2
+        lobby.ball.dx = 0
+        lobby.ball.dy = 0
     }
+
+    // RUN AND SEND GAME
 
     getAllPlayerInfo(lobbyId){
         const userIds = this.games[lobbyId].userIds
@@ -292,14 +324,10 @@ export default class Game1Control{
         return(playerInfo)
     }
 
-    getBallInfo(lobbyId){
-        return(this.games[lobbyId].ball)
-    }
-
     getAllInfo(lobbyId){
         const playerInfo = this.getAllPlayerInfo(lobbyId)
-        const ballInfo = this.getBallInfo(lobbyId)
-        const goalInfo = this.getGoalInfo(lobbyId)
+        const ballInfo = this.games[lobbyId].ball
+        const goalInfo = this.games[lobbyId].goals.getGoals()
         return({'players':playerInfo,'ball':ballInfo,'goal':goalInfo})
     }
 
@@ -322,16 +350,25 @@ export default class Game1Control{
 
     // SETUP GAME
 
-    addPlayers(lobbyId,userIds){
-        const angleInt = 2*Math.PI/Object.keys(userIds).length
-        const spawnRadius = this.games[lobbyId].spawnRadius
+    makePosition(spawnRadius,angle){
+        var position = {}
+        position['x'] = Math.cos(angle)*spawnRadius+this.serverW/2
+        position['y'] = Math.sin(angle)*spawnRadius+this.serverH/2
+        return(position)
+    }
+
+    addPlayers(lobby){
+        const angleInt = 2*Math.PI/lobby.userIds.length
+        const spawnRadius = lobby.spawnRadius
         var angle = 0
         
-        for(var userId of userIds){
-            const x = Math.cos(angle)*spawnRadius+this.serverW/2
-            const y = Math.sin(angle)*spawnRadius+this.serverH/2
-            const team = this.users.getInfo(userId).team
-            this.players.addPlayer(userId,x,y,this.serverH,this.serverW,team)
+        for(var userId of lobby.userIds){
+            const position = this.makePosition(spawnRadius,angle)
+            const user = this.users.getInfo(userId)
+            this.players.addPlayer(
+                userId,position.x,position.y,this.serverH,this.serverW,
+                user.team, user.userName
+            )
             angle += angleInt
         }
     }
@@ -351,17 +388,38 @@ export default class Game1Control{
         return(contacts)
     }
 
-    addBall(lobbyId){
+    addBall(lobby){
         const x = this.serverW/2
         const y = this.serverH/2
-        this.games[lobbyId].ball = new Ball(x,y,this.serverH,this.serverW)
+        lobby.ball = new Ball(x,y,this.serverH,this.serverW)
     }
 
-    newGame(lobbyId,userIds){
+    addGoals(lobby){
+        if(lobby.teams.length != 2){
+            console.log('goalErr')    
+            return
+        }
+        lobby.goals = new Goals()
+
+        const topEdge = this.serverH/2-lobby.goalHeight/2
+        lobby.goals.addGoal(0, topEdge, lobby.goalWidth,lobby.goalHeight,
+            lobby.teams[0],0)
+        lobby.goals.addGoal(this.serverW-lobby.goalWidth, topEdge,
+            lobby.goalWidth,lobby.goalHeight, lobby.teams[1], lobby.goalWidth)
+    }
+
+    newGame(roomLobby){
+        const userIds = roomLobby.userIds
+        const lobbyId = roomLobby.lobbyId
+        const teams = roomLobby.teams
         const contacts = this.makeContacts(userIds)
-        this.games[lobbyId] = new Game(userIds,contacts)
-        this.addPlayers(lobbyId,userIds)
-        this.addBall(lobbyId)
+
+        this.games[lobbyId] = new Game(userIds,contacts,teams)
+        const gameLobby = this.games[lobbyId]
+
+        this.addGoals(gameLobby)
+        this.addPlayers(gameLobby)
+        this.addBall(gameLobby)
     }
 }
 

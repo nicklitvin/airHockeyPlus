@@ -1,3 +1,4 @@
+'use strict'
 import RoomControl from './roomControl.js'
 import Game1Control from './game1Control.js'
 

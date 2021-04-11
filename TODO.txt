@@ -5,11 +5,15 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-scoring
-endScreen and return
+endGame, endScreen
 bug fixes
 
 FOR LATER
+blue shadow after moving even tho orange player
+userName undefined
+create timers after goal scored before gameStart
+multiple teams (corner goals)
+have ball remember last person in contact to determine goal scorer
 lobby errors
     if person leaves and the rest are ready, game doesnt start
     object object appears once game starts

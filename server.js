@@ -1,3 +1,4 @@
+'use strict'
 // Dependencies
 import express from 'express'
 import { createServer } from "http"

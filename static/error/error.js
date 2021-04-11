@@ -1,3 +1,4 @@
+'use strict'
 import cookie from '/modules/cookies.js'
 const socket = io()
 

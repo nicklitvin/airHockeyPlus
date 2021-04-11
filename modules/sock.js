@@ -1,3 +1,4 @@
+'use strict'
 export default class SockManager{
     constructor(){
         this.socks = {}
@@ -44,7 +45,7 @@ export default class SockManager{
         const socket = user.socket
         this.newSock(user.socket.id,user.userId)
         socket.emit('lobbyUpdate',user.lobbyId)
-        socket.emit('nameUpdate',user.name)
+        socket.emit('nameUpdate',user.userName)
         socket.emit('gameUpdate',game)
         socket.emit('teamOptions',teams)
     }

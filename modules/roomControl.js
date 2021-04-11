@@ -1,3 +1,4 @@
+'use strict'
 export default class RoomControl{
     constructor(io,gameControl,lobbies,users,socks,gameLib){
         this.gameControl = gameControl
@@ -54,18 +55,18 @@ export default class RoomControl{
         lobby.inGame = 0
     }       
 
-    isTeamReal(team){
-        if(this.lobbies.getTeams().includes(team)){
+    isTeamReal(lobbyId,team){
+        if(this.lobbies.getInfo(lobbyId).teams.includes(team)){
             return(1)
         }
     }
 
     joinTeam(socket,team){
-        if(!this.isTeamReal(team)){
-            return
-        }
         const userId = this.socks.getUserId(socket.id)
         const user = this.users.getInfo(userId)
+        if(!this.isTeamReal(user.lobbyId,team)){
+            return
+        }
         //cant change color if ready
         if(user.ready){
             this.socks.forceColor(user.socket,user.team)
@@ -95,7 +96,8 @@ export default class RoomControl{
 
         if(lobby.game){
             this.lobbies.getInfo(lobbyId).inGame = 1
-            this.gameControl.newGame(lobbyId,lobby.userIds)
+            // this.gameControl.newGame(lobbyId,lobby.userIds,lobby.teams)
+            this.gameControl.newGame(lobby)
             for(var userId of lobby.userIds){
                 const socket = this.users.getInfo(userId).socket
                 this.users.getInfo(userId).inGame = 1
@@ -180,7 +182,7 @@ export default class RoomControl{
         for(var userId of lobby.userIds){
             const user = this.users.getInfo(userId)
 
-            var lineText = `${user.name}`
+            var lineText = `${user.userName}`
             if(user.ready){
                 lineText += ' (✓)'
             }
@@ -249,12 +251,10 @@ export default class RoomControl{
         }
 
         const user = this.users.getInfo(userId)
-        const game = this.lobbies.getInfo(lobbyId).game
-        const teams = this.lobbies.getTeams()
+        const lobby = this.lobbies.getInfo(lobbyId)
 
         user.socket = socket
-        // user.ready = 0
-        this.socks.joinLobby(user,game,teams)
+        this.socks.joinLobby(user,lobby.game,lobby.teams)
         this.socks.deleteCookie(socket)
         this.updatePlayerList(lobbyId)
     }
@@ -270,10 +270,9 @@ export default class RoomControl{
     addUser(socket,lobbyId){
         const lobby = this.lobbies.getInfo(lobbyId)
         const user = this.users.newUser(socket,lobbyId,lobby.userIds)
-        const teams = this.lobbies.getTeams()
 
         this.socks.deleteCookie(user.socket)
-        this.socks.joinLobby(user,lobby.game,teams)
+        this.socks.joinLobby(user,lobby.game,lobby.teams)
         lobby.userIds.push(user.userId)
         this.isNewOwner(user.socket,lobbyId)
         this.updatePlayerList(lobbyId)

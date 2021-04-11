@@ -1,6 +1,7 @@
+'use strict'
 class Player{
-    constructor(userId,userName,x,y,serverH,serverW,team){
-        this.userId = userId,
+    constructor(userId,x,y,serverH,serverW,team,userName){
+        this.userId = userId
         this.userName = userName
         this.x = x
         this.y = y
@@ -11,6 +12,7 @@ class Player{
         this.serverH = serverH
         this.serverW = serverW
         this.team = team
+        this.goals = 0
     }
 }
 
@@ -20,9 +22,8 @@ export default class PlayerManager{
         this.players = {}
     }
 
-    addPlayer(userId,x,y,serverH,serverW,team){
-        const userName = this.users.getInfo(userId).userName
-        this.players[userId] = new Player(userId,userName,x,y,serverH,serverW,team)
+    addPlayer(userId,x,y,serverH,serverW,team,userName){
+        this.players[userId] = new Player(userId,x,y,serverH,serverW,team,userName)
     }
 
     getInfo(userId){

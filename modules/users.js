@@ -1,9 +1,10 @@
+'use strict'
 class User{
-    constructor(userId,socket,lobbyId,name){
+    constructor(userId,socket,lobbyId,userName){
         this.userId = userId
         this.socket = socket
         this.lobbyId = lobbyId
-        this.name = name
+        this.userName = userName
         this.ready = 0
         this.inGame = 0
         this.team = 0
@@ -34,27 +35,27 @@ export default class UserManager{
     }
 
     changeName(userIds,userId,userName){
-        var names = this.getNames(userIds)
-        if(!names.includes(userName)){
-            this.users[userId].name = userName
+        var userNames = this.getNames(userIds)
+        if(!userNames.includes(userName)){
+            this.users[userId].userName = userName
             return(1)
         }
     }
     
     getNames(userIds){
-        var names = []
+        var userNames = []
         for(var userId of userIds){
-            names.push(this.users[userId].name)
+            userNames.push(this.users[userId].userName)
         }
-        return(names)
+        return(userNames)
     }
 
     makeName(userIds){
-        var names = this.getNames(userIds)
+        var userNames = this.getNames(userIds)
         while(true){
-            var name = 'player' + Math.floor(Math.random()*999)
-            if(!names.includes(name)){
-                return(name)
+            var userName = 'player' + Math.floor(Math.random()*999)
+            if(!userNames.includes(userName)){
+                return(userName)
             }
         }
     }
@@ -74,8 +75,8 @@ export default class UserManager{
 
     newUser(socket,lobbyId,userIds){
         const userId = this.makeId()
-        const name = this.makeName(userIds)
-        this.users[userId] = new User(userId,socket,lobbyId,name)
+        const userName = this.makeName(userIds)
+        this.users[userId] = new User(userId,socket,lobbyId,userName)
         // console.log('newUser',this.users[userId])
         return(this.users[userId])
     }

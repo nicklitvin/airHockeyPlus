@@ -1,9 +1,12 @@
+'use strict'
 class Lobby{
-    constructor() {
+    constructor(lobbyId) {
+        this.lobbyId = lobbyId
         this.userIds = []
         this.owner = 0
         this.game = 0
         this.inGame = 0
+        this.teams = ['orange','blue']
     }
 }
 
@@ -49,7 +52,7 @@ export default class LobbyManager{
 
     newLobby(){
         const lobbyId = this.makeId()
-        this.lobbies[lobbyId] = new Lobby
+        this.lobbies[lobbyId] = new Lobby(lobbyId)
         // console.log('newLobby',this.lobbies[lobbyId])
         return(lobbyId)
     }

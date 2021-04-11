@@ -1,9 +1,11 @@
+'use strict'
 import cookie from '/modules/cookies.js'
 const socket = io()
 
 //TEMPORARY
 joinLobby()
-// gameChange()
+gameChange()
+// teamChange()
 // readyChange()
 
 function joinLobby(){
@@ -27,7 +29,8 @@ window.readyChange = readyChange
 
 function teamChange(){
     teamSelectError.innerHTML = ''
-    socket.emit('joinTeam',teamSelect.value)
+    socket.emit('joinTeam','orange')
+    // socket.emit('joinTeam',teamSelect.value)
     teamOptionBlank.style.display = 'none'
 }
 window.teamChange = teamChange

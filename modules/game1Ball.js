@@ -1,4 +1,4 @@
-
+'use strict'
 export default class Ball{
     constructor(x,y,serverH,serverW){
         this.x = x,
