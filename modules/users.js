@@ -21,19 +21,6 @@ export default class UserManager{
         return(this.users[userId])
     }
 
-    readyChange(userId){
-        if(this.users[userId].ready){
-            this.users[userId].ready = 0
-            return
-        }
-        this.users[userId].ready = 1
-        return(1)
-    }
-
-    getUserIds(){
-        return(Object.keys(this.users))
-    }
-
     changeName(userIds,userId,userName){
         var userNames = this.getNames(userIds)
         if(!userNames.includes(userName)){
@@ -73,16 +60,14 @@ export default class UserManager{
         }
     }
 
-    newUser(socket,lobbyId,userIds){
+    newUser(socket,lobby){
         const userId = this.makeId()
-        const userName = this.makeName(userIds)
-        this.users[userId] = new User(userId,socket,lobbyId,userName)
-        // console.log('newUser',this.users[userId])
+        const userName = this.makeName(lobby.userIds)
+        this.users[userId] = new User(userId,socket,lobby.lobbyId,userName)
         return(this.users[userId])
     }
 
     deleteUser(userId){
         delete this.users[userId]
-        // console.log('deleteUser',this.users)
     }
 }

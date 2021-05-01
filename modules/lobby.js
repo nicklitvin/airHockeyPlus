@@ -25,7 +25,7 @@ export default class LobbyManager{
         return(this.teams)
     }
 
-    lobbyExist(lobbyId){
+    doesLobbyExist(lobbyId){
         if(Object.keys(this.lobbies).includes(lobbyId)){
             return(1)
         }
@@ -44,40 +44,14 @@ export default class LobbyManager{
         }
     }
     
-    findNewOwner(lobbyId){
-        const newOwner = this.lobbies[lobbyId].userIds[0]
-        this.lobbies[lobbyId].owner = newOwner
-        return(newOwner)
-    }
-
     newLobby(){
         const lobbyId = this.makeId()
         this.lobbies[lobbyId] = new Lobby(lobbyId)
-        // console.log('newLobby',this.lobbies[lobbyId])
-        return(lobbyId)
+        return(this.lobbies[lobbyId])
     }
 
-    deleteLobby(lobbyId){
-        if(this.lobbies[lobbyId].userIds.length == 0){
-            delete this.lobbies[lobbyId]
-            // console.log('deleteLobby',this.lobbies)
-            return(1)
-        }
-    }
-    
-    leaveLobby(userId,lobbyId){
-        //delete if owner
-        if(this.lobbies[lobbyId].owner == userId){
-            this.lobbies[lobbyId].owner = 0
-        }
-        //delete from userIds
-        for(var a in this.lobbies[lobbyId].userIds){
-            if (this.lobbies[lobbyId].userIds[a] == userId){
-                this.lobbies[lobbyId].userIds.splice(a,1)
-                // console.log('leaveLobby',this.lobbies[lobbyId].userIds)
-                return(this.deleteLobby(lobbyId))
-            }
-        }
+    deleteLobby(lobby){
+        delete this.lobbies[lobby.lobbyId]
     }
 }
 

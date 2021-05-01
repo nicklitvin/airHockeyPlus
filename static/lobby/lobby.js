@@ -5,7 +5,7 @@ const socket = io()
 //TEMPORARY
 joinLobby()
 gameChange()
-// teamChange()
+teamChange()
 // readyChange()
 
 function joinLobby(){
@@ -102,7 +102,6 @@ function addTeamChoices(choices){
 
 function deletePlayerList(){
     const playerList = document.getElementById('playerListDiv').querySelectorAll('.playerListClass')
-    console.log(playerList)
     for(var id of playerList){
         id.remove()
     }
@@ -153,17 +152,14 @@ socket.on('newOwner', (games,game)=>{
 
 socket.on('playerUpdate', (txt)=>{
     makePlayerList(txt)
-    // playerListDiv.innerHTML = txt
 })
 
 socket.on('nameUpdate', (userName) =>{
-    // console.log('updatingName')
     nameTitle.innerHTML = 'and you are ' + userName
     userNameInput.value = ''
 })
 
 socket.on('lobbyUpdate', (lobbyId) => {
-    // console.log('updatingLobby')
     lobbyTitle.innerHTML = 'lobby ' + lobbyId
 })
 

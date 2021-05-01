@@ -36,31 +36,26 @@ export default class SockManager{
         socket.emit('playerUpdate',text)
     }
 
-    newSock(socketId,userId){
-        this.socks[socketId] = userId
-        // console.log('newSock',this.socks)
-    }
-
-    joinLobby(user,game,teams){
+    joinLobby(user,lobby){
         const socket = user.socket
         this.newSock(user.socket.id,user.userId)
         socket.emit('lobbyUpdate',user.lobbyId)
         socket.emit('nameUpdate',user.userName)
-        socket.emit('gameUpdate',game)
-        socket.emit('teamOptions',teams)
+        socket.emit('gameUpdate',lobby.game)
+        socket.emit('teamOptions',lobby.teams)
     }
 
     errorPage(socket){
         socket.emit('redirect','/error')
     }
 
-    toLobby(socket,lobbyId){
-        const url = `lobby/?a=${lobbyId}`
+    toLobby(socket,lobby){
+        const url = `lobby/?a=${lobby.lobbyId}`
         socket.emit('redirect',url)
     }
 
-    toGame(socket,game,lobbyId){
-        const url = `${game}/?a=${lobbyId}`
+    toGame(socket,lobby){
+        const url = `${lobby.game}/?a=${lobby.lobbyId}`
         socket.emit('redirect',url)
     }
 
@@ -80,6 +75,10 @@ export default class SockManager{
         socket.emit('nameError','nameTaken')
     }
 
+    newSock(socketId,userId){
+        this.socks[socketId] = userId
+    }
+
     getUserId(socketId){
         if(Object.keys(this.socks).includes(socketId)){
             return(this.socks[socketId])
@@ -89,7 +88,6 @@ export default class SockManager{
     deleteSock(socketId){
         if(Object.keys(this.socks).includes(socketId)){
             delete this.socks[socketId]
-            // console.log('deleteSock',this.socks)
         }
     }
 }

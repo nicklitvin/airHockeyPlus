@@ -6,4 +6,12 @@ body {
 * { margin:0; padding:0; }
 canvas {
     background: #696969;
+    position: relative;
+}
+button {
+    z-index: 1;
+    position: relative;
+}
+#lobbyReturnBut{
+    display: none;
 }

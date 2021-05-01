@@ -5,15 +5,16 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-endGame, endScreen
-bug fixes
+create start timer
+make win conditions
+change impulse condition
 
 FOR LATER
-blue shadow after moving even tho orange player
-userName undefined
+dont send lobby updates if in endscreen
+mvp in endScreen
+blue shadow after moving even tho orange player, illusion?
 create timers after goal scored before gameStart
-multiple teams (corner goals)
-have ball remember last person in contact to determine goal scorer
+3+ teams (corner goals)
 lobby errors
     if person leaves and the rest are ready, game doesnt start
     object object appears once game starts
@@ -24,16 +25,11 @@ transition to jQuery
 closeRoom power to joiners in lobby
 disable cornering of ball
 only impulse off walls if in contact with wall, maybe launch direction ui
-make goals into an object
 configuration contains all preset values {x:?,y:?,radius:? ...}
-black hole
-    if x,y within radius of hole, suck it in
-    respawn at corner, move along wall if no available, can blink in
 glitch: bounce doesn't always go all the way to the bot wall, works for others
 create more accuracte collision mechanic
 reduce radius depending on player count
 create timer for impulse
-limit info being sent to client about players
 fluid motion, have move stored on server in players{}
 if blocked cookies, special error
 separate game.js(canvas stuff) from index.js
@@ -45,4 +41,11 @@ button appearance changes when ready (green/red)
 name change limit per minute
 if owner alone refreshes, error cause lobby gets deleted
 send survey to players after game (game quality, site in general)
+
+DIFF GAME
+black hole
+    if x,y within radius of hole, suck it in
+    respawn at corner, move along wall if no available, can blink in
+
+
 

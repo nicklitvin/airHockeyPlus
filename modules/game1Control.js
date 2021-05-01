@@ -5,7 +5,8 @@ import PhysicsManager from './game1Physics.js'
 import Goals from './game1Goal.js'
 
 class Game{
-    constructor(userIds,contacts,teams){
+    constructor(userIds,contacts,teams,lobbyId){
+        this.lobbyId = lobbyId
         this.userIds = userIds
         this.contacts = contacts
         this.serverH = 9
@@ -17,6 +18,7 @@ class Game{
         this.bounceStrength = 0.1
         this.goalHeight = 1.5
         this.goalWidth = 0.2
+        this.inGame = 1
 
         this.ball = 0
         this.goals = 0
@@ -25,8 +27,9 @@ class Game{
 }
 
 export default class Game1Control{
-    constructor(io,users){
+    constructor(io,users,lobbies){
         this.users = users
+        this.lobbies = lobbies
         this.players = new PlayerManager(this.users,users)
         this.physics = new PhysicsManager()
         this.serverH = 9
@@ -40,13 +43,57 @@ export default class Game1Control{
             socket.on('game1Impulse', (userId)=>{
                 this.impulsePlayer(userId)
             })
+            socket.on('endGame', (userId)=>{
+                this.endGame(userId)
+            })
         })
+    }
+
+    // ENDSCREEN
+
+    makeWinnerTeamText(lobby){
+        var text = ''
+        const goals = lobby.goals.getGoals()
+        const orangeGoals = goals['orange'].goalsScored
+        const blueGoals = goals['blue'].goalsScored
+
+        if(blueGoals > orangeGoals){
+            text = 'blue team has won (' + blueGoals + '-' + orangeGoals +')'
+        }
+        else if(orangeGoals > blueGoals){
+            text = 'orange team has won (' + orangeGoals + '-' + blueGoals +')'
+        }
+        else{
+            text = 'both teams tied (' + orangeGoals + '-' + blueGoals +')'
+        }
+
+        return(text)
+    }
+
+    makeEndInfo(lobby){
+        const info = {}
+        info['summary'] = this.makeWinnerTeamText(lobby)
+        return(info)
+    }
+
+    endGame(userId){
+        const lobbyId = this.users.getInfo(userId).lobbyId
+        const gameLobby = this.games[lobbyId]
+        const roomLobby = this.lobbies.getInfo(lobbyId)        
+        gameLobby.inGame = 0
+        roomLobby.inGame = 0
+        
+        const endInfo = this.makeEndInfo(gameLobby)
+        for(var userId of gameLobby.userIds){
+            const socket = this.users.getInfo(userId).socket
+            socket.emit('gameEnd',endInfo)  
+        }
     }
 
     // IMPULSE
 
-    wallBounce(user,lobbyId){
-        const impMagn = this.games[lobbyId].impulseMagnitude
+    wallBounce(user,lobby){
+        const impMagn = lobby.impulseMagnitude
         
         //closest to which wall
         const yDist = Math.min(this.serverH-user.y,user.y)
@@ -77,8 +124,8 @@ export default class Game1Control{
         }
     }
 
-    giveTargetImpulse(player,target,lobbyId){
-        const impMagn = this.games[lobbyId].impulseMagnitude
+    giveTargetImpulse(player,target,lobby){
+        const impMagn = lobby.impulseMagnitude
         const angle = Math.atan(Math.abs(target.y-player.y)/Math.abs(target.x-player.x))
         var dy = 0
         var dx = 0
@@ -103,8 +150,8 @@ export default class Game1Control{
         this.physics.addDy(target,dy) 
     }
 
-    pvpImpulseCheck(user,lobbyId,impRadius){
-        const targetIds = this.games[lobbyId].userIds
+    pvpImpulseCheck(user,lobby,impRadius){
+        const targetIds = lobby.userIds
 
         for(var targetId of targetIds){
             if(targetId == user.userId){
@@ -112,26 +159,27 @@ export default class Game1Control{
             }
             const target = this.players.getInfo(targetId)
             if(this.withinImpRange(user,target,impRadius)){
-                this.giveTargetImpulse(user,target,lobbyId)
+                this.giveTargetImpulse(user,target,lobby)
             }
         }
     }
 
-    ballImpulseCheck(user,lobbyId,impRadius){
-        const ball = this.games[lobbyId].ball
+    ballImpulseCheck(user,lobby,impRadius){
+        const ball = lobby.ball
         if(this.withinImpRange(user,ball,impRadius)){
-            this.giveTargetImpulse(user,ball,lobbyId)
+            this.giveTargetImpulse(user,ball,lobby)
         }
     }
 
     impulsePlayer(userId){
         const user = this.players.getInfo(userId)
         const lobbyId = this.users.getInfo(userId).lobbyId
-        const impRadius = this.games[lobbyId].impulseRadius
+        const lobby = this.games[lobbyId]
+        const impRadius = lobby.impulseRadius
 
-        this.wallBounce(user,lobbyId)
-        this.pvpImpulseCheck(user,lobbyId,impRadius)
-        this.ballImpulseCheck(user,lobbyId,impRadius)
+        this.wallBounce(user,lobby)
+        this.pvpImpulseCheck(user,lobby,impRadius)
+        this.ballImpulseCheck(user,lobby,impRadius)
     }
 
     // PLAYER MOVEMENT
@@ -139,11 +187,11 @@ export default class Game1Control{
     movePlayer(userId,move){
         const userInfo = this.players.getInfo(userId)
         const lobbyId = this.users.getInfo(userId).lobbyId
-        const speed = this.games[lobbyId].speed
-        const moveInfo = this.players.processMove(move,speed)
+        const lobby = this.games[lobbyId]
+        const moveInfo = this.players.processMove(move,lobby.speed)
 
         this.resolveMove(userInfo,moveInfo)
-        this.collisionControl(lobbyId)
+        this.collisionControl(lobby)
     }
 
     resolveMove(obj,move){
@@ -155,8 +203,8 @@ export default class Game1Control{
 
     // COLLISION CHECK
 
-    pvpCollision(p1,p2,lobbyId){
-        const strength = this.games[lobbyId].bounceStrength
+    pvpCollision(p1,p2,lobby){
+        const strength = lobby.bounceStrength
         const angle = Math.atan(Math.abs(p1.y-p2.y)/Math.abs(p1.x-p2.x))
         const dx = Math.cos(angle)*strength
         const dy = Math.sin(angle)*strength
@@ -190,15 +238,15 @@ export default class Game1Control{
         }        
     }
 
-    pvpCollisionCheck(lobbyId){
-        if(!this.games[lobbyId].contacts){
+    pvpCollisionCheck(lobby){
+        if(!lobby.contacts){
             return  
         }
-        for(var contact of this.games[lobbyId].contacts){
+        for(var contact of lobby.contacts){
             const p1 = this.players.getInfo(contact[0])
             const p2 = this.players.getInfo(contact[1])
             if(this.checkCollision(p1,p2)){
-                this.pvpCollision(p1,p2,lobbyId)
+                this.pvpCollision(p1,p2,lobby)
             }
         }
     }
@@ -230,9 +278,8 @@ export default class Game1Control{
         goal.lastBallToucher = player.userId
     }  
 
-    ballCollisionCheck(lobbyId){
-        const ball = this.games[lobbyId].ball
-        const lobby = this.games[lobbyId]
+    ballCollisionCheck(lobby){
+        const ball = lobby.ball
         for(var userId of lobby.userIds){
             const player = this.players.getInfo(userId)
             if(this.checkCollision(player,ball)){
@@ -241,15 +288,15 @@ export default class Game1Control{
         }
     }
 
-    collisionControl(lobbyId){
-        this.pvpCollisionCheck(lobbyId)
-        this.ballCollisionCheck(lobbyId)
+    collisionControl(lobby){
+        this.pvpCollisionCheck(lobby)
+        this.ballCollisionCheck(lobby)
     }
 
     // BOUNCE CONTROL
 
-    bouncePlayers(lobbyId){
-        for (var userId of this.games[lobbyId].userIds){
+    bouncePlayers(lobby){
+        for(var userId of lobby.userIds){
             const userInfo = this.players.getInfo(userId)
             this.physics.resolveBounce(userInfo)
         }
@@ -278,15 +325,14 @@ export default class Game1Control{
         }
     }
 
-    bounceBall(lobbyId){
-        const lobby = this.games[lobbyId]
+    bounceBall(lobby){
         this.physics.resolveBounce(lobby.ball)
         this.isGoal(lobby)
     }
 
-    bounceControl(lobbyId){
-        this.bouncePlayers(lobbyId)
-        this.bounceBall(lobbyId)
+    bounceControl(lobby){
+        this.bouncePlayers(lobby)
+        this.bounceBall(lobby)
     }
 
     // GAME EVENTS
@@ -315,36 +361,40 @@ export default class Game1Control{
 
     // RUN AND SEND GAME
 
-    getAllPlayerInfo(lobbyId){
-        const userIds = this.games[lobbyId].userIds
+    getAllPlayerInfo(lobby){
         const playerInfo = {}
-        for(var userId of userIds){
+        for(var userId of lobby.userIds){
             playerInfo[userId] = this.players.getInfo(userId)
         }
         return(playerInfo)
     }
 
-    getAllInfo(lobbyId){
-        const playerInfo = this.getAllPlayerInfo(lobbyId)
-        const ballInfo = this.games[lobbyId].ball
-        const goalInfo = this.games[lobbyId].goals.getGoals()
+    getAllInfo(lobby){
+        const playerInfo = this.getAllPlayerInfo(lobby)
+        const ballInfo = lobby.ball
+        const goalInfo = lobby.goals.getGoals()
         return({'players':playerInfo,'ball':ballInfo,'goal':goalInfo})
     }
 
-    sendGame(lobbyId,allInfo){
-        for(var userId of this.games[lobbyId].userIds){
+    sendGame(lobby,allInfo){
+        for(var userId of lobby.userIds){
             const socket = this.users.getInfo(userId).socket
-            socket.emit('gameUpdate',allInfo)
+            socket.emit('game1Update',allInfo)
         }
     }
 
     runGame1(){
         for(var lobbyId of Object.keys(this.games)){
-            this.bounceControl(lobbyId)
-            this.collisionControl(lobbyId)
+            const lobby = this.games[lobbyId]
+            if(!lobby.inGame){
+                continue
+            }
 
-            const allInfo = this.getAllInfo(lobbyId)
-            this.sendGame(lobbyId,allInfo)
+            this.bounceControl(lobby)
+            this.collisionControl(lobby)
+            
+            const allInfo = this.getAllInfo(lobby)
+            this.sendGame(lobby,allInfo)
         }
     }
 
@@ -414,7 +464,7 @@ export default class Game1Control{
         const teams = roomLobby.teams
         const contacts = this.makeContacts(userIds)
 
-        this.games[lobbyId] = new Game(userIds,contacts,teams)
+        this.games[lobbyId] = new Game(userIds,contacts,teams,lobbyId)
         const gameLobby = this.games[lobbyId]
 
         this.addGoals(gameLobby)

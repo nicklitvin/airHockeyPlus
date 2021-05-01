@@ -14,7 +14,7 @@ export default class MainControl{
         this.socks = new SockManager()
         this.gameLib = new gameLibrary()
 
-        this.game1Control = new Game1Control(io,this.users)
+        this.game1Control = new Game1Control(io,this.users,this.lobbies)
         this.room = new RoomControl(
             io,
             this.game1Control,

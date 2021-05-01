@@ -1,7 +1,38 @@
 'use strict'
-const socket = io();
+const socket = io()
+let endInfo
 
 import cookie from '/modules/cookies.js'
+
+function showReturn(){
+    const button = document.getElementById('lobbyReturnBut')
+    button.style.display = 'block'
+}
+
+function goToLobby(){
+    const urlStart = window.location.href.split('game')[0]
+    const urlEnd = window.location.href.split('game1')[1]
+    window.location.href = urlStart + 'lobby' + urlEnd
+}
+window.goToLobby = goToLobby
+
+function displayEndText(){
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const fontSize = canvas.height / 12
+    // ctx.textBaseline = 'middle'
+    ctx.textAlign = 'center'
+    ctx.font = fontSize + 'px comic sans ms'
+    ctx.fillStyle = 'black'
+    ctx.fillText(endInfo['summary'],canvas.width/2,canvas.height/2) 
+}
+
+function endGame(){
+    const userId = cookie.get('userId')
+    socket.emit('endGame',userId)
+}
+window.endGame = endGame
 
 function joinGame(){
     const userId = cookie.get('userId')
@@ -9,11 +40,6 @@ function joinGame(){
     socket.emit('joinGame',userId,lobbyId)
 }
 joinGame()
-
-function toLobby(){
-    socket.emit('endGame')
-}
-window.toLobby = toLobby
 
 function redirect(extra){
     window.location.href = window.location.href.split('game')[0] + extra
@@ -45,6 +71,9 @@ function resizeCanvas(){
     canvas.style.left = w_adjust
     canvas.style.right = window.innerWidth-w_adjust
     canvas.style.position = 'absolute'
+    if(endInfo){
+        displayEndText()
+    }
 }
 resizeCanvas()
 
@@ -150,7 +179,6 @@ function noMove(key){
     }    
     for(var a of Object.keys(move)){
         if(a!='change' && move[a]==true){
-            // console.log(move[a])
             return
         }
     }
@@ -163,7 +191,7 @@ socket.on('redirect', (extra)=>{
     redirect(extra)
 })
 
-socket.on('gameUpdate', (gameInfo)=>{
+socket.on('game1Update', (gameInfo)=>{
     drawGame(gameInfo)
 
     const userId = cookie.get('userId')
@@ -173,6 +201,12 @@ socket.on('gameUpdate', (gameInfo)=>{
     if(impulse){
         socket.emit('game1Impulse',userId)
     }
+})
+
+socket.on('gameEnd', (info)=>{
+    endInfo = info
+    displayEndText()
+    showReturn()
 })
 
 // EVENTS
