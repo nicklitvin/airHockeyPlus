@@ -1,11 +1,12 @@
 'use strict'
 class Lobby{
-    constructor(lobbyId) {
+    constructor(lobbyId,timer){
         this.lobbyId = lobbyId
         this.userIds = []
         this.owner = 0
         this.game = 0
         this.inGame = 0
+        this.gameTimer = timer
         this.teams = ['orange','blue']
     }
 }
@@ -44,9 +45,9 @@ export default class LobbyManager{
         }
     }
     
-    newLobby(){
+    newLobby(timer){
         const lobbyId = this.makeId()
-        this.lobbies[lobbyId] = new Lobby(lobbyId)
+        this.lobbies[lobbyId] = new Lobby(lobbyId,timer)
         return(this.lobbies[lobbyId])
     }
 

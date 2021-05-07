@@ -28,8 +28,8 @@ export default class SockManager{
         socket.emit('nameError','nameError')
     }
 
-    newOwner(socket,games,game){
-        socket.emit('newOwner',games,game)
+    newOwner(socket,games,game,currTimer,timers){
+        socket.emit('newOwner',games,game,currTimer,timers)
     }
 
     playerUpdate(socket,text){
@@ -43,6 +43,7 @@ export default class SockManager{
         socket.emit('nameUpdate',user.userName)
         socket.emit('gameUpdate',lobby.game)
         socket.emit('teamOptions',lobby.teams)
+        socket.emit('timerUpdate',lobby.gameTimer)
     }
 
     errorPage(socket){
@@ -61,6 +62,10 @@ export default class SockManager{
 
     gameUpdate(socket,game){
         socket.emit('gameUpdate',game)
+    }
+
+    timerUpdate(socket,timer){
+        socket.emit('timerUpdate',timer)
     }
 
     chatError(socket){

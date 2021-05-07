@@ -6,6 +6,7 @@ export default class RoomControl{
         this.users = users
         this.socks = socks
         this.gameLib = gameLib
+        this.timerChoices = ['1min','3min','5min']
 
         io.on('connection', (socket)=>{
             socket.on('joinGame', (userId,lobbyId)=>{
@@ -35,7 +36,31 @@ export default class RoomControl{
             socket.on('joinTeam', (team)=>{
                 this.joinTeam(socket,team)
             })
+            socket.on('changeGameTimer', (gameTimer)=>{
+                this.changeGameTime(socket,gameTimer)
+            })
         })
+    }
+
+    changeGameTime(socket,gameTimer){
+        const userId = this.socks.getUserId(socket.id)
+        const user = this.users.getInfo(userId)
+        const lobby = this.lobbies.getInfo(user.lobbyId)
+        
+        if(lobby.owner != userId){
+            return
+        }
+        
+        lobby.gameTimer = gameTimer
+        this.sendGameTimeChange(lobby)
+    }
+
+    sendGameTimeChange(lobby){
+        const timer = lobby.gameTimer
+        for(var userId of lobby.userIds){
+            const socket = this.users.getInfo(userId).socket
+            this.socks.timerUpdate(socket,timer)
+        }
     }
 
     joinTeam(socket,team){
@@ -103,6 +128,10 @@ export default class RoomControl{
             const userId = this.socks.getUserId(socket.id)
             const lobbyId = this.users.getInfo(userId).lobbyId
             const lobby = this.lobbies.getInfo(lobbyId)
+
+            if(lobby.owner != userId){
+                return
+            }
             
             this.unreadyUsers(lobby)
             lobby.game = game
@@ -235,17 +264,24 @@ export default class RoomControl{
     giveOwnerView(lobby){
         const allGames = this.gameLib.getNames()
         const socket = this.users.getInfo(lobby.owner).socket
-        this.socks.newOwner(socket,allGames,lobby.game)
+        this.socks.newOwner(
+            socket,
+            allGames,
+            lobby.game,
+            lobby.gameTimer,
+            this.timerChoices
+        )
     }
 
     returningUser(socket,lobby,userId){
+        const user = this.users.getInfo(userId)
+        user.inGame = 0
+        user.socket = socket
+
         if(lobby.owner == userId){
             this.giveOwnerView(lobby)
         }
-        const user = this.users.getInfo(userId)
 
-        user.inGame = 0
-        user.socket = socket
         this.socks.joinLobby(user,lobby)
         this.socks.deleteCookie(socket)
         this.updatePlayerList(lobby)
@@ -268,8 +304,10 @@ export default class RoomControl{
 
     isLobbyOpen(lobbyId){
         const exist = this.lobbies.doesLobbyExist(lobbyId)
-        if(exist || !this.lobbies.getInfo(lobbyId).gameBegun){
-            return(1)
+        if(exist){
+            if(!this.lobbies.getInfo(lobbyId).gameBegun){
+                return(1)
+            }
         }
     }
 
@@ -292,7 +330,8 @@ export default class RoomControl{
     }
 
     createLobby(socket=0){
-        const lobby = this.lobbies.newLobby()
+        const selectedGame = this.gameLib.getNames[0]
+        const lobby = this.lobbies.newLobby(this.timerChoices[0],selectedGame)
         if(socket){
             this.socks.toLobby(socket,lobby)
         }

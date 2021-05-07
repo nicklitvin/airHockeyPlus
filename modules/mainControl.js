@@ -8,13 +8,13 @@ import UserManager from './users.js'
 import gameLibrary from './gameLib.js'
 
 export default class MainControl{
-    constructor(io){
+    constructor(io,refreshRate){
         this.lobbies = new LobbyManager()
         this.users = new UserManager()
         this.socks = new SockManager()
         this.gameLib = new gameLibrary()
 
-        this.game1Control = new Game1Control(io,this.users,this.lobbies)
+        this.game1Control = new Game1Control(io,this.users,this.lobbies,refreshRate)
         this.room = new RoomControl(
             io,
             this.game1Control,

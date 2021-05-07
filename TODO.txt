@@ -5,9 +5,9 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-create start timer
-make win conditions
 change impulse condition
+fix join logic
+delete if everyone gone from game too long
 
 FOR LATER
 dont send lobby updates if in endscreen

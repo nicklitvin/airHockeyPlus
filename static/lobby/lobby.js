@@ -4,9 +4,9 @@ const socket = io()
 
 //TEMPORARY
 joinLobby()
-gameChange()
-teamChange()
-// readyChange()
+changeGame()
+changeTeam()
+// changeReady()
 
 function joinLobby(){
     const lobbyId = window.location.href.split('a=')[1]
@@ -21,19 +21,32 @@ function chooseName(){
 }
 window.chooseName = chooseName
 
-function readyChange(){
+function changeReady(){
     teamSelectError.innerHTML = ''
     socket.emit('readyChange')
 }
-window.readyChange = readyChange
+window.changeReady = changeReady
 
-function teamChange(){
+function changeTeam(){
     teamSelectError.innerHTML = ''
     socket.emit('joinTeam','orange')
     // socket.emit('joinTeam',teamSelect.value)
     teamOptionBlank.style.display = 'none'
 }
-window.teamChange = teamChange
+window.changeTeam = changeTeam
+
+function changeGame(){
+    // gameNameBlank.style.display = 'none'
+    socket.emit('gameChange','game1')
+    // socket.emit('gameChange',gameName.value)
+}
+window.changeGame = changeGame
+
+function changeGameTimer(){
+    const myTimer = gameTimer.value
+    socket.emit('changeGameTimer',myTimer)
+}
+window.changeGameTimer = changeGameTimer
 
 function newChat(msg){
     var atBot = 0
@@ -48,32 +61,43 @@ function newChat(msg){
 	}
 }
 
-function uOwner(games,currGame){
+function showGameOptions(games,currGame){
     for(var game of games){
         var gameOption = document.createElement('option')
         gameOption.innerHTML = game
         gameOption.value = game
-        gameInfoP.style.display = 'none'
+        gameNameP.style.display = 'none'
         gameName.appendChild(gameOption)
     }
     if(currGame){
-        gameNameBlank.style.display = 'none'
+        // gameNameBlank.style.display = 'none'
         gameName.value = currGame
     }
-    gameInfoSelect.style.display = 'block'
 }
 
-function gameChange(){
-    gameNameBlank.style.display = 'none'
-    socket.emit('gameChange','game1')
-    // socket.emit('gameChange',gameName.value)
+function showTimerOptions(currTimer,timers){
+    for(var timer of timers){
+        var timerOption = document.createElement('option')
+        timerOption.innerHTML = timer
+        timerOption.value = timer
+        gameTimerP.style.display = 'none'
+        gameTimer.appendChild(timerOption)
+    }
+    if(currTimer){
+        gameTimer.value = currTimer
+    }
 }
-window.gameChange = gameChange
 
 function updateGame(game){
     if(game){
         readyButton.style.display = 'block'
-        gameInfoP.innerHTML = 'selected game: ' + game
+        gameNameP.innerHTML = 'selected game: ' + game
+    }
+}
+
+function updateTimer(timer){
+    if(timer){
+        gameTimerP.innerHTML = 'game time: ' + timer 
     }
 }
 
@@ -146,8 +170,10 @@ socket.on('deleteCookie', ()=>{
     cookie.set('userId','')
 })
 
-socket.on('newOwner', (games,game)=>{
-    uOwner(games,game)
+socket.on('newOwner', (games,game,currTimer,timers)=>{
+    showGameOptions(games,game)
+    showTimerOptions(currTimer,timers)
+    gameSettingsDiv.style.display = 'block'
 })
 
 socket.on('playerUpdate', (txt)=>{
@@ -163,16 +189,20 @@ socket.on('lobbyUpdate', (lobbyId) => {
     lobbyTitle.innerHTML = 'lobby ' + lobbyId
 })
 
+socket.on('gameUpdate', (game)=>{
+    updateGame(game)
+})
+
+socket.on('timerUpdate', (timer)=>{
+    updateTimer(timer)
+})
+
 socket.on('newCookie', (userId) =>{
     cookie.set('userId',userId)
 })
 
 socket.on('redirect', (url)=>{
     redirect(url)
-})
-
-socket.on('gameUpdate', (game)=>{
-    updateGame(game)
 })
 
 socket.on('nameError', (err) =>{

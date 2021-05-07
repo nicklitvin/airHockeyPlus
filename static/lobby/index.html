@@ -18,24 +18,32 @@
 
         <div id='teamSelectDiv'>
             <label for='teamSelect'>choose team: </label>
-            <select id='teamSelect' onchange='teamChange()'>
+            <select id='teamSelect' onchange='changeTeam()'>
                 <option id='teamOptionBlank'></option>
             </select>
         </div>
 
-        <div id='gameInfoDiv'>
-            <div id='gameInfoSelect'>
+        <div id='gameSettingsDiv'>
+            <div id='gameNameSelect'>
                 <label for='gameName'>select game: </label>
-                <select id='gameName' onchange='gameChange()'>
-                    <option id='gameNameBlank'></option>
+                <select id='gameName' onchange='changeGame()'>
+                    <!-- <option id='gameNameBlank'></option> -->
                 </select>
             </div>
-            <p id='gameInfoP'>no game selected</p>
+            <div id='gameTimeSelect'>
+                <label for='gameTimer'>select game: </label>
+                <select id='gameTimer' onchange='changeGameTimer()'></select>
+            </div>
+        </div>
+
+        <p id='gameNameP'>no game selected</p>
+        <p id='gameTimerP'>no game time selected</p>
         </div><br>
+
 
         <p id='teamSelectError'></p>
 
-        <button id='readyButton' onclick='readyChange()'>ready</button><br>
+        <button id='readyButton' onclick='changeReady()'>ready</button><br>
 
         <div id='chatDiv'>
 			<div id='chatLogContainer'>

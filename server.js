@@ -6,11 +6,14 @@ import path from 'path'
 import { Server } from "socket.io"
 import MainControl from './modules/mainControl.js'
 
+const refreshRate = 90
+
 var app = express()
 var server = createServer(app)
 const io = new Server(server)
 const __dirname = path.resolve()
-const control = new MainControl(io)
+const control = new MainControl(io,refreshRate)
+
 
 // Static folder is accessible to client
 app.use('/',express.static(path.join(__dirname, 'static')))
@@ -26,4 +29,4 @@ server.listen(5000, function() {})
 //runGame
 setInterval(() => {
     control.runGame1()
-}, 1000/90)
+}, 1000/refreshRate)

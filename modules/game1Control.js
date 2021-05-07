@@ -5,7 +5,7 @@ import PhysicsManager from './game1Physics.js'
 import Goals from './game1Goal.js'
 
 class Game{
-    constructor(userIds,contacts,teams,lobbyId){
+    constructor(userIds,contacts,teams,lobbyId,countdown,gameTimer = 0){
         this.lobbyId = lobbyId
         this.userIds = userIds
         this.contacts = contacts
@@ -20,6 +20,10 @@ class Game{
         this.goalWidth = 0.2
         this.inGame = 1
 
+        this.countdown = countdown
+        this.gameTime = 0
+        this.gameTimer = gameTimer
+
         this.ball = 0
         this.goals = 0
         this.teams = teams
@@ -27,13 +31,15 @@ class Game{
 }
 
 export default class Game1Control{
-    constructor(io,users,lobbies){
+    constructor(io,users,lobbies,refreshRate){
         this.users = users
         this.lobbies = lobbies
         this.players = new PlayerManager(this.users,users)
         this.physics = new PhysicsManager()
         this.serverH = 9
         this.serverW = 16
+        this.countdown = 1
+        this.refreshRate = refreshRate
         this.games = {}
 
         io.on('connection', (socket)=>{
@@ -76,18 +82,26 @@ export default class Game1Control{
         return(info)
     }
 
+    usersEndProcedure(lobby,endInfo){
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            const socket = user.socket
+            
+            user.ready = 0
+            socket.emit('gameEnd',endInfo)  
+        }
+    }
+
     endGame(userId){
         const lobbyId = this.users.getInfo(userId).lobbyId
         const gameLobby = this.games[lobbyId]
         const roomLobby = this.lobbies.getInfo(lobbyId)        
+        const endInfo = this.makeEndInfo(gameLobby)
+
         gameLobby.inGame = 0
         roomLobby.inGame = 0
-        
-        const endInfo = this.makeEndInfo(gameLobby)
-        for(var userId of gameLobby.userIds){
-            const socket = this.users.getInfo(userId).socket
-            socket.emit('gameEnd',endInfo)  
-        }
+
+        this.usersEndProcedure(roomLobby,endInfo)
     }
 
     // IMPULSE
@@ -373,7 +387,23 @@ export default class Game1Control{
         const playerInfo = this.getAllPlayerInfo(lobby)
         const ballInfo = lobby.ball
         const goalInfo = lobby.goals.getGoals()
-        return({'players':playerInfo,'ball':ballInfo,'goal':goalInfo})
+
+        let timer
+        let timeLeft
+        if(lobby.countdown){
+            timer = Math.ceil(lobby.countdown)
+        }
+        else{
+            timeLeft = Math.ceil(lobby.gameTimer-lobby.gameTime)
+        }
+
+        return({
+            'players':playerInfo,
+            'ball':ballInfo,
+            'goal':goalInfo,
+            'countdown': timer,
+            'timeLeft': timeLeft
+        })
     }
 
     sendGame(lobby,allInfo){
@@ -389,10 +419,24 @@ export default class Game1Control{
             if(!lobby.inGame){
                 continue
             }
+            //run timer
+            if(lobby.countdown > 0){
+                lobby.countdown -= 1/this.refreshRate
+                if(lobby.countdown < 0){
+                    lobby.countdown = 0
+                }
+            }
+            //run game
+            else{
+                lobby.gameTime += 1/this.refreshRate
+                if(lobby.gameTime >= lobby.gameTimer){
+                    this.endGame(lobby.userIds[0])
+                    return
+                }
+                this.bounceControl(lobby)
+                this.collisionControl(lobby)
+            }
 
-            this.bounceControl(lobby)
-            this.collisionControl(lobby)
-            
             const allInfo = this.getAllInfo(lobby)
             this.sendGame(lobby,allInfo)
         }
@@ -462,11 +506,19 @@ export default class Game1Control{
         const userIds = roomLobby.userIds
         const lobbyId = roomLobby.lobbyId
         const teams = roomLobby.teams
+        const gameTimer = Number(roomLobby.gameTimer[0])*60
         const contacts = this.makeContacts(userIds)
 
-        this.games[lobbyId] = new Game(userIds,contacts,teams,lobbyId)
+        this.games[lobbyId] = new Game(
+            userIds,
+            contacts,
+            teams,
+            lobbyId,
+            this.countdown,
+            gameTimer)
+            
         const gameLobby = this.games[lobbyId]
-
+        
         this.addGoals(gameLobby)
         this.addPlayers(gameLobby)
         this.addBall(gameLobby)

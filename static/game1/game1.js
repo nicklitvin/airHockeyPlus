@@ -128,10 +128,48 @@ function drawGoals(goals){
     }
 }
 
+function drawCountdown(time){
+    if(!time){
+        return
+    }
+
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+
+    ctx.font = 1/16*canvas.height + 'px Comic Sans MS'
+    ctx.fillStyle = 'white'
+    ctx.textAlign = 'center'
+    ctx.fillText(
+        time,
+        canvas.width/2,
+        canvas.height/2
+    )
+}
+
+function drawTimeLeft(time){
+    if(!time){
+        return
+    }
+
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+
+    ctx.font = 1/16*canvas.height + 'px Comic Sans MS'
+    ctx.fillStyle = 'white'
+    ctx.textAlign = 'center'
+    ctx.fillText(
+        time,
+        canvas.width/2,
+        canvas.height/10
+    )
+}
+
 function drawGame(gameInfo){
     drawPlayers(gameInfo['players'])
     drawBall(gameInfo['ball'])
     drawGoals(gameInfo['goal'])
+    drawCountdown(gameInfo['countdown'])
+    drawTimeLeft(gameInfo['timeLeft'])
 }
 
 // MOVE PLAYER
@@ -193,7 +231,9 @@ socket.on('redirect', (extra)=>{
 
 socket.on('game1Update', (gameInfo)=>{
     drawGame(gameInfo)
-
+    if(gameInfo.countdown){
+        return
+    }
     const userId = cookie.get('userId')
     if(move['change']){
         socket.emit('game1Move',userId,move)
