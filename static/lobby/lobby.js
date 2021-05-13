@@ -3,9 +3,9 @@ import cookie from '/modules/cookies.js'
 const socket = io()
 
 //TEMPORARY
-joinLobby()
-changeGame()
-changeTeam()
+// joinLobby()
+// changeGame()
+// changeTeam()
 // changeReady()
 
 function joinLobby(){
@@ -13,7 +13,7 @@ function joinLobby(){
     const userId = cookie.get('userId')
     socket.emit('joinLobby',lobbyId,userId)
 }
-// joinLobby()
+joinLobby()
 
 function chooseName(){
     socket.emit('nameUpdate',userNameInput.value)
@@ -29,16 +29,16 @@ window.changeReady = changeReady
 
 function changeTeam(){
     teamSelectError.innerHTML = ''
-    socket.emit('joinTeam','orange')
-    // socket.emit('joinTeam',teamSelect.value)
+    // socket.emit('joinTeam','orange')
+    socket.emit('joinTeam',teamSelect.value)
     teamOptionBlank.style.display = 'none'
 }
 window.changeTeam = changeTeam
 
 function changeGame(){
     // gameNameBlank.style.display = 'none'
-    socket.emit('gameChange','game1')
-    // socket.emit('gameChange',gameName.value)
+    // socket.emit('gameChange','game1')
+    socket.emit('gameChange',gameName.value)
 }
 window.changeGame = changeGame
 
@@ -154,7 +154,8 @@ window.addEventListener('keypress', (a)=>{
 
 // SOCKET.ON
 
-socket.on('forceColor', (txt)=>{
+socket.on('forceTeam', (team,txt)=>{
+    teamSelect.value = team
     teamSelectError.innerHTML = txt
 })
 
@@ -217,4 +218,9 @@ socket.on('newChat', (msg)=>{
 socket.on('chatError', (err)=>{
     document.getElementById('chatError').innerHTML = err
     chatError.style.display ='block'
+})
+
+socket.on('oldColor',(team)=>{
+    teamOptionBlank.style.display = 'none'
+    teamSelect.value = team
 })

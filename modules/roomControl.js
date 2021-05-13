@@ -7,10 +7,11 @@ export default class RoomControl{
         this.socks = socks
         this.gameLib = gameLib
         this.timerChoices = ['1min','3min','5min']
+        this.teamChoices = ['orange','blue']
 
         io.on('connection', (socket)=>{
-            socket.on('joinGame', (userId,lobbyId)=>{
-                this.joinGame(socket,userId,lobbyId)
+            socket.on('joinGame', (userId,lobbyId,gameId)=>{
+                this.joinGame(socket,userId,lobbyId,gameId)
             })
             socket.on('disconnect', () => {
                 this.disconnect(socket)
@@ -39,8 +40,13 @@ export default class RoomControl{
             socket.on('changeGameTimer', (gameTimer)=>{
                 this.changeGameTime(socket,gameTimer)
             })
+            socket.on('returnFromGame', (userId)=>{
+                this.returnFromGame(userId)
+            })
         })
     }
+
+    // UPDATE STATUS
 
     changeGameTime(socket,gameTimer){
         const userId = this.socks.getUserId(socket.id)
@@ -58,7 +64,11 @@ export default class RoomControl{
     sendGameTimeChange(lobby){
         const timer = lobby.gameTimer
         for(var userId of lobby.userIds){
-            const socket = this.users.getInfo(userId).socket
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                continue
+            }
+            const socket = user.socket
             this.socks.timerUpdate(socket,timer)
         }
     }
@@ -73,7 +83,7 @@ export default class RoomControl{
         }
         //cant change color if ready
         if(user.ready){
-            this.socks.forceColor(user.socket,user.team)
+            this.socks.forceColor(user)
             return
         }
         //change to team
@@ -83,22 +93,32 @@ export default class RoomControl{
         this.updatePlayerList(lobby)
     }
 
-    joinGame(socket,userId,lobbyId){
+    joinGame(socket,userId,lobbyId,gameId){
         if(!this.lobbies.doesLobbyExist(lobbyId)){
+            this.socks.errorPage(socket)
             return
         }
+
         const lobby = this.lobbies.getInfo(lobbyId)
         if(!lobby.inGame){
             this.socks.toLobby(socket,lobby)
-            return
         }
-        if(lobby.userIds.includes(userId)){
-            const user = this.users.getInfo(userId)
-            user.socket = socket
-            this.socks.newSock(socket.id,userId)
-            return
+
+        else if(lobby.userIds.includes(userId)){
+            if(lobby.game == 'game' + gameId){
+                const user = this.users.getInfo(userId)
+                user.socket = socket
+                user.inGame = 1
+                this.socks.newSock(socket.id,userId)
+            }
+            // wrong game but correct room
+            else{
+                this.socks.toGame(socket,lobby)
+            }
         }
-        this.socks.errorPage(socket)
+        else{
+            this.socks.errorPage(socket)
+        }
     }
 
     startGame(lobby){
@@ -109,7 +129,6 @@ export default class RoomControl{
             for(var userId of lobby.userIds){
                 const user = this.users.getInfo(userId)
                 const socket = user.socket
-                user.inGame = 1
                 this.socks.sendCookie(socket,userId)
                 this.socks.toGame(socket,lobby)
             }
@@ -118,7 +137,11 @@ export default class RoomControl{
 
     sendGameChange(lobby){
         for(var userId of lobby.userIds){
-            const socket = this.users.getInfo(userId).socket
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                continue
+            }
+            const socket = user.socket
             this.socks.gameUpdate(socket,lobby.game)
         }
     }
@@ -126,9 +149,14 @@ export default class RoomControl{
     gameChange(socket,game){
         if(this.gameLib.getNames().includes(game)){
             const userId = this.socks.getUserId(socket.id)
+            if(!userId){
+                return
+            }
             const lobbyId = this.users.getInfo(userId).lobbyId
+            if(!lobbyId){
+                return
+            }
             const lobby = this.lobbies.getInfo(lobbyId)
-
             if(lobby.owner != userId){
                 return
             }
@@ -136,9 +164,6 @@ export default class RoomControl{
             this.unreadyUsers(lobby)
             lobby.game = game
             this.sendGameChange(lobby)
-        }
-        else{
-            // console.log('gameChangeError')
         }
     }
 
@@ -165,13 +190,12 @@ export default class RoomControl{
         const user = this.users.getInfo(userId)
 
         if(!lobby.game){
-            return
+            console.log('noGame')
         }
-        if(!user.team){
+        else if(!user.team){
             this.socks.noTeamSelected(user.socket)
-            return
         }
-        if(user.ready){
+        else if(user.ready){
             user.ready = 0
         }
         else{
@@ -187,10 +211,12 @@ export default class RoomControl{
     updatePlayerList(lobby){
         const text = this.makeLobbyText(lobby)
         for(var userId of lobby.userIds){
-            if(!this.users.getInfo(userId).inGame){
-                const socket = this.users.getInfo(userId).socket
-                this.socks.playerUpdate(socket,text)
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                continue
             }
+            const socket = user.socket
+            this.socks.playerUpdate(socket,text)
         }
     }
 
@@ -254,12 +280,29 @@ export default class RoomControl{
 
         chat = user.userName +': ' + chat
         for(var userId1 of userIds){
-            const socket1 = this.users.getInfo(userId1).socket
+            const user1 = this.users.getInfo(userId1)
+            if(user1.inGame){
+                continue
+            }
+            const socket1 = user1.socket
             this.socks.newChat(socket1,chat)
         }
     }
 
     // JOIN/LEAVE
+
+    returnFromGame(userId){
+        const user = this.users.getInfo(userId)
+        if(!this.lobbies.doesLobbyExist(user.lobbyId)){
+            this.socks.errorPage(user.socket)
+        }
+        const lobby = this.lobbies.getInfo(user.lobbyId)
+        if(!lobby.userIds.includes(userId)){
+            this.socks.errorPage(user.socket)
+        }
+        lobby.awaitingUsers.push(userId)
+        this.socks.toLobby(user.socket,lobby)
+    }
 
     giveOwnerView(lobby){
         const allGames = this.gameLib.getNames()
@@ -277,6 +320,13 @@ export default class RoomControl{
         const user = this.users.getInfo(userId)
         user.inGame = 0
         user.socket = socket
+
+        var awaitingUsers = lobby.awaitingUsers
+        for(var a in awaitingUsers){
+            if(awaitingUsers[a] == userId){
+                awaitingUsers.splice(a,1)
+            }
+        }
 
         if(lobby.owner == userId){
             this.giveOwnerView(lobby)
@@ -305,10 +355,20 @@ export default class RoomControl{
     isLobbyOpen(lobbyId){
         const exist = this.lobbies.doesLobbyExist(lobbyId)
         if(exist){
-            if(!this.lobbies.getInfo(lobbyId).gameBegun){
+            if(!this.lobbies.getInfo(lobbyId).inGame){
                 return(1)
             }
         }
+    }
+
+    allReturnedCheck(lobby){
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                return
+            }
+        }
+        this.gameControl.deleteGame(lobby)
     }
 
     joinLobby(socket,lobbyId,userId){
@@ -318,6 +378,7 @@ export default class RoomControl{
             //returning user
             if(userId && lobby.userIds.includes(userId)){
                 this.returningUser(socket,lobby,userId)
+                this.allReturnedCheck(lobby)
             }
             //new user
             else{
@@ -330,8 +391,11 @@ export default class RoomControl{
     }
 
     createLobby(socket=0){
-        const selectedGame = this.gameLib.getNames[0]
-        const lobby = this.lobbies.newLobby(this.timerChoices[0],selectedGame)
+        const lobby = this.lobbies.newLobby()
+        lobby.gameTimer = this.timerChoices[0]
+        lobby.game = this.gameLib.getNames()[0]
+        lobby.teams = this.teamChoices
+
         if(socket){
             this.socks.toLobby(socket,lobby)
         }
@@ -341,20 +405,41 @@ export default class RoomControl{
         const userId = this.socks.getUserId(socket.id)
         if(userId){
             const user = this.users.getInfo(userId)
+            const lobby = this.lobbies.getInfo(user.lobbyId)
             this.socks.deleteSock(socket.id)
 
-            if(user.inGame){
-                // console.log('leaving started game')
+            // disconnecting while gaming
+            if(lobby.inGame && user.inGame){
+                user.inGame = 0
+                this.isAllDisconnected(lobby)
             }
-            else{
-                this.deleteUser(user)
+            // disconnecting while no gaming
+            else if(!lobby.inGame && !lobby.awaitingUsers.includes(userId)){
+                this.deleteRoomUser(user,lobby)
             }
         }
     }
 
-    deleteUser(user){
-        const lobby = this.lobbies.getInfo(user.lobbyId)
-        
+    isAllDisconnected(lobby){
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                return
+            }
+        }
+        this.deleteGameRoom(lobby)
+    }
+
+    deleteGameRoom(lobby){
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            this.users.deleteUser(user)
+        }
+        this.lobbies.deleteLobby(lobby)
+        this.gameControl.deleteGame(lobby)
+    }
+
+    deleteRoomUser(user,lobby){
         for(var a in lobby.userIds){
             if(lobby.userIds[a] == user.userId){
                 lobby.userIds.splice(a,1)
@@ -371,5 +456,6 @@ export default class RoomControl{
 
         this.users.deleteUser(user)
         this.updatePlayerList(lobby)
+        this.allReadyCheck(lobby)
     }
 }

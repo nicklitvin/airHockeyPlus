@@ -1,8 +1,11 @@
 'use strict'
-const socket = io()
-let endInfo
-
 import cookie from '/modules/cookies.js'
+
+const socket = io()
+const userId = cookie.get('userId')
+const countdownSize = 1/16
+const impulseTimerSize = 1/3
+let endInfo
 
 function showReturn(){
     const button = document.getElementById('lobbyReturnBut')
@@ -10,9 +13,7 @@ function showReturn(){
 }
 
 function goToLobby(){
-    const urlStart = window.location.href.split('game')[0]
-    const urlEnd = window.location.href.split('game1')[1]
-    window.location.href = urlStart + 'lobby' + urlEnd
+    socket.emit('returnFromGame',userId)
 }
 window.goToLobby = goToLobby
 
@@ -29,15 +30,15 @@ function displayEndText(){
 }
 
 function endGame(){
-    const userId = cookie.get('userId')
     socket.emit('endGame',userId)
 }
 window.endGame = endGame
 
 function joinGame(){
-    const userId = cookie.get('userId')
-    const lobbyId = window.location.href.split('a=')[1]
-    socket.emit('joinGame',userId,lobbyId)
+    const gameAndLobby = window.location.href.split('/game')[1]
+    const gameId = gameAndLobby.split('/?a')[0]
+    const lobbyId = gameAndLobby.split('a=')[1]
+    socket.emit('joinGame',userId,lobbyId,gameId)
 }
 joinGame()
 
@@ -79,34 +80,50 @@ resizeCanvas()
 
 // DRAW GAME
 
-function drawPlayers(playerInfo){
-    const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d')
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    for(var player of Object.keys(playerInfo)){
+function drawPlayers(playerInfo, impulseTimer,ctx){
+    for(var playerId of Object.keys(playerInfo)){
+        const player = playerInfo[playerId]
         ctx.beginPath()
         ctx.arc(
-            playerInfo[player].x/16*canvas.width,
-            playerInfo[player].y/9*canvas.height,
-            playerInfo[player].radius/9*canvas.height,
+            player.x*canvas.width,
+            player.y*canvas.height,
+            player.radiusY*canvas.height,
             0,
             2 * Math.PI
         )
-        ctx.fillStyle = playerInfo[player].team
+        ctx.fillStyle = player.team
         ctx.fill()
+
+        if(playerId == userId){
+            drawImpulseTimer(player,impulseTimer,ctx)
+        }
     }
 }
 
-function drawBall(ball){
-    const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d')
-
+function drawImpulseTimer(player,impulseTimer,ctx){
     ctx.beginPath()
     ctx.arc(
-        ball.x/16*canvas.width,
-        ball.y/9*canvas.height,
-        ball.radius/9*canvas.height,
+        player.x*canvas.width,
+        player.y*canvas.height,
+        player.radiusY*impulseTimerSize*canvas.height,
+        0,
+        2 * Math.PI
+    )
+    if(impulseTimer){
+        ctx.fillStyle = 'red'
+    }
+    else{
+        ctx.fillStyle = 'green'
+    }
+    ctx.fill()
+}
+
+function drawBall(ball,ctx){
+    ctx.beginPath()
+    ctx.arc(
+        ball.x*canvas.width,
+        ball.y*canvas.height,
+        ball.radiusY*canvas.height,
         0,
         2 * Math.PI
     )
@@ -114,29 +131,23 @@ function drawBall(ball){
     ctx.fill()
 }
 
-function drawGoals(goals){
-    const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d')
-
+function drawGoals(goals,ctx){
     for(var id of Object.keys(goals)){
-        const x = goals[id].x/16*canvas.width
-        const y = goals[id].y/9*canvas.height
-        const width = goals[id].width/16*canvas.width
-        const height = goals[id].height/9*canvas.height
+        const x = goals[id].x*canvas.width
+        const y = goals[id].y*canvas.height
+        const width = goals[id].width*canvas.width
+        const height = goals[id].height*canvas.height
         ctx.fillStyle = goals[id].color
         ctx.fillRect(x,y,width,height)
     }
 }
 
-function drawCountdown(time){
+function drawCountdown(time,ctx){
     if(!time){
         return
     }
 
-    const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d')
-
-    ctx.font = 1/16*canvas.height + 'px Comic Sans MS'
+    ctx.font = countdownSize*canvas.height + 'px Comic Sans MS'
     ctx.fillStyle = 'white'
     ctx.textAlign = 'center'
     ctx.fillText(
@@ -146,15 +157,12 @@ function drawCountdown(time){
     )
 }
 
-function drawTimeLeft(time){
+function drawTimeLeft(time,ctx){
     if(!time){
         return
     }
 
-    const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d')
-
-    ctx.font = 1/16*canvas.height + 'px Comic Sans MS'
+    ctx.font = countdownSize*canvas.height + 'px Comic Sans MS'
     ctx.fillStyle = 'white'
     ctx.textAlign = 'center'
     ctx.fillText(
@@ -165,11 +173,15 @@ function drawTimeLeft(time){
 }
 
 function drawGame(gameInfo){
-    drawPlayers(gameInfo['players'])
-    drawBall(gameInfo['ball'])
-    drawGoals(gameInfo['goal'])
-    drawCountdown(gameInfo['countdown'])
-    drawTimeLeft(gameInfo['timeLeft'])
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    drawPlayers(gameInfo['players'],gameInfo['impulseTimer'],ctx)
+    drawBall(gameInfo['ball'],ctx)
+    drawGoals(gameInfo['goal'],ctx)
+    drawCountdown(gameInfo['countdown'],ctx)
+    drawTimeLeft(gameInfo['timeLeft'],ctx)
 }
 
 // MOVE PLAYER
@@ -234,7 +246,6 @@ socket.on('game1Update', (gameInfo)=>{
     if(gameInfo.countdown){
         return
     }
-    const userId = cookie.get('userId')
     if(move['change']){
         socket.emit('game1Move',userId,move)
     }

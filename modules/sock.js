@@ -8,8 +8,9 @@ export default class SockManager{
         socket.emit('noTeamSelected','noTeamSelected')
     }
 
-    forceColor(socket,team){
-        socket.emit('forceTeam',team,`can't change team if ready`)
+    forceColor(user){
+        const socket = user.socket
+        socket.emit('forceTeam',user.team,`can't change team if ready`)
     }
 
     deleteCookie(socket){
@@ -44,6 +45,10 @@ export default class SockManager{
         socket.emit('gameUpdate',lobby.game)
         socket.emit('teamOptions',lobby.teams)
         socket.emit('timerUpdate',lobby.gameTimer)
+        
+        if(user.team){
+            socket.emit('oldColor',user.team)
+        }
     }
 
     errorPage(socket){

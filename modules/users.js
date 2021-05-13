@@ -6,8 +6,9 @@ class User{
         this.lobbyId = lobbyId
         this.userName = userName
         this.ready = 0
-        this.inGame = 0
         this.team = 0
+
+        this.inGame = 0
     }
 }
 
@@ -15,6 +16,16 @@ export default class UserManager{
     constructor (){
         this.users = {},
         this.idLength = 10
+    }
+
+    doesUserExist(userId){
+        if(Object.keys(this.users).includes(userId)){
+            return(1)
+        }
+    }
+
+    getAllInfo(){
+        return(this.users)
     }
 
     getInfo(userId){
@@ -67,7 +78,7 @@ export default class UserManager{
         return(this.users[userId])
     }
 
-    deleteUser(userId){
-        delete this.users[userId]
+    deleteUser(user){
+        delete this.users[user.userId]
     }
 }

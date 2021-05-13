@@ -1,13 +1,14 @@
 'use strict'
 class Lobby{
-    constructor(lobbyId,timer){
+    constructor(lobbyId){
         this.lobbyId = lobbyId
         this.userIds = []
         this.owner = 0
         this.game = 0
         this.inGame = 0
-        this.gameTimer = timer
-        this.teams = ['orange','blue']
+        this.gameTimer = 0
+        this.teams = []
+        this.awaitingUsers = []
     }
 }
 
@@ -15,15 +16,14 @@ export default class LobbyManager{
     constructor(){
         this.lobbies = {}
         this.idLength = 1
-        this.teams = ['orange','blue']
+    }
+
+    getAllInfo(){
+        return(this.lobbies)
     }
 
     getInfo(lobbyId){
         return(this.lobbies[lobbyId])
-    }
-
-    getTeams(){
-        return(this.teams)
     }
 
     doesLobbyExist(lobbyId){
@@ -36,18 +36,18 @@ export default class LobbyManager{
         var hex = '0123456789abcdef'
         while (true){
             var id = ''
-            for (var a=0; a<this.idLength; a++){
+            for(var a=0; a<this.idLength; a++){
                 id += hex[Math.floor(Math.random()*16)]
             }
-            if (!Object.keys(this.lobbies).includes(id)){
+            if(!Object.keys(this.lobbies).includes(id)){
                 return (id)
             }
         }
     }
     
-    newLobby(timer){
+    newLobby(){
         const lobbyId = this.makeId()
-        this.lobbies[lobbyId] = new Lobby(lobbyId,timer)
+        this.lobbies[lobbyId] = new Lobby(lobbyId)
         return(this.lobbies[lobbyId])
     }
 

@@ -9,6 +9,7 @@ class Player{
         this.dy = 0
         this.radius = .5
         this.impulse = 1
+        this.impulseTimer = 0
         this.serverH = serverH
         this.serverW = serverW
         this.team = team
@@ -22,12 +23,20 @@ export default class PlayerManager{
         this.players = {}
     }
 
+    getAllInfo(){
+        return(this.players)
+    }
+
     addPlayer(userId,x,y,serverH,serverW,team,userName){
         this.players[userId] = new Player(userId,x,y,serverH,serverW,team,userName)
     }
 
-    getInfo(userId){
-        return(this.players[userId])
+    deletePlayer(playerId){
+        delete this.players[playerId]
+    }
+
+    getInfo(playerId){
+        return(this.players[playerId])
     }
 
     processMove(move,speed){
