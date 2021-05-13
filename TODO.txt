@@ -5,47 +5,32 @@ NOTES
 90-120fps is fluid, track timestamps for server/client
 
 TODO
-change impulse condition
-fix join logic
-delete if everyone gone from game too long
 
 FOR LATER
-dont send lobby updates if in endscreen
+maintenance to remove inactive users (who forgot about tab)
+return to game if user's browser closed all tabs
 mvp in endScreen
 blue shadow after moving even tho orange player, illusion?
-create timers after goal scored before gameStart
 3+ teams (corner goals)
-lobby errors
-    if person leaves and the rest are ready, game doesnt start
-    object object appears once game starts
-    check if owner is changing game not hacker
+if person leaves and the rest are ready, game doesnt start
 bug: rightclicking in game messes up move 
 dont generate entire player list repeatedly
 transition to jQuery
 closeRoom power to joiners in lobby
 disable cornering of ball
-only impulse off walls if in contact with wall, maybe launch direction ui
 configuration contains all preset values {x:?,y:?,radius:? ...}
 glitch: bounce doesn't always go all the way to the bot wall, works for others
 create more accuracte collision mechanic
 reduce radius depending on player count
-create timer for impulse
 fluid motion, have move stored on server in players{}
-if blocked cookies, special error
 separate game.js(canvas stuff) from index.js
 roomControl.joinGame check if correct game
 specify error using cookies, roomcontrol save cookie w/ error
 owner kick players, make owner buttons
-[not returned] add to playerlist
 button appearance changes when ready (green/red)
 name change limit per minute
 if owner alone refreshes, error cause lobby gets deleted
 send survey to players after game (game quality, site in general)
-
-DIFF GAME
-black hole
-    if x,y within radius of hole, suck it in
-    respawn at corner, move along wall if no available, can blink in
 
 
 
