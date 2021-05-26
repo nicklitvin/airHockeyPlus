@@ -1,6 +1,8 @@
 'use strict'
 export default class PhysicsManager{
-    constructor(){}
+    constructor(){
+        this.frictionConst = 0.92
+    }
 
     addDx(obj,dx){
         obj.dx += dx
@@ -15,7 +17,7 @@ export default class PhysicsManager{
             d = 0
         }
         if(d){
-            d /= 1.1
+            d *= this.frictionConst
         }
         return(d)
     }

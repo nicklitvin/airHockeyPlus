@@ -5,11 +5,11 @@ export default class gameLibrary{
             game1: {
                 title: 'game1',
                 description: 'description1'
-            },
-            game2: {
-                title: 'game2',
-                description: 'description2'
             }
+            // game2: {
+            //     title: 'game2',
+            //     description: 'description2'
+            // }
         }
     }
 

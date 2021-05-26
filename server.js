@@ -2,31 +2,24 @@
 // Dependencies
 import express from 'express'
 import { createServer } from "http"
-import path from 'path'
 import { Server } from "socket.io"
 import MainControl from './modules/mainControl.js'
-
-const refreshRate = 90
 
 var app = express()
 var server = createServer(app)
 const io = new Server(server)
-const __dirname = path.resolve()
+const PORT = 5000
+
+const refreshRate = 100
 const control = new MainControl(io,refreshRate)
 
-
 // Static folder is accessible to client
-app.use('/',express.static(path.join(__dirname, 'static')))
-
-// send index.html to user
-app.get('/', function(request, response) {
-    response.sendFile(path.join(__dirname, 'static', 'index.html'))
-})
+app.use('/', express.static('static'))
 
 // Listen to requests
-server.listen(5000, function() {})
-
+server.listen(PORT)
+ 
 //runGame
-setInterval(() => {
+setInterval(()=>{
     control.runGame1()
-}, 1000/refreshRate)
+},1000/refreshRate)

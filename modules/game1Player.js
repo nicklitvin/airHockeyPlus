@@ -1,13 +1,13 @@
 'use strict'
 class Player{
-    constructor(userId,x,y,serverH,serverW,team,userName){
+    constructor(userId,x,y,serverH,serverW,team,userName,playerRadius){
         this.userId = userId
         this.userName = userName
         this.x = x
         this.y = y
         this.dx = 0
         this.dy = 0
-        this.radius = .5
+        this.radius = playerRadius
         this.impulse = 1
         this.impulseTimer = 0
         this.serverH = serverH
@@ -27,8 +27,8 @@ export default class PlayerManager{
         return(this.players)
     }
 
-    addPlayer(userId,x,y,serverH,serverW,team,userName){
-        this.players[userId] = new Player(userId,x,y,serverH,serverW,team,userName)
+    addPlayer(userId,x,y,serverH,serverW,team,userName,playerRadius){
+        this.players[userId] = new Player(userId,x,y,serverH,serverW,team,userName,playerRadius)
     }
 
     deletePlayer(playerId){

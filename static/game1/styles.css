@@ -15,3 +15,6 @@ button {
 #lobbyReturnBut{
     display: none;
 }
+#endGameBut{
+    display: none
+}

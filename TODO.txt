@@ -1,35 +1,38 @@
 NOTES
-/home (create,about,settings)
-/lobby (chat,gameSelect,gameInfo)
-/about (patchNotes,ideaPollResults)
-90-120fps is fluid, track timestamps for server/client
+If right click on browser top, move doesn't reset
+server sends one game frame after game end
+blue shadow for orange move, illusion?
+game starts if unready leaves and rest are ready
+if lone player goes to other game #, no return
+if lone player refresh lobby, no return
+change to PORT = 80 when external IP
 
 TODO
+collision passing through
+move
+    store move under player, execute move when runGame1()
+    use parametric equations to determine collisions
 
 FOR LATER
+round numbers to nearest X, cause Math.pi makes .000003
+restructure code, no need for sock, split control code
+movement multiplier based on time passed (accuracy)
+set timer to delete last ball toucher 
+losers advantage is size
+make how to play page w/ instructions + navigate site
+owner kick players & close room party owner power
+make mobile version on browser
+ballImpulse logic bad, need to know player move, fine if <15players
 maintenance to remove inactive users (who forgot about tab)
 return to game if user's browser closed all tabs
-mvp in endScreen
-blue shadow after moving even tho orange player, illusion?
 3+ teams (corner goals)
-if person leaves and the rest are ready, game doesnt start
-bug: rightclicking in game messes up move 
-dont generate entire player list repeatedly
 transition to jQuery
-closeRoom power to joiners in lobby
-disable cornering of ball
+close room power in lobby
 configuration contains all preset values {x:?,y:?,radius:? ...}
-glitch: bounce doesn't always go all the way to the bot wall, works for others
-create more accuracte collision mechanic
-reduce radius depending on player count
-fluid motion, have move stored on server in players{}
 separate game.js(canvas stuff) from index.js
-roomControl.joinGame check if correct game
 specify error using cookies, roomcontrol save cookie w/ error
-owner kick players, make owner buttons
-button appearance changes when ready (green/red)
+lobby button appearance changes when ready (green/red)
 name change limit per minute
-if owner alone refreshes, error cause lobby gets deleted
 send survey to players after game (game quality, site in general)
 
 

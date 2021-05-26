@@ -4,12 +4,9 @@
     "dependencies": {
         "express": "latest",
         "http": "latest",
-        "mariadb": "latest",
-        "path": "latest",
         "socket.io": "latest",
         "ssl": "latest" 
     },
     "type": "module",
-    "main": "server.js",
-    "version": "1.0.0"
+    "main": "server.js"
 }

@@ -8,8 +8,11 @@ const impulseTimerSize = 1/3
 let endInfo
 
 function showReturn(){
-    const button = document.getElementById('lobbyReturnBut')
-    button.style.display = 'block'
+    const returnBut = document.getElementById('lobbyReturnBut')
+    returnBut.style.display = 'block'
+
+    const stopBut = document.getElementById('endGameBut')
+    stopBut.style.display = 'none'
 }
 
 function goToLobby(){
@@ -17,7 +20,7 @@ function goToLobby(){
 }
 window.goToLobby = goToLobby
 
-function displayEndText(){
+function displaySummary(){
     const canvas = document.getElementById('canvas')
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -27,6 +30,38 @@ function displayEndText(){
     ctx.font = fontSize + 'px comic sans ms'
     ctx.fillStyle = 'black'
     ctx.fillText(endInfo['summary'],canvas.width/2,canvas.height/2) 
+}
+
+function displayScorers(){
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const fontSize = canvas.height / 24
+    ctx.textAlign = 'center'
+    ctx.font = fontSize + 'px comic sans ms'
+
+    var height = 3*canvas.height/5
+    const info = endInfo['scorers']
+    var line = ''
+
+    for(var i=0; i<info.length; i++){
+        if(info[i] == '/'){
+            ctx.fillStyle = info[i+1]
+            i += 1
+        }
+        else if(info[i] == '!'){
+            ctx.fillText(line,canvas.width/2,height)
+            height += canvas.height / 18
+            line = ''
+        }
+        else{
+            line += info[i]
+        }
+    }
+}
+
+function displayEndText(){
+    displaySummary()
+    displayScorers()
 }
 
 function endGame(){
@@ -188,7 +223,7 @@ function drawGame(gameInfo){
 
 var impulse = 0
 var move = {
-    change: 0,
+    action: 0,
     left: false,
     right: false,
     up: false,
@@ -198,19 +233,19 @@ var move = {
 function newMove(key){
     if(key == 'w'){
         move['up'] = true
-        move['change'] = 1
+        move['action'] = 1
     }
     if(key == 'a'){
         move['left'] = true
-        move['change'] = 1
+        move['action'] = 1
     }
     if(key == 's'){
         move['down'] = true
-        move['change'] = 1
+        move['action'] = 1
     }
     if(key == 'd'){
         move['right'] = true
-        move['change'] = 1
+        move['action'] = 1
     }    
 }
 
@@ -232,7 +267,14 @@ function noMove(key){
             return
         }
     }
-    move['change'] = 0
+    move['action'] = 0
+}
+
+function resetMove(){
+    for(var direct of Object.keys(move)){
+        move[direct] = false
+    }
+    move['action'] = 0
 }
 
 //SOCKET.ON
@@ -242,11 +284,17 @@ socket.on('redirect', (extra)=>{
 })
 
 socket.on('game1Update', (gameInfo)=>{
+    if(endInfo){
+        return
+    }
     drawGame(gameInfo)
     if(gameInfo.countdown){
         return
     }
-    if(move['change']){
+    if(!document.hasFocus()){
+        resetMove()
+    }
+    if(move['action']){
         socket.emit('game1Move',userId,move)
     }
     if(impulse){
@@ -254,10 +302,15 @@ socket.on('game1Update', (gameInfo)=>{
     }
 })
 
-socket.on('gameEnd', (info)=>{
+socket.on('endStuff', (info)=>{
     endInfo = info
     displayEndText()
     showReturn()
+})
+
+socket.on('stopGamePower', ()=>{
+    const button = document.getElementById('endGameBut')
+    button.style.display = 'block'
 })
 
 // EVENTS
@@ -266,6 +319,7 @@ window.addEventListener('resize', resizeCanvas)
 
 window.addEventListener('keydown', (event)=>{
     if(['w','a','s','d'].includes(event.key)){
+        // console.log('pressed',event.key)
         newMove(event.key)
     }
     if(event.code == 'Space'){
@@ -274,9 +328,23 @@ window.addEventListener('keydown', (event)=>{
 })
 window.addEventListener('keyup', (event)=>{
     if(['w','a','s','d'].includes(event.key)){
+        // console.log('let go of',event.key)
         noMove(event.key)
     }
     if(event.code == 'Space'){
         impulse = 0
     }
 })
+
+window.addEventListener('click', ()=>{
+    resetMove()
+})
+
+window.oncontextmenu = ()=> {
+    resetMove()
+}
+
+document.onvisibilitychange = ()=> {
+    resetMove()
+}
+

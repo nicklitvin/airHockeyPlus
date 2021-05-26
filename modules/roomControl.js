@@ -110,6 +110,10 @@ export default class RoomControl{
                 user.socket = socket
                 user.inGame = 1
                 this.socks.newSock(socket.id,userId)
+
+                if(lobby.owner == userId){
+                    user.socket.emit('stopGamePower')
+                }
             }
             // wrong game but correct room
             else{
@@ -255,6 +259,13 @@ export default class RoomControl{
         if(userName.length==0 || userName.length>12){
             this.socks.nameError(socket)
             return
+        }
+        for(var a in userName){
+            var code = userName.charCodeAt(a)
+            if((code < 48) || (code < 65 && code > 57) || (code > 122)){
+                this.socks.nameError(socket)
+                return
+            }
         }
         const userId = this.socks.getUserId(socket.id)
         const lobbyId = this.users.getInfo(userId).lobbyId
