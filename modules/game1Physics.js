@@ -1,15 +1,9 @@
 'use strict'
 export default class PhysicsManager{
-    constructor(){
+    constructor(serverW,serverH){
         this.frictionConst = 0.92
-    }
-
-    addDx(obj,dx){
-        obj.dx += dx
-    }
-
-    addDy(obj,dy){
-        obj.dy += dy
+        this.serverW = serverW
+        this.serverH = serverH
     }
 
     applyFriction(d){
@@ -27,59 +21,62 @@ export default class PhysicsManager{
         obj.dy = this.applyFriction(obj.dy)
     }
 
-    resolveBounce(obj){
-        if(obj.dx>0){
-            this.moveRight(obj,obj.dx)
+    moveObject(obj){
+        if(obj.xMove>0){
+            this.moveRight(obj)
         }
-        else if(obj.dx<0){
-            this.moveLeft(obj,obj.dx)
+        else if(obj.xMove<0){
+            this.moveLeft(obj)
         }
-        if(obj.dy>0){
-            this.moveDown(obj,obj.dy)
+        if(obj.yMove>0){
+            this.moveDown(obj)
         }
-        else if(obj.dy<0){
-            this.moveUp(obj,obj.dy)
+        else if(obj.yMove<0){
+            this.moveUp(obj)
         }
+        obj.xMove = 0
+        obj.yMove = 0
+        
         this.resolveFriction(obj)
     }
 
-    moveRight(obj,dx){
-        if(obj.x+dx+obj.radius > obj.serverW){
-            obj.x = obj.serverW - obj.radius
-            obj.dx *= -1
-        }
-        else{
-            obj.x += dx
-        }
-    }
-
-    moveLeft(obj,dx){
-        if(obj.x+dx-obj.radius < 0){
+    moveLeft(obj){
+        if(obj.x + obj.xMove - obj.radius < 0){
             obj.x = obj.radius
             obj.dx *= -1
         }
         else{
-            obj.x += dx
+            obj.x += obj.xMove
         }
     }
 
-    moveUp(obj,dy){
-        if(obj.y+dy-obj.radius < 0){
+    moveRight(obj){
+        if(obj.x + obj.xMove + obj.radius > this.serverW){
+            obj.x = this.serverW - obj.radius
+            obj.dx *= -1
+        }
+        else{
+            obj.x += obj.xMove
+        }
+    }
+
+    moveUp(obj){
+        if(obj.y + obj.yMove - obj.radius < 0){
             obj.y = obj.radius
             obj.dy *= -1
         }
         else{
-            obj.y += dy
+            obj.y += obj.yMove
         }
     }
 
-    moveDown(obj,dy){
-        if(obj.y+dy+obj.radius > obj.serverH){
-            obj.y = obj.serverH - obj.radius
+    moveDown(obj){
+        if(obj.y + obj.yMove + obj.radius > this.serverH){
+            obj.y = this.serverH - obj.radius
             obj.dy *= -1
         }
         else{
-            obj.y += dy
+            obj.y += obj.yMove
         }
     }
 }

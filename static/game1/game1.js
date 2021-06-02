@@ -135,7 +135,7 @@ function drawPlayers(playerInfo, impulseTimer,ctx){
     }
 }
 
-function drawImpulseTimer(player,impulseTimer,ctx){
+function drawImpulseTimer(player,impulseColor,ctx){
     ctx.beginPath()
     ctx.arc(
         player.x*canvas.width,
@@ -144,12 +144,7 @@ function drawImpulseTimer(player,impulseTimer,ctx){
         0,
         2 * Math.PI
     )
-    if(impulseTimer){
-        ctx.fillStyle = 'red'
-    }
-    else{
-        ctx.fillStyle = 'green'
-    }
+    ctx.fillStyle = impulseColor
     ctx.fill()
 }
 
@@ -212,7 +207,7 @@ function drawGame(gameInfo){
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    drawPlayers(gameInfo['players'],gameInfo['impulseTimer'],ctx)
+    drawPlayers(gameInfo['players'],gameInfo['impulseColor'],ctx)
     drawBall(gameInfo['ball'],ctx)
     drawGoals(gameInfo['goal'],ctx)
     drawCountdown(gameInfo['countdown'],ctx)
@@ -287,10 +282,12 @@ socket.on('game1Update', (gameInfo)=>{
     if(endInfo){
         return
     }
+
     drawGame(gameInfo)
     if(gameInfo.countdown){
         return
     }
+
     if(!document.hasFocus()){
         resetMove()
     }

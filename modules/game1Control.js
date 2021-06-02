@@ -4,58 +4,74 @@ import Ball from './game1Ball.js'
 import PhysicsManager from './game1Physics.js'
 import Goals from './game1Goal.js'
 
+const MILISECONDS_TO_SECONDS = 1/1000
+const MINUTES_TO_SECONDS = 60
+const ROUNDING_ERROR = 0.001
+
 class Game{
-    constructor(userIds,contacts,teams,lobbyId,countdown,playerRadius,gameTimer = 0){
+    constructor(userIds,contacts,teams,lobbyId,countdown,playerRadius,
+            gameTimer){
         this.lobbyId = lobbyId
         this.userIds = userIds
         this.contacts = contacts
-        this.serverH = 9
-        this.serverW = 16
         this.playerRadius = playerRadius
-        this.speed = 0.1
-        this.impulseMagnitude = .4
-        this.impulseRadius = 1.5
-        this.spawnRadius = 4
-        this.bounceStrength = 0.1
-        this.goalHeight = 3
-        this.goalWidth = 0.2
-        this.speedLimit = 0.3
-        this.inGame = 1
+        this.playersToDelete = []
 
-        this.countdown = countdown
+        // in seconds
         this.gameTime = 0
+        this.countdown = countdown
         this.gameTimer = gameTimer
-        this.impulseCooldown = 1
+        // in miliseconds
         this.lastTime = Date.now()
+        this.timeDiff = 0
 
+        this.inGame = 1
         this.ball = 0
         this.goals = 0
         this.teams = teams
-
-        this.playersToDelete = []
     }
 }
 
 export default class Game1Control{
     constructor(io,users,lobbies,refreshRate){
+        this.serverH = 9
+        this.serverW = 16
+
         this.users = users
         this.lobbies = lobbies
         this.players = new PlayerManager(this.users,users)
-        this.physics = new PhysicsManager()
-        this.serverH = 9
-        this.serverW = 16
-        this.countdown = 1
-        this.playerImpulseTimerSize = 0.4
+        this.physics = new PhysicsManager(this.serverW,this.serverH)
+        this.games = {}
+
+        this.gameCountdown = 1
+        this.impulseCooldown = 1
+
+        this.ballSpeedLimit = 0.3
+        this.playerMoveSpeed = 0.1
+        this.playerBounceSpeedLimit = 0.2
+
+        this.impulseMagnitude = .4
+        this.impulseRadius = 1.5
+        this.bounceStrength = 0.1
+
+        this.goalHeight = 3
+        this.goalWidth = 0.2
+        
+        this.spawnRadius = 4
+        this.playerRadiusA = 0.6
+        this.playerRadiusB = 0.95
+        
+        this.scorerListLength = 5
         this.scorerTextDelimeter = '!'
         this.refreshRate = refreshRate
-        this.games = {}
+        
 
         io.on('connection', (socket)=>{
             socket.on('game1Move', (userId,move)=>{
-                this.movePlayer(userId,move)
+                this.recordPlayerMove(userId,move)
             })
             socket.on('game1Impulse', (userId)=>{
-                this.impulsePlayer(userId)
+                this.recordPlayerImpulse(userId)
             })
             socket.on('endGame', (userId)=>{
                 this.endGame(userId)
@@ -104,39 +120,42 @@ export default class Game1Control{
         return(text)
     }
 
-    makeScorerText(lobby){
-        var scorers = {}
-        var topScores = []
-        var text = ['/','black','top scorers:','!']
+    getScorersOrdered(lobby){
+        var scorers = []
         for(var userId of lobby.userIds){
-            const user = this.players.getInfo(userId)
-            if(user.goals){
-                topScores.push(user.goals)
-                scorers[userId] = [user.goals,user.team]
+            const player = this.players.getInfo(userId)
+            if(player.goals){
+                scorers.push(player)
             }
         }
-        topScores.sort((a,b) => b - a)
+        scorers.sort( (a,b) => b.goals - a.goals)
+        return(scorers)
+    }
 
-        for(var count = 0; count < 5; count++){
-            var score = topScores[count]
-            if(!score){
-                break
-            }
-            for(var userId of Object.keys(scorers)){
-                var scorer = scorers[userId]
-                if(scorer[0] == score){
-                    text.push('/', scorer[1], userId, ': ', scorer[0], '!')
-                    delete scorers[userId]
-                }
-            }
+    getScorerText(scorers){
+        var text = ['/','black','top scorers:','!']
+
+        for(var count = 0;
+            count < Math.min(scorers.length,this.scorerListLength);
+            count++){
+            
+            const scorer = scorers[count]
+            text.push('/', scorer.team, scorer.userName, ': ',
+                scorer.goals, '!')
         }
-        if(topScores.length == 0){
+
+        if(scorers.length == 0){
             text.push('/','black','absolutely nobody', '!')
         }
-        else if(topScores.length > 6){
+        else if(scorers.length > 6){
             text.push('/', 'black', '...', '!')
         }
+        return(text)
+    }
 
+    makeScorerText(lobby){
+        const scorers = this.getScorersOrdered(lobby)
+        const text = this.getScorerText(scorers)
         return(text)
     }
 
@@ -190,64 +209,50 @@ export default class Game1Control{
 
     // IMPULSE
 
-    wallBounce(player,lobby){
-        const impMagn = lobby.impulseMagnitude
+    recordPlayerImpulse(userId){
+        const player = this.players.getInfo(userId)
+        const lobbyId = this.users.getInfo(userId).lobbyId
+        const lobby = this.games[lobbyId]
+        if(lobby.countdown || player.impulseCooldown){
+            return
+        }
+        player.newImpulse = 1
+        player.impulseCooldown = this.impulseCooldown
+    }
+
+    wallImpulseCheck(player){
+        const impulseMagnitude = this.impulseMagnitude
+
         //closest to which wall
         const yDist = Math.min(this.serverH-player.y,player.y)
         const xDist = Math.min(this.serverW-player.x,player.x)
 
-        if(Math.abs(yDist-player.radius) < 0.001){ 
-            if(this.serverH-player.y<player.y){
-                this.physics.addDy(player,-impMagn)
-            }
-            else{
-                this.physics.addDy(player,impMagn)
-            }
+        if(Math.abs(yDist-player.radius) < ROUNDING_ERROR){
+            player.dy += Math.sign(this.serverH-2*player.y)*impulseMagnitude 
         }
-        if(Math.abs(xDist-player.radius) < 0.001){ 
-            if(this.serverW-player.x<player.x){
-                this.physics.addDx(player,-impMagn)
-            }
-            else{
-                this.physics.addDx(player,impMagn)
-            }
+        if(Math.abs(xDist-player.radius) < ROUNDING_ERROR){
+            player.dx += Math.sign(this.serverW-2*player.x)*impulseMagnitude 
         }
     }
 
-    withinImpRange(obj0,obj1,impRadius){
-        const dist = ( (obj0.x-obj1.x)**2 + (obj0.y-obj1.y)**2 )**1/2
-        if(dist<impRadius){
+    isWithinImpulseRange(obj0,obj1){
+        const dist = ( (obj0.x-obj1.x)**2 + (obj0.y-obj1.y)**2 )**(1/2)
+        if(dist < this.impulseRadius){
             return(1)
         }
     }
 
-    giveTargetImpulse(giver,target,lobby, ballImpulseMagn=0){
-        const impMagn = (ballImpulseMagn || lobby.impulseMagnitude)
-        const angle = Math.atan(Math.abs(target.y-giver.y)/Math.abs(target.x-giver.x))
-        var dy = 0
-        var dx = 0
-
-        //push down
-        if(target.y>giver.y){
-            dy = Math.sin(angle)*impMagn
-        }
-        //push up
-        else if(target.y<giver.y){
-            dy = -Math.sin(angle)*impMagn
-        }
-        //push right
-        if(target.x>giver.x){
-            dx = Math.cos(angle)*impMagn
-        }       
-        //push left
-        else if(target.x<giver.x){
-            dx = -Math.cos(angle)*impMagn
-        }
-        this.physics.addDx(target,dx)
-        this.physics.addDy(target,dy)
+    giveTargetBounce(giver,target,ballImpulseMagn=0){
+        const impulseMagnitude = (ballImpulseMagn || this.impulseMagnitude)
+  
+        //1st quadrant angle
+        const angle = Math.abs(Math.atan((target.y-giver.y)/(target.x-giver.x)))
+        
+        target.dy += Math.sign(target.y-giver.y)*Math.sin(angle)*impulseMagnitude
+        target.dx += Math.sign(target.x-giver.x)*Math.cos(angle)*impulseMagnitude
     }
 
-    pvpImpulseCheck(player,lobby,impRadius){
+    pvpImpulseCheck(player,lobby){
         const targetIds = lobby.userIds
 
         for(var targetId of targetIds){
@@ -255,88 +260,44 @@ export default class Game1Control{
                 continue
             }
             const target = this.players.getInfo(targetId)
-            if(this.withinImpRange(player,target,impRadius)){
-                this.giveTargetImpulse(player,target,lobby)
+            if(this.isWithinImpulseRange(player,target)){
+                this.giveTargetBounce(player,target)
             }
         }
     }
 
-    ballImpulseCheck(player,lobby,impRadius){
+    ballImpulseCheck(player,lobby){
         const ball = lobby.ball
-        if(this.withinImpRange(player,ball,impRadius)){
-            this.giveTargetImpulse(player,ball,lobby)
+
+        if(this.isWithinImpulseRange(player,ball)){
+            this.giveTargetBounce(player,ball)
         }
     }
 
-    impulsePlayer(userId){
-        const player = this.players.getInfo(userId)
-        const lobbyId = this.users.getInfo(userId).lobbyId
-        const lobby = this.games[lobbyId]
-        const impRadius = lobby.impulseRadius
-        
-        if(lobby.countdown || player.impulseTimer){
-            return
-        }
-        player.impulseTimer = lobby.impulseCooldown
-
-        this.wallBounce(player,lobby)
-        this.pvpImpulseCheck(player,lobby,impRadius)
-        this.ballImpulseCheck(player,lobby,impRadius)
-    }
-
-    // PLAYER MOVEMENT
-    
-    movePlayer(userId,move){
-        const userInfo = this.players.getInfo(userId)
-        const lobbyId = this.users.getInfo(userId).lobbyId
-        const lobby = this.games[lobbyId]
-        if(lobby.countdown){
-            return
-        }
-
-        const moveInfo = this.players.processMove(move,lobby.speed)
-        this.resolveMove(userInfo,moveInfo)
-        this.collisionControl(lobby)
-    }
-
-    resolveMove(obj,move){
-        this.physics.moveLeft(obj,move['left'])
-        this.physics.moveRight(obj,move['right'])
-        this.physics.moveUp(obj,move['up'])
-        this.physics.moveDown(obj,move['down'])
+    impulsePlayer(player,lobby){
+        this.wallImpulseCheck(player)
+        this.pvpImpulseCheck(player,lobby)
+        this.ballImpulseCheck(player,lobby)
     }
 
     // COLLISION CHECK
 
-    pvpCollision(p1,p2,lobby){
-        const strength = lobby.bounceStrength
-        const angle = Math.atan(Math.abs(p1.y-p2.y)/Math.abs(p1.x-p2.x))
+    collidePlayers(p1,p2){
+        const strength = this.bounceStrength
+        
+        //1st quadrant angle
+        const angle = Math.abs(Math.atan((p1.y-p2.y)/(p1.x-p2.x)))
         const dx = Math.cos(angle)*strength
         const dy = Math.sin(angle)*strength
 
-        // push down
-        if (p1.y<p2.y){
-            this.physics.addDy(p1,-dy)
-            this.physics.addDy(p2,dy)
-        }
-        // push up
-        else if (p1.y>p2.y){
-            this.physics.addDy(p1,dy)
-            this.physics.addDy(p2,-dy)
-        }
-        // push right
-        if (p1.x<p2.x){
-            this.physics.addDx(p1,-dx)
-            this.physics.addDx(p2,dx)
-        }
-        // push left
-        else if (p1.x>p2.x){
-            this.physics.addDx(p1,dx)
-            this.physics.addDx(p2,-dx)
-        }             
+        p1.dy += Math.sign(p1.y-p2.y)*dy
+        p2.dy -= Math.sign(p1.y-p2.y)*dy
+
+        p1.dx += Math.sign(p1.x-p2.x)*dx
+        p2.dx -= Math.sign(p1.x-p2.x)*dx
     }
 
-    checkCollision(obj0,obj1){
+    isCollision(obj0,obj1){
         const dist = ( (obj0.x-obj1.x)**2 + (obj0.y-obj1.y)**2 )**(1/2)
         if(dist < obj0.radius+obj1.radius){
             return(1)
@@ -350,18 +311,18 @@ export default class Game1Control{
         for(var contact of lobby.contacts){
             const p1 = this.players.getInfo(contact[0])
             const p2 = this.players.getInfo(contact[1])
-            if(this.checkCollision(p1,p2)){
-                this.pvpCollision(p1,p2,lobby)
+            if(this.isCollision(p1,p2)){
+                this.collidePlayers(p1,p2)
             }
         }
     }
 
-    //only when cornered
+    //only in corner
     doesBallImpulse(ball){
-        const topTouch = (ball.y - ball.radius == 0)
-        const botTouch = (ball.y + ball.radius == this.serverH)
-        const leftTouch = (ball.x - ball.radius == 0)
-        const rightTouch = (ball.x + ball.radius == this.serverW)
+        const topTouch = (ball.y - ball.radius < ROUNDING_ERROR)
+        const botTouch = (ball.y + ball.radius > this.serverH - ROUNDING_ERROR)
+        const leftTouch = (ball.x - ball.radius < ROUNDING_ERROR)
+        const rightTouch = (ball.x + ball.radius > this.serverW - ROUNDING_ERROR)
 
         if( (topTouch || botTouch) && (leftTouch || rightTouch) ){
             return(1)
@@ -372,15 +333,15 @@ export default class Game1Control{
         const ball = lobby.ball
         for(var userId of lobby.userIds){
             const player = this.players.getInfo(userId)
-            if(this.checkCollision(player,ball)){
+            if(this.isCollision(player,ball)){
 
                 if(this.doesBallImpulse(ball)){
-                    this.giveTargetImpulse(ball,player,lobby,
-                        lobby.bounceStrength)
+                    this.giveTargetBounce(ball,player,
+                        this.bounceStrength)
                 }
                 else{
-                    this.giveTargetImpulse(player,ball,lobby,
-                        lobby.bounceStrength)
+                    this.giveTargetBounce(player,ball,
+                        this.bounceStrength)
                 }
                 const goal = lobby.goals.getGoals()[player.team]
                 goal.lastBallToucher = player.userId
@@ -393,19 +354,12 @@ export default class Game1Control{
         this.ballCollisionCheck(lobby)
     }
 
-    // BOUNCE CONTROL
-
-    bouncePlayers(lobby){
-        for(var userId of lobby.userIds){
-            const userInfo = this.players.getInfo(userId)
-            this.physics.resolveBounce(userInfo)
-        }
-    }
+    // GAME EVENTS
 
     countGoal(lobby,scoringTeam){
         const goal = lobby.goals.getGoals()[scoringTeam]
         goal.goalsScored += 1
-        lobby.countdown = this.countdown
+        lobby.countdown = this.gameCountdown
 
         const scorer = this.players.getInfo(goal.lastBallToucher)
         if(scorer){
@@ -417,6 +371,7 @@ export default class Game1Control{
     isGoal(lobby){
         const ball = lobby.ball
         const goals = lobby.goals.getGoals()
+
         if( (ball.x==ball.radius) && (ball.y > goals['orange'].y) &&
                  (ball.y < goals['orange'].y+goals['orange'].height)){
             this.countGoal(lobby,'blue')
@@ -427,31 +382,67 @@ export default class Game1Control{
         }
     }
 
-    bounceBall(lobby){
-        this.physics.resolveBounce(lobby.ball)
-        this.isGoal(lobby)
-    }
-
-    bounceControl(lobby){
-        this.bouncePlayers(lobby)
-        this.bounceBall(lobby)
-    }
-
-    // GAME EVENTS
-
     resetBallPosition(lobby){
-        lobby.ball.x = this.serverW/2
-        lobby.ball.y = this.serverH/2
-        lobby.ball.dx = 0
-        lobby.ball.dy = 0
+        const ball = lobby.ball
+        ball.x = this.serverW/2
+        ball.y = this.serverH/2
+        ball.dx = 0
+        ball.dy = 0
+        ball.xMove = 0
+        ball.yMove = 0
     }
     
     resetPositions(lobby){
-        const memberCounts = this.countTeamMembers(lobby)
-
-        this.addOrangePlayers(lobby,memberCounts['orange'],1)
-        this.addBluePlayers(lobby,memberCounts['blue'],1)
+        const reset = 1
+        this.addPlayerPositions(lobby,reset)
         this.resetBallPosition(lobby)
+    }
+
+    getTeamAngleInfo(lobby){
+        const teamCounts = this.countTeamMembers(lobby)
+        const orangeAngleInterval = Math.PI/(teamCounts['orange']+1)
+        const blueAngleInterval = Math.PI/(teamCounts['blue']+1)
+        
+        return({
+            'orangeAngleInterval': orangeAngleInterval,
+            'orangeAngle': Math.PI/2 + orangeAngleInterval,
+            'blueAngleInterval': blueAngleInterval,
+            'blueAngle': -Math.PI/2 + blueAngleInterval,
+        })
+    }
+
+    setPlayerPosition(player,angleInfo){
+        let position
+        if(player.team == 'blue'){
+            position = this.makePosition(angleInfo.blueAngle)
+            angleInfo.blueAngle += angleInfo.blueAngleInterval
+        }
+        if(player.team == 'orange'){
+            position = this.makePosition(angleInfo.orangeAngle)
+            angleInfo.orangeAngle += angleInfo.orangeAngleInterval
+        }
+        player.x = position.x
+        player.y = position.y
+    }
+
+    resetPlayerMotion(player){
+        player.dx = 0
+        player.dy = 0
+        player.impulseCooldown = 0
+    }
+
+    addPlayerPositions(lobby,reset=0){
+        const angleInfo = this.getTeamAngleInfo(lobby)
+
+        for(var playerId of lobby.userIds){
+            const player = this.players.getInfo(playerId)
+            this.setPlayerPosition(player,angleInfo)
+
+            if(reset){
+                this.resetPlayerMoveCommands(player)
+                this.resetPlayerMotion(player)
+            }
+        }
     }
 
     // RUN AND SEND GAME
@@ -510,78 +501,184 @@ export default class Game1Control{
             'goal':goalInfo,
             'countdown': timer,
             'timeLeft': timeLeft,
-            'impulseTimer': 0
+            'impulseColor': ''
         })
+    }
+
+    getImpulseColor(user){
+        const player = this.players.getInfo(user.userId)
+        if(player.impulseCooldown){
+            return('red')
+        }
+        return('green')
     }
 
     sendGame(lobby,allInfo){
         for(var userId of lobby.userIds){
             const user = this.users.getInfo(userId)
             const socket = user.socket
-            allInfo['impulseTimer'] = this.players.getInfo(userId).impulseTimer
+            allInfo['impulseColor'] = this.getImpulseColor(user)
 
             socket.emit('game1Update',allInfo)
         }
     }
 
-    impulseTimerControl(lobby){
-        for(var userId of lobby.userIds){
-            const user = this.players.getInfo(userId)
-            if(!user.impulseTimer){
-                continue
-            }
-            user.impulseTimer -= 1/this.refreshRate
-            if(user.impulseTimer < 0){
-                user.impulseTimer = 0
-            }
-        }
-    }
-
-    updateTimer(lobby){
+    updateGameTime(lobby){
         const now = Date.now()
-        const diff = now - lobby.lastTime
-        lobby.countdown -= diff/1000
+        const timeDiff = now - lobby.lastTime
+
+        lobby.timeDiff = timeDiff
+        lobby.countdown -= timeDiff * MILISECONDS_TO_SECONDS
+        lobby.gameTime += timeDiff * MILISECONDS_TO_SECONDS
         lobby.lastTime = Date.now()
+
         if(lobby.countdown < 0){
             lobby.countdown = 0
         }
-    }
-
-    reduceSpeed(obj,magn){
-        const angle = Math.tan(obj.dy/obj.dx)
-        obj.dx = Math.cos(angle)*magn
-        obj.dy = Math.sin(angle)*magn
-    }
-
-    speedControl(lobby){
-        for(var playerId of lobby.userIds){
-            const player = this.players.getInfo(playerId)
-            const speed = (player.dx**2 + player.dy**2)**1/2
-            if(speed > this.speedLimit){
-                this.reduceSpeed(player,magn)
-            }
-        }
-        const ball = lobby.ball
-        const speed = (ball.dx**2 + ball.dy**2)**1/2
-        if(speed > this.speedLimit){
-            this.reduceSpeed(player)
-        }
-    }
-
-    updateGame(lobby){
-        const now = Date.now()
-        const diff = now - lobby.lastTime
-        lobby.gameTime += diff/1000
-        lobby.lastTime = Date.now()
-
         if(lobby.gameTime >= lobby.gameTimer){
             this.endGame(lobby.userIds[0])
             return
         }
-        this.speedControl(lobby)
-        this.bounceControl(lobby)
+    }
+
+    // PLAYER MOVE CONTROL
+
+    recordPlayerMove(userId,move){
+        const player = this.players.getInfo(userId)
+        if(move.left){
+            player.moveL = 1
+        }
+        if(move.right){
+            player.moveR = 1
+        }
+        if(move.up){
+            player.moveU = 1
+        }
+        if(move.down){
+            player.moveD = 1
+        }
+    }
+
+    deleteMoveContradictions(player){
+        if(player.moveU && player.moveD){
+            player.moveU = 0
+            player.moveD = 0
+        }
+        if(player.moveL && player.moveR){
+            player.moveL = 0
+            player.moveR = 0
+        }
+    }
+
+    setMoveSpeed(player){
+        player.playerSpeed = this.playerMoveSpeed
+        if( (player.moveU || player.moveD) && (player.moveL || player.moveR) ){
+            player.playerSpeed *= Math.sqrt(2)/2
+        }
+    }
+
+    makeTotalMove(player){
+        const playerSpeed = player.playerSpeed
+
+        if(player.moveU){
+            player.yMove -= playerSpeed
+        }
+        else if(player.moveD){
+            player.yMove += playerSpeed
+        }
+        if(player.moveL){
+            player.xMove -= playerSpeed
+        }
+        else if(player.moveR){
+            player.xMove += playerSpeed
+        }
+        player.xMove += player.dx
+        player.yMove += player.dy
+    }
+
+    processPlayerMove(player){
+        this.deleteMoveContradictions(player)
+        this.setMoveSpeed(player)
+        this.makeTotalMove(player)
+    }
+
+    isPlayerBounceTooFast(player){
+        return((player.dx**2+player.dy**2)**(1/2) > this.playerBounceSpeedLimit)
+    }
+
+    limitPlayerBounceSpeed(player){
+        const angle = Math.atan(player.dy/player.dx)
+        player.dx = Math.sign(player.dx || 1)*Math.cos(angle)*this.playerBounceSpeedLimit 
+        player.dy = Math.sign(player.dx || 1)*Math.sin(angle)*this.playerBounceSpeedLimit
+    }
+
+    resetPlayerMoveCommands(player){
+        player.moveL = 0
+        player.moveR = 0
+        player.moveU = 0
+        player.moveD = 0
+    }
+
+    movePlayers(lobby){
+        for(var playerId of lobby.userIds){
+            const player = this.players.getInfo(playerId)
+            if(this.isPlayerBounceTooFast(player)){
+                this.limitPlayerBounceSpeed(player)
+            }
+            this.processPlayerMove(player)
+            this.physics.moveObject(player)
+            this.resetPlayerMoveCommands(player)
+        }
+    }
+
+    // CONTROL IMPULSE
+
+    impulseControl(lobby){
+        const timeDiff = lobby.timeDiff * MILISECONDS_TO_SECONDS
+
+        for(var playerId of lobby.userIds){
+            const player = this.players.getInfo(playerId)
+            if(player.newImpulse){
+                this.impulsePlayer(player,lobby)
+                player.newImpulse = 0
+            }
+            
+            player.impulseCooldown -= timeDiff
+            
+            if(player.impulseCooldown < 0){
+                player.impulseCooldown = 0
+            }
+        }
+    }
+
+    isBallTooFast(ball){
+        return((ball.dx**2+ball.dy**2)**1/2 > this.ballSpeedLimit)
+    }
+
+    limitBallSpeed(ball){
+        const angle = Math.tan(ball.dy/ball.dx)
+        ball.dx = Math.cos(angle)*this.ballSpeedLimit
+        ball.dy = Math.sin(angle)*this.ballSpeedLimit
+    }
+
+    moveBall(lobby){
+        const ball = lobby.ball
+        if(this.isBallTooFast(ball)){
+            this.limitBallSpeed(ball)
+        }
+        else{
+            ball.xMove = ball.dx
+            ball.yMove = ball.dy
+        }
+        this.physics.moveObject(ball)
+        this.isGoal(lobby)
+    }
+
+    updateGame(lobby){
+        this.impulseControl(lobby)
         this.collisionControl(lobby)
-        this.impulseTimerControl(lobby)
+        this.movePlayers(lobby)
+        this.moveBall(lobby)
     }
 
     runGame1(){
@@ -590,12 +687,14 @@ export default class Game1Control{
             if(!lobby.inGame){
                 continue
             }
-            if(lobby.countdown > 0){
-                this.updateTimer(lobby)
+            this.updateGameTime(lobby)
+            if(!lobby.inGame){
+                continue
             }
-            else{
+            if(lobby.countdown == 0){
                 this.updateGame(lobby)
             }
+
             const allInfo = this.getAllInfo(lobby)
             this.sendGame(lobby,allInfo)
         }
@@ -603,10 +702,10 @@ export default class Game1Control{
 
     // SETUP GAME
 
-    makePosition(spawnRadius,angle){
+    makePosition(angle){
         return{
-            'x': Math.cos(angle)*spawnRadius+this.serverW/2,
-            'y': Math.sin(angle)*spawnRadius+this.serverH/2
+            'x': Math.cos(angle) * this.spawnRadius + this.serverW/2,
+            'y': Math.sin(angle) * this.spawnRadius + this.serverH/2
         }
     }
 
@@ -624,68 +723,6 @@ export default class Game1Control{
         return(memberCounts)
     }
 
-    addOrangePlayers(lobby,count,reset=0){
-        const angleInt = Math.PI/(count+1)
-        const spawnRadius = lobby.spawnRadius
-        var angle = Math.PI/2 + angleInt
-
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-            if(user.team == 'orange'){
-                const position = this.makePosition(spawnRadius,angle)
-                if(reset){
-                    const player = this.players.getInfo(userId)
-                    player.impulseTimer = 0
-                    player.x = position.x 
-                    player.y = position.y
-                    player.dx = 0
-                    player.dy = 0
-                }
-                else{
-                    this.players.addPlayer(
-                        userId,position.x,position.y,this.serverH,this.serverW,
-                        user.team, user.userName, lobby.playerRadius
-                    )
-                }
-                angle += angleInt
-            }
-        }
-    }
-
-    addBluePlayers(lobby,count,reset=0){
-        const angleInt = Math.PI/(count+1)
-        const spawnRadius = lobby.spawnRadius
-        var angle = -Math.PI/2 + angleInt
-
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-            if(user.team == 'blue'){
-                const position = this.makePosition(spawnRadius,angle)
-                if(reset){
-                    const player = this.players.getInfo(userId)
-                    player.impulseTimer = 0
-                    player.x = position.x 
-                    player.y = position.y
-                    player.dx = 0
-                    player.dy = 0
-                }
-                else{
-                    this.players.addPlayer(
-                        userId,position.x,position.y,this.serverH,this.serverW,
-                        user.team, user.userName, lobby.playerRadius
-                    )
-                }
-                angle += angleInt
-            }
-        }
-    }
-
-    addPlayers(lobby){
-        const teamMemberCounts = this.countTeamMembers(lobby)
-        this.addOrangePlayers(lobby,teamMemberCounts['orange'])
-        this.addBluePlayers(lobby,teamMemberCounts['blue'])
-    }
-
     makeContacts(userIds){
         const len = userIds.length
         var contacts = []
@@ -693,7 +730,7 @@ export default class Game1Control{
             return
         }
         for(var i=0; i<len-1; i++){
-            for(var p = i+1;p<len;p++){
+            for(var p = i+1; p<len; p++){
                 var contact = [userIds[i],userIds[p]]
                 contacts.push(contact)
             }
@@ -704,7 +741,16 @@ export default class Game1Control{
     addBall(lobby){
         const x = this.serverW/2
         const y = this.serverH/2
-        lobby.ball = new Ball(x,y,this.serverH,this.serverW)
+        lobby.ball = new Ball(x,y)
+    }
+
+    addPlayers(lobby){
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            this.players.addPlayer(userId,user.team,user.userName,
+                lobby.playerRadius)
+        }
+        this.addPlayerPositions(lobby,0)
     }
 
     addGoals(lobby){
@@ -714,27 +760,27 @@ export default class Game1Control{
         }
         lobby.goals = new Goals()
 
-        const topEdge = this.serverH/2-lobby.goalHeight/2
-        lobby.goals.addGoal(0, topEdge, lobby.goalWidth,lobby.goalHeight,
-            lobby.teams[0],0)
-        lobby.goals.addGoal(this.serverW-lobby.goalWidth, topEdge,
-            lobby.goalWidth,lobby.goalHeight, lobby.teams[1], lobby.goalWidth)
+        const topEdge = this.serverH/2-this.goalHeight/2
+        lobby.goals.addGoal(0, topEdge, this.goalWidth,this.goalHeight,
+            lobby.teams[0])
+        lobby.goals.addGoal(this.serverW-this.goalWidth, topEdge,
+            this.goalWidth,this.goalHeight, lobby.teams[1])
     }
 
     newGame(roomLobby){
         const userIds = roomLobby.userIds
         const lobbyId = roomLobby.lobbyId
         const teams = roomLobby.teams
-        const gameTimer = Number(roomLobby.gameTimer[0])*60
+        const gameTimer = Number(roomLobby.gameTimer[0])*MINUTES_TO_SECONDS
         const contacts = this.makeContacts(userIds)
-        const playerRadius = 0.6*.95**userIds.length
+        const playerRadius = this.playerRadiusA*this.playerRadiusB**userIds.length
 
         this.games[lobbyId] = new Game(
             userIds,
             contacts,
             teams,
             lobbyId,
-            this.countdown,
+            this.gameCountdown,
             playerRadius,
             gameTimer
         )
