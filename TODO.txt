@@ -8,18 +8,26 @@ if lone player refresh lobby, no return
 change to PORT = 80 when external IP
 
 TODO
+make previous collision more specific to optimize
+find 2 nearest collisions in case 1st is a repeat of first cause touching is collision
+when is collision? check for previous collision
+testcollisionprocedure if repeat collision, can be wall again in a moment.
+
+hold previousCollision in Game object
+how to find tangent line when ball and player radii are diff, shouldnt matter?
+collision can increase speed > speed limit
+have ball be in contact list gameLobby
+contacts should include ball
 ball passing through players
 ball needs stronger impulse
 spread functions to other files
 store users instead of userIds
-configuration file for everything
-move
-    use parametric equations to determine collisions
-    draw rectangle, intersection means paths cross
+
+http://twobitcoder.blogspot.com/2010/04/circle-collision-detection.html
+https://flatredball.com/documentation/tutorials/math/circle-collision/
 
 FOR LATER
 colorblind feature
-restructure code, no need for sock, split control code
 movement multiplier based on time passed (accuracy)
 set timer to delete last ball toucher 
 losers advantage is size
@@ -30,7 +38,6 @@ ballImpulse logic bad, need to know player move, fine if <15players
 maintenance to remove inactive users (who forgot about tab)
 return to game if user's browser closed all tabs
 3+ teams (corner goals)
-transition to jQuery
 close room power in lobby
 configuration contains all preset values {x:?,y:?,radius:? ...}
 separate game.js(canvas stuff) from index.js

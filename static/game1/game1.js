@@ -218,7 +218,7 @@ function drawGame(gameInfo){
 
 var impulse = 0
 var move = {
-    action: 0,
+    action: false,
     left: false,
     right: false,
     up: false,
@@ -228,19 +228,19 @@ var move = {
 function newMove(key){
     if(key == 'w'){
         move['up'] = true
-        move['action'] = 1
+        move['action'] = true
     }
     if(key == 'a'){
         move['left'] = true
-        move['action'] = 1
+        move['action'] = true
     }
     if(key == 's'){
         move['down'] = true
-        move['action'] = 1
+        move['action'] = true
     }
     if(key == 'd'){
         move['right'] = true
-        move['action'] = 1
+        move['action'] = true
     }    
 }
 
@@ -258,11 +258,11 @@ function noMove(key){
         move['right'] = false
     }    
     for(var a of Object.keys(move)){
-        if(a!='change' && move[a]==true){
+        if(a!='action' && move[a]==true){
             return
         }
     }
-    move['action'] = 0
+    move['action'] = false
 }
 
 function resetMove(){

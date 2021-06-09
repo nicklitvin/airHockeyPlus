@@ -93,6 +93,17 @@ export default class RoomControl{
         this.updatePlayerList(lobby)
     }
 
+    updateUserGameInfo(userId,lobby,socket){
+        const user = this.users.getInfo(userId)
+        user.socket = socket
+        user.inGame = 1
+        this.socks.newSock(socket.id,userId)
+
+        if(lobby.owner == userId){
+            user.socket.emit('stopGamePower')
+        }
+    }
+
     joinGame(socket,userId,lobbyId,gameId){
         if(!this.lobbies.doesLobbyExist(lobbyId)){
             this.socks.errorPage(socket)
@@ -101,19 +112,13 @@ export default class RoomControl{
 
         const lobby = this.lobbies.getInfo(lobbyId)
         if(!lobby.inGame){
-            this.socks.toLobby(socket,lobby)
+            this.socks.toLobby(socket,lobby,socket)
+            return
         }
 
-        else if(lobby.userIds.includes(userId)){
+        if(lobby.userIds.includes(userId)){
             if(lobby.game == 'game' + gameId){
-                const user = this.users.getInfo(userId)
-                user.socket = socket
-                user.inGame = 1
-                this.socks.newSock(socket.id,userId)
-
-                if(lobby.owner == userId){
-                    user.socket.emit('stopGamePower')
-                }
+                this.updateUserGameInfo(userId,lobby,socket)
             }
             // wrong game but correct room
             else{
@@ -139,6 +144,7 @@ export default class RoomControl{
         }
     }
 
+    // continue func check here
     sendGameChange(lobby){
         for(var userId of lobby.userIds){
             const user = this.users.getInfo(userId)

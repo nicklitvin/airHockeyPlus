@@ -10,7 +10,7 @@ class Player{
         this.x = 0
         this.y = 0
         this.dx = 0
-        this.dy = 2
+        this.dy = 0
 
         this.moveL = 0
         this.moveR = 0
