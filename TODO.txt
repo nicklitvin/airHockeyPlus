@@ -6,27 +6,27 @@ game starts if unready leaves and rest are ready
 if lone player goes to other game #, no return
 if lone player refresh lobby, no return
 change to PORT = 80 when external IP
-
-TODO
-make previous collision more specific to optimize
-find 2 nearest collisions in case 1st is a repeat of first cause touching is collision
-when is collision? check for previous collision
-testcollisionprocedure if repeat collision, can be wall again in a moment.
-
-hold previousCollision in Game object
-how to find tangent line when ball and player radii are diff, shouldnt matter?
-collision can increase speed > speed limit
-have ball be in contact list gameLobby
-contacts should include ball
-ball passing through players
-ball needs stronger impulse
-spread functions to other files
-store users instead of userIds
-
+circle collision sources:
 http://twobitcoder.blogspot.com/2010/04/circle-collision-detection.html
 https://flatredball.com/documentation/tutorials/math/circle-collision/
 
+TODO
+ball overlap in field corner
+optimize calculations
+scorers not counting properly
+create entire game for testing so isGoal can be used
+
+when determining collision, doesn't consider that circle will stop at wall due to
+no dx/dy just move
+
+multi-way collisions for 1 object?
+hold previousCollision in Game object
+store users instead of userIds
+
+
+
 FOR LATER
+multiple balls, lobby.balls = [Ball,Ball]
 colorblind feature
 movement multiplier based on time passed (accuracy)
 set timer to delete last ball toucher 
