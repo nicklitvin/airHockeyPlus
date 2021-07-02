@@ -1,31 +1,30 @@
 NOTES
 If right click on browser top, move doesn't reset
-server sends one game frame after game end
+server sends one game frame after game end?
 blue shadow for orange move, illusion?
 game starts if unready leaves and rest are ready
 if lone player goes to other game #, no return
 if lone player refresh lobby, no return
 change to PORT = 80 when external IP
-circle collision sources:
-http://twobitcoder.blogspot.com/2010/04/circle-collision-detection.html
-https://flatredball.com/documentation/tutorials/math/circle-collision/
+circle collision sources: 
+https://en.wikipedia.org/wiki/Elastic_collision 
+http://cobweb.cs.uga.edu/~maria/classes/4070-Spring-2017/Adam%20Brookes%20Elastic%20collision%20Code.pdf
+goals currently disabled
 
 TODO
-ball overlap in field corner
+ball floats off right and left walls
+moving along wall, impulse doesn't work
+players should have mass for trajectory formula
+timePassed hold in lobby object
+player cant move if caps lock enabled
 optimize calculations
-scorers not counting properly
-create entire game for testing so isGoal can be used
-
-when determining collision, doesn't consider that circle will stop at wall due to
-no dx/dy just move
-
-multi-way collisions for 1 object?
-hold previousCollision in Game object
-store users instead of userIds
-
-
+scorers not counting properly?
+transition to vectors?
+merge ball and player together?
+moving functions should be in player class?
 
 FOR LATER
+no friction mode
 multiple balls, lobby.balls = [Ball,Ball]
 colorblind feature
 movement multiplier based on time passed (accuracy)

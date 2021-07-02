@@ -3,9 +3,11 @@ import PlayerManager from './game1Player.js'
 import Ball from './game1Ball.js'
 import PhysicsManager from './game1Physics.js'
 import Goals from './game1Goal.js'
+import {strictEqual} from 'assert'
 
 const MILISECONDS_TO_SECONDS = 1/1000
 const MINUTES_TO_SECONDS = 60
+const ROUNDING_ERROR = 0.001
 
 class Game{
     constructor(userIds,contacts,teams,lobbyId,countdown,playerRadius,
@@ -320,7 +322,7 @@ export default class Game1Control{
         this.limitObjectSpeeds(lobby)
         this.calculateXyMoves(lobby)
         this.collisionProcedure(lobby)
-        this.resetAllMoves(lobby)
+        this.resetAllMoves(lobby)   
         this.applyFriction(lobby)
     }
     
@@ -472,7 +474,6 @@ export default class Game1Control{
         return(memberCounts)
     }
 
-    //TODO: ADD BALL
     makeContacts(userIds){
         const count = userIds.length
         var contacts = []
@@ -589,7 +590,7 @@ export default class Game1Control{
             }
         }
         const ball = lobby.ball
-        if(this.physics.isObjectBounceTooFast(ball)){
+        if(ball && this.physics.isObjectBounceTooFast(ball)){
             this.physics.limitObjectBounceSpeed(ball)
         }
     }
@@ -600,12 +601,17 @@ export default class Game1Control{
             this.physics.resolveFriction(player)
         }
         const ball = lobby.ball
-        this.physics.resolveFriction(ball)
+        if(ball){
+            this.physics.resolveFriction(ball)
+        }
     }
 
     // MOVE
 
     moveGameObjects(lobby,time){
+        const p1 = this.players.getInfo('p1')
+        const p2 = this.physics.getObjectById(lobby,'ball')
+        // console.log(p1,p2)
         this.movePlayers(lobby,time)
         if(lobby.ball){
             this.moveBall(lobby,time)
@@ -627,7 +633,9 @@ export default class Game1Control{
         this.physics.moveObject(ball,time)
         // console.log('ball moving x to',ball.x,'and y to', ball.y,
         // 'in seconds',time)
-        this.isGoal(lobby)
+        if(lobby.goal){
+            this.isGoal(lobby)
+        }
     }
 
     // XY MOVE
@@ -640,7 +648,9 @@ export default class Game1Control{
             this.physics.makeXyMove(player)
         }
         const ball = lobby.ball
-        this.physics.makeXyMove(ball)
+        if(ball){
+            this.physics.makeXyMove(ball)
+        }
     }
 
     resetAllMoves(lobby){
@@ -650,7 +660,9 @@ export default class Game1Control{
             this.resetObjectXyMoves(player)
         }
         const ball = lobby.ball
-        this.resetObjectXyMoves(ball)
+        if(ball){
+            this.resetObjectXyMoves(ball)
+        }
     }
 
     resetObjectXyMoves(obj){
@@ -658,50 +670,47 @@ export default class Game1Control{
         obj.yMove = 0
     }
 
-    // COLLISION
-
-    // collision = [time,Player,Player/Ball,collisionType]
-    collisionProcedure(lobby,timePassed=0,previousCollision=[]){
-        const nextCollision = this.getNextCollision(lobby,previousCollision)
-        const time = nextCollision[0]
+    collisionProcedure(lobby,timePassed=0){
+        const nextCollision = this.getNextCollision(lobby)
         const remainingTime = 1/this.refreshRate - timePassed
+        this.isOverlap(lobby)
 
-        if(!nextCollision || time > remainingTime){
+        if(!nextCollision || nextCollision.time > remainingTime){
+            // console.log('noCollision')
             this.moveGameObjects(lobby,remainingTime)
             return
         }
 
-        else if (nextCollision[3] == 'wall'){
-            console.log('wallCollision')
+        if (nextCollision.type == 'wall'){
+            // console.log('wallCollision')
             this.wallCollisionProcedure(lobby,timePassed,nextCollision)
-            return
         }
-        else if(nextCollision[3] == 'player'){
-            console.log('playerCollision')
+        else if(nextCollision.type == 'player'){
+            // console.log('playerCollision')
             this.objectCollisionProcedure(lobby,timePassed,nextCollision)
-            return
         }
     }
 
-    getNextCollision(lobby,previousCollision){
-        const playerCollision = this.physics.getNext2ObjectCollision(lobby,previousCollision)
-        const wallCollision = this.physics.getNextWallCollision(lobby,previousCollision)
-        if(!playerCollision && !wallCollision){
-            return(0)
-        }
+    getNextCollision(lobby){
+        const playerCollision = this.physics.getGameNext2ObjectCollision(lobby)
+        const wallCollision = this.physics.getGameNextWallCollision(lobby)
+
         if(wallCollision &&
-            (!playerCollision || wallCollision[0] < playerCollision[0]) )
+            (!playerCollision || wallCollision.time < playerCollision.time) )
         {
             return(wallCollision)
         }
-        else{
+
+        else if(playerCollision &&
+            (!wallCollision || playerCollision.time <= wallCollision.time) )
+        {
             return(playerCollision)
         }
     }
 
     wallCollisionProcedure(lobby,timePassed,nextCollision){
-        const time = nextCollision[0]
-        const object = nextCollision[1]
+        const time = nextCollision.time
+        const object = nextCollision.p1
 
         this.moveGameObjects(lobby,time)
         this.physics.changeWallCollisionTrajectory(object)
@@ -709,15 +718,15 @@ export default class Game1Control{
         this.physics.makeXyMove(object)
 
         timePassed += time
-        this.collisionProcedure(lobby,timePassed,nextCollision)
+        this.collisionProcedure(lobby,timePassed) 
     }
 
     objectCollisionProcedure(lobby,timePassed,nextCollision){
-        const time = nextCollision[0]
-        const p1 = nextCollision[1]
-        const p2 = nextCollision[2]
+        const time = nextCollision.time
+        const p1 = nextCollision.p1
+        const p2 = nextCollision.p2
 
-        if(!p2.userId){
+        if(!p2.userId && lobby.goals){
             const goal = lobby.goals.getGoals()[p1.team]
             goal.lastBallToucher = p1.userId
         }
@@ -730,135 +739,166 @@ export default class Game1Control{
         this.physics.makeXyMove(p2)
 
         timePassed += time
-
-        this.collisionProcedure(lobby,timePassed,nextCollision)
+        this.collisionProcedure(lobby,timePassed)
     }
 
     // TESTS
 
     runTest(){
-        this.testCustom()
-        // this.testPlayerCollisionDiagonally()
-        // this.testPlayersCollisionHorizontal()
-        // this.testPlayerHitsBallUpward()
+        this.testPlayerPushesBallRight()
+        this.testPlayerPushesBallLeft()
+        this.testPlayerPushesBallDownToTheSide()
+        this.testPlayerPushesBallUpToTheSide()
+        this.testPlayerPushesBallDown()
+        this.testPlayerPushesBallDiagonally()
     }
 
-    testCustom(){
-        this.players.addPlayer('p1',0,0,0.5)
-        const p1 = this.players.getInfo('p1')
-        p1.x = 5
-        p1.y = 4.5
-        p1.newImpulse = 0
-        p1.xMove = 0
-        p1.dx = 120
+    isOverlap(lobby){
+        for(var contact of lobby.contacts){
+            const p1 = this.physics.getObjectById(lobby,contact[0])
+            const p2 = this.physics.getObjectById(lobby,contact[1])
+            const distance = ((p1.x-p2.x)**2 + (p1.y-p2.y)**2)**(1/2)
 
-        this.players.addPlayer('p2',0,0,0.5)
-        const p2 = this.players.getInfo('p2')
-        p2.x = 4
-        p2.y = 4.5
-        p2.moveR = 1
-        p2.xMove = 100
-        p2.dx = 100
-        p2.yMove = 0
-        p2.dy = 0
+            if(distance < p1.radius + p2.radius - ROUNDING_ERROR){
+                console.log(distance,p1,p2)
+                strictEqual(0,1)
+            }
+        }
+    }
 
+    isBounceReasonable(lobby){
+        var objects = lobby.userIds.slice()
+        if(lobby.ball){
+            objects.push('ball')
+        }
+        for(var objectId of objects){
+            const object = this.physics.getObjectById(lobby,objectId)
+            if( Math.abs(object.dx) > 500 || Math.abs(object.dy) > 500){
+                console.log(object)
+                strictEqual(0,1)
+            }
+        }
+    }
+
+    logPlayer(id, p){
+        console.log('%s x=%f y=%f dx=%f dy=%f', id, p.x, p.y, p.dx, p.dy)
+    }
+
+    testMakeLobbyWithP1Ball(ball){
         const lobby = {
             userIds: ['p1'],
             contacts: [ ['p1','ball'] ],
-            ball: new Ball(5.75,4.5)
+            ball: ball
         }
-
-        this.updateGame(lobby)
-        // this.collisionProcedure(lobby)
+        return(lobby)
     }
 
-    testPlayerCollisionDiagonally(){
-        console.log('testPlayerCollisionDiagonally')
+    testRunGameWithP1Ball(lobby,moveCommand,moveCommand1){
+        const p1 = this.players.getInfo('p1')
+        const ball = lobby.ball
+        const cycles = 10
+
+        for(var count = 0; count < cycles; count++){
+            // console.log('cycle=%i', count)
+            this.updateGame(lobby)
+            p1[moveCommand] = 1
+            p1[moveCommand1] = 1
+
+            // this.isOverlap(lobby)
+            this.isBounceReasonable(lobby)
+            
+            // console.log('== after cycle')
+            // this.logPlayer('p1', p1)
+            // this.logPlayer('p2', ball)
+        }
+        this.players.deletePlayer('p1')
+    }
+
+    testPlayerPushesBallRight(){
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
-        p1.x = 5.5
-        p1.y = 5.5
-        p1.xMove = 0
+        p1.x = 7.450000000000016
+        // p1.dx = -12.75
+        p1.y = 4.500000000000001 
+        p1.moveR = 1
+
+        const ball = new Ball(8.200000000000015,4.5)
+        ball.dx = 12.75
+        console.log( ((ball.x-p1.x)**2+(ball.y-p1.y)**2)**(1/2))
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveR')
+    }
+
+    testPlayerPushesBallLeft(){
+        this.players.addPlayer('p1',0,0,0.5)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 1.1
+        // p1.dx = -12.75
+        p1.y = 4
+        p1.moveL = 1
+
+        const ball = new Ball(0.3,4)
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveL')
+    }
+
+    testPlayerPushesBallDown(){
+        console.log('testPlayerPushesBallDown')
+        this.players.addPlayer('p1',0,0,0.5)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 4
         p1.dx = 0
+        p1.y = 4
+        p1.moveD = 1
 
-        this.players.addPlayer('p2',0,0,0.5)
-        const p2 = this.players.getInfo('p2')
-        p2.x = 6.6
-        p2.y = 6.6
-        p2.xMove = -100
-        p2.dx = -100
-        p2.yMove = -100
-        p2.dy = -100
-
-        const lobby = {
-            userIds: ['p1', 'p2'],
-            contacts: [ ['p1','p2'] ],
-            ball: 0
-        }
-
-        this.collisionProcedure(lobby)
-
-        if(p1.dx > 0 || p1.xMove > 0 || p1.x > 5.5 ||
-            p1.dy > 0 || p1.yMove > 0 || p1.y > 5.5 ||
-            p2.x < 6.21 || p2.y < 6.21 || p2.yMove < 0)
-        {
-            console.log('ERROR 129')
-        }
+        const ball = new Ball(p1.x,p1.y+.8)
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveD')
     }
 
-    testPlayersCollisionHorizontal(){
-        console.log('testPlayersCollisionHorizontal')
+    testPlayerPushesBallDownToTheSide(){
+        console.log('testPlayerPushesBallDownToSide')
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
-        p1.x = 12
-        p1.y = 4.5
-        p1.xMove = -1000
-        p1.dx = -1000
+        p1.x = 15.411066224684294
+        p1.y = 3.1821407971619977
+        p1.dx = -0.38
+        p1.moveD = 1
 
-        this.players.addPlayer('p2',0,0,0.5)
-        const p2 = this.players.getInfo('p2')
-        p2.x = 8
-        p2.y = 4.5
-        p2.xMove = 10
-        p2.dx = 10
-        p2.yMove = 0
-        p2.dy = 0
-
-        const lobby = {
-            userIds: ['p1', 'p2'],
-            contacts: [ ['p1','p2'] ],
-            ball: 0
-        }
-
-        this.collisionProcedure(lobby)
-        if(p1.x < p2.x || p1.xMove < 0 || p2.xMove > 0){
-            console.log('ERROR 234')
-        }
+        const ball = new Ball(15.430037101626137,4.001921320124124)
+        ball.dx = 0.32
+        ball.dy = 14.98
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveD')
     }
 
-    testPlayerHitsBallUpward(){
-        console.log('testPlayerHitsBallUpward')
-        this.players.addPlayer('p2',0,0,0.5)
-        const p2 = this.players.getInfo('p2')
-        p2.x = 8
-        p2.y = 8
-        p2.xMove = 0
-        p2.dx = 0
-        p2.yMove = -2000
-        p2.dy = -2000
+    testPlayerPushesBallUpToTheSide(){
+        console.log('testPlayerPushesBallUpToSide')
+        this.players.addPlayer('p1',0,0,0.5)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 3
+        p1.y = 6
+        p1.moveU = 1
 
-        const lobby = {
-            userIds: ['p2'],
-            contacts: [ ['p2','ball'] ],
-            ball: new Ball(8,this.serverH/2)
-        }
+        const ball = new Ball(p1.x - .36,p1.y - .66)
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveU')
+    }
 
-        this.collisionProcedure(lobby)
-        if(lobby.ball.y > p2.y ||
-            lobby.ball.dy > 0 ||
-            p2.dy < 0)
-        {
-            console.log('ERROR 738')
-        }
+    testPlayerPushesBallDiagonally(){
+        this.players.addPlayer('p1',0,0,0.5)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 13.38426696672149
+        p1.y = 2.820446733112996
+        // p1.dx = 15
+        // p1.dy = 15
+        p1.moveL = 1
+        p1.moveU = 1
+
+        const ball = new Ball(12.89285420882964,2.164006711952552)
+        ball.dx = -9.26
+        ball.dy = -11.61
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveL')
     }
 }

@@ -19,9 +19,10 @@ app.use('/', express.static('static'))
 // Listen to requests
 server.listen(PORT)
  
-//runGame
+// runGame
 setInterval(()=>{
     control.runGame1()
 },1000/refreshRate)
 
-// control.runGame1()
+// runGameTest
+// control.runGame1Test()

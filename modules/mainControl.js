@@ -26,7 +26,10 @@ export default class MainControl{
     }
 
     runGame1(){
-        // this.game1Control.runTest()
         this.game1Control.runGame1()
+    }
+
+    runGame1Test(){
+        this.game1Control.runTest()
     }
 }

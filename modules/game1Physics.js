@@ -1,5 +1,7 @@
 'use strict'
 
+import Vector from './vector.js'
+
 const ROUNDING_ERROR = 0.001
 
 export default class PhysicsManager{
@@ -8,14 +10,15 @@ export default class PhysicsManager{
         this.serverH = serverH
         this.players = players
 
-        this.frictionConst = 0.92
+        this.frictionConst = 0.85
         this.bounceStrength = 10
-        this.objectBounceSpeedLimit = 10
+        this.objectBounceSpeedLimit = 100
         this.playerMoveSpeed = 15
         this.impulseMagnitude = 20
         this.impulseRadius = 1.5
     }
 
+    // TODO: use private method
     getObjectById(lobby,objectId){
         let object
         if(objectId == 'ball'){
@@ -38,8 +41,9 @@ export default class PhysicsManager{
     }
 
     isObjectBounceTooFast(object){
-        return((object.dx**2+object.dy**2)**(1/2) >
-            this.objectBounceSpeedLimit)
+        return( (object.dx**2+object.dy**2)**(1/2) >
+            this.objectBounceSpeedLimit
+        )
     }
 
     // IMPULSE
@@ -103,11 +107,8 @@ export default class PhysicsManager{
     moveObject(obj,time){
         obj.x += obj.xMove*time
         obj.y += obj.yMove*time
-        this.roundXyPositions(obj)
-
-        if(obj.userId){
-            this.keepObjectWithinBoundary(obj)
-        }
+        // this.roundXyPositions(obj)
+        this.keepObjectWithinBoundary(obj)
     }
 
     keepObjectWithinBoundary(obj){
@@ -125,24 +126,48 @@ export default class PhysicsManager{
         }
     }
 
+    // TODO: consider refactoring.
+    // roundSinglePosition(p) {
+    //     return Math.round( p * 100 + Number.EPSILON ) / 100
+    // }
+
+    // roundXyPositionx(obj) {
+    //     obj.x = self.roundSinglePosition(obj.x)
+    //     obj.y = self.roundSinglePosition(obj.y)
+    // }
+
     roundXyPositions(obj){
-        obj.x = Math.round( obj.x * 100 + Number.EPSILON ) / 100
-        obj.y = Math.round( obj.y * 100 + Number.EPSILON ) / 100
+        // (obj.x, obj.y) = self.roundPosition(obj.x, obj.y)
+        const digits = 4 
+        const number = 10**digits
+
+        obj.x = Math.round( obj.x * number + Number.EPSILON ) / number
+        obj.y = Math.round( obj.y * number + Number.EPSILON ) / number
+    }
+
+    roundObjectDxDy(obj){
+        obj.dx = Math.round( obj.dx * 100 + Number.EPSILON ) / 100
+        obj.dy = Math.round( obj.dy * 100 + Number.EPSILON ) / 100
     }
 
     applyPlayerMoveInput(player){
         const playerSpeed = player.playerSpeed
 
-        if(player.moveU){
+        if(player.moveU && player.y - player.radius > ROUNDING_ERROR){
             player.yMove -= playerSpeed
         }
-        else if(player.moveD){
+        else if(player.moveD &&
+            player.y + player.radius < this.serverH - ROUNDING_ERROR)
+        {
             player.yMove += playerSpeed
         }
-        if(player.moveL){
+
+        if(player.moveL && player.x - player.radius > ROUNDING_ERROR){
             player.xMove -= playerSpeed
         }
-        else if(player.moveR){
+        else if(player.moveR &&
+            player.x + player.radius < this.serverW - ROUNDING_ERROR)
+        {
             player.xMove += playerSpeed
         }
     }
@@ -179,162 +204,182 @@ export default class PhysicsManager{
     resolveFriction(obj){
         obj.dx = this.applyFriction(obj.dx)
         obj.dy = this.applyFriction(obj.dy)
+        this.roundObjectDxDy(obj)
     }
 
-    applyFriction(obj){
-        if(Math.abs(obj) < 0.01){
-            obj = 0
+    applyFriction(objDxDy){
+        if(Math.abs(objDxDy) < 0.01){
+            objDxDy = 0
         }
-        if(obj){
-            obj *= this.frictionConst
+        if(objDxDy){
+            objDxDy *= this.frictionConst
         }
-        return(obj)
+        return(objDxDy)
     }
 
     // WALL COLLISION
 
-    getNextWallCollision(lobby,previousCollision){
-        let nextCollision
+    getGameNextWallCollision(lobby){
         var objects = lobby.userIds.slice()
-        objects.push('ball')
+        if(lobby.ball){
+            objects.push('ball')
+        }
 
+        let nextCollision
         for(var objectId of objects){
             const object = this.getObjectById(lobby,objectId)
-            const collision = this.getNextObjectWallCollision(object,previousCollision)
-            if(collision &&
-                (!nextCollision || collision[0] < nextCollision[0]) )
-            {
-                nextCollision = collision
-            }
-        }
-        if(nextCollision){
-            return (nextCollision)
-        }
-    }
+            const time = this.getNextObjectWallCollisionTime(object)
 
-    getNextObjectWallCollision(p1,previousCollision){
-        const upInfo = this.whenIsWallCollisionUp(p1)
-        const downInfo = this.whenIsWallCollisionDown(p1)
-        const leftInfo = this.whenIsWallCollisionLeft(p1)
-        const rightInfo = this.whenIsWallCollisionRight(p1) 
-        let nextCollision
-
-        for(var collision of [upInfo,downInfo,leftInfo,rightInfo]){
-            if( (collision && 
-                (!previousCollision || collision[3] != previousCollision[3]) &&
-                (!nextCollision || collision[0] < nextCollision[0]) ) )
-            {
-                nextCollision = collision
+            if(time >= 0 && (!nextCollision || time < nextCollision.time) ){
+                nextCollision = {
+                    'time': time,
+                    'p1': object,
+                    'type': 'wall'
+                } 
             }
         }
         return(nextCollision)
     }
 
+    getNextObjectWallCollisionTime(p1){
+        const upTime = this.whenIsWallCollisionUp(p1)
+        const downTime = this.whenIsWallCollisionDown(p1)
+        const leftTime = this.whenIsWallCollisionLeft(p1)
+        const rightTime = this.whenIsWallCollisionRight(p1)
+        
+        var legitTimes = []
+        for(var time of [upTime,downTime,leftTime,rightTime]){
+            if(time >= 0){
+                legitTimes.push(time)
+            }
+        }
+
+        return(Math.min(...legitTimes))
+    }
+
     whenIsWallCollisionRight(p1){
-        if(p1.x + p1.radius + p1.xMove > this.serverW && p1.dx){
+        if(p1.xMove > 0 && p1.x + p1.radius + p1.xMove > this.serverW){
             const time = (this.serverW - p1.x - p1.radius)/p1.xMove
-            return([time,p1,'right','wall'])
+            return(time)
         }
     }
 
     whenIsWallCollisionLeft(p1){
-        if(p1.x - p1.radius + p1.xMove < 0 && p1.dx){
+        if(p1.xMove < 0 && p1.x - p1.radius + p1.xMove < 0){
             const time = (p1.radius - p1.x)/p1.xMove
-            return([time,p1,'left','wall'])
+            return(time)
         }
     }
 
     whenIsWallCollisionDown(p1){
-        if(p1.y + p1.radius + p1.yMove > this.serverH && p1.dy){
+        if(p1.yMove > 0 &&
+            p1.y + p1.radius + p1.yMove > this.serverH)
+        {
             const time = (this.serverH - p1.y - p1.radius)/p1.yMove
-            return([time,p1,'down','wall'])
+            return(time)
         }
     }
 
     whenIsWallCollisionUp(p1){
-        if(p1.y - p1.radius + p1.yMove < 0 && p1.dy){
+        if(p1.yMove < 0 && p1.y - p1.radius + p1.yMove < 0){
             const time = (p1.radius - p1.y)/p1.yMove
-            return([time,p1,'up','wall'])
+            return(time)
         }
     }
 
     // 2 OBJECT COLLISION
 
-    getNext2ObjectCollision(lobby,previousCollision){
+    getGameNext2ObjectCollision(lobby){
         const contacts = lobby.contacts
-        let nextCollision
+        var nextCollision = null
 
-        for(var count=0; count<contacts.length; count++){
+        for(var count = 0; count < contacts.length; count++){
             const contact = contacts[count]
             const p1 = this.getObjectById(lobby,contact[0])
             const p2 = this.getObjectById(lobby,contact[1])
             const time = this.getObjectCollisionTime(p1,p2)
 
-            if(time >= 0 &&
-                (!nextCollision || time < nextCollision[0]) &&
-                !this.isSame2ObjectCollision(p1,p2,previousCollision) )
-            {
-                nextCollision = [time,p1,p2,'player']
+            if(time >= 0 && (!nextCollision || time < nextCollision.time) ){
+                nextCollision = {
+                    'time': time,
+                    'p1': p1,
+                    'p2': p2,
+                    'type': 'player'
+                }
             }
         }
         return(nextCollision)
     }
     
     getObjectCollisionTime(obj1,obj2){
+        // Speed differences.
         const Vx = obj2.xMove - obj1.xMove
         const Vy = obj2.yMove - obj1.yMove
+        // Position differences.
         const Px = obj2.x-obj1.x
         const Py = obj2.y-obj1.y
+        const squaredSumOfRadii = (obj1.radius + obj2.radius)**2
 
         const a = Vx**2 + Vy**2
         const b = 2*(Px*Vx + Py*Vy)
-        const c = Px**2 + Py**2 - (obj1.radius + obj2.radius)**2
+        const c = Px**2 + Py**2 - squaredSumOfRadii
         const discriminant = this.findDiscriminant(a,b,c)
+        // console.log('discriminant',a,b,c)
+        
+        if(discriminant < 0){return}
 
-        if(discriminant >= 0){
-            const time = this.findQuadraticRoot(a,b,c)
+        const times = this.findQuadraticRoot(a,b,c)
+        
+        if(times.length == 0){return}
 
-            if(time >= 0){
+        var time = this.whenIsNextRealObjectCollision(obj1,obj2,times)
+        time = this.roundSmallToZero(time)
+        
+        if(time >= 0){
+            return(time)
+        }
+    }
+
+    whenIsNextRealObjectCollision(obj1,obj2,times){
+        for(var time of times){
+            const p1 = obj1.getInfoIn(time)
+            const p2 = obj2.getInfoIn(time)
+
+            const normalMoves = this.getNormalVectorsForCollision(p1,p2)
+            const p1Info = {'position':p1,'normal':normalMoves.p1,'magnitude':normalMoves.p1Magnitude}
+            const p2Info = {'position':p2,'normal':normalMoves.p2,'magnitude':normalMoves.p2Magnitude}
+            
+            if(
+                this.isCollisionPossible(p1Info,p2Info) ||
+                this.isCollisionPossible(p2Info,p1Info))
+            {
                 return(time)
             }
         }
     }
 
-    isSame2ObjectCollision(obj1,obj2=0,previousCollision){
-        if(previousCollision.length == 4 &&
-            obj1.userId == previousCollision[1].userId)
-        {
-            // ball collision repeat
-            if(!obj2.userId && !previousCollision[2].userId)
-            {
-                // console.log('sameBall')
-                return(1)
-            }
-            //player collision repeat
-            if(obj2.userId && obj2.userId == previousCollision[2].userId)
-            {
-                // console.log('samePlayer')
-                return(1)
-            }
+    // check if p1 normal greater than p2 normal speed
+    isCollisionPossible(p1,p2){
+        var timeX = -1
+        var timeY = -1
+        
+        if(p1.normal.x){
+            timeX = (p2.position.x - p1.position.x)/p1.normal.x
         }
-    }        
-
-    // CHANGE TRAJECTORY
-
-    changeObjectCollisionTrajectory(p1,p2){
-        const normalVector = this.calculateNormalVector(p1,p2)
-
-        // reverse normal for p1
-        if(Math.abs(p1.x + normalVector.x - p2.x) < ROUNDING_ERROR &&
-            Math.abs(p1.y + normalVector.y - p2.y) < ROUNDING_ERROR)
-        {
-            this.applyNormalVector(p1,p2,normalVector)
+        
+        if(p1.normal.y){
+            timeY = (p2.position.y - p1.position.y)/p1.normal.y
         }
-        //reverse normal for p2
-        else{
-            this.applyNormalVector(p2,p1,normalVector)
+
+        if( (timeX > 0 || timeY > 0) && 
+            ((p1.magnitude > 0 && p1.magnitude > p2.magnitude) ||
+            (p1.magnitude < 0 && p1.magnitude < p2.magnitude)) )
+        {
+            return(1)
         }
     }
+
+    // CHANGE TRAJECTORY
 
     changeWallCollisionTrajectory(p1){
         if( Math.abs(p1.x + p1.radius - this.serverW) < ROUNDING_ERROR ||
@@ -350,49 +395,187 @@ export default class PhysicsManager{
         }
     }
 
-    calculateNormalVector(p1,p2){
-        // vector tangent to <x,y> is <-y,x>
-        const tangentY = p1.x - p2.x
-        const tangentX = p2.y - p1.y
-        // console.log('tangent',tangentX,tangentY)
-        const scalar = 1/( (tangentY**2 + tangentX**2)**(1/2))
-        
-        // normal vector to tangent vector
-        var normalX = tangentY
-        var normalY = -tangentX
+    getUnitNormalVector(p1,p2){
+        const xDistance = p2.x-p1.x
+        const yDistance = p2.y-p1.y
+        var vector = new Vector(xDistance,yDistance)
+        vector.normalise()
+        return(vector)
+    }
+
+    getUnitTangentVector(unitNormalVector){
+        var tangentVector = new Vector(-1*unitNormalVector.y,unitNormalVector.x)
+        tangentVector.normalise()
+        return(tangentVector)
+    }
+
+    getNormalVectorsForCollision(p1,p2){
+        const unitNormalVector = this.getUnitNormalVector(p1,p2)
+
+        const p1MoveVector = new Vector(p1.xMove,p1.yMove)
+        const p2MoveVector = new Vector(p2.xMove,p2.yMove)
+
+        const p1Normal = unitNormalVector.dotProduct(p1MoveVector)
+        const p2Normal = unitNormalVector.dotProduct(p2MoveVector)
+        const P1NormalVector = unitNormalVector.multiply(p1Normal)
+        const P2NormalVector = unitNormalVector.multiply(p2Normal)
 
         return({
-            'x':normalX,
-            'y':normalY,
-            'unitX': normalX*scalar,
-            'unitY': normalY*scalar
+            'p1': P1NormalVector,
+            'p1Magnitude': p1Normal,
+            'p2': P2NormalVector,
+            'p2Magnitude': p2Normal
         })
     }
 
-    applyNormalVector(reversedPlayer,standardPlayer,normal){
-        reversedPlayer.dx = -1*normal.unitX*this.bounceStrength 
-        reversedPlayer.dy = -1*normal.unitY*this.bounceStrength 
-        standardPlayer.dx = normal.unitX*this.bounceStrength 
-        standardPlayer.dy = normal.unitY*this.bounceStrength
+    // getVectorsAfterCollision(p1,p2){
+    //     const unitNormalVector = this.getUnitNormalVector(p1,p2)
+    //     const unitTangentVector = this.getUnitTangentVector(unitNormalVector)
+
+    //     const p1MoveVector = new Vector(p1.xMove,p1.yMove)
+    //     const p2MoveVector = new Vector(p2.xMove,p2.yMove)
+
+    //     const p1Normal = unitNormalVector.dotProduct(p1MoveVector)
+    //     const p2Normal = unitNormalVector.dotProduct(p2MoveVector)
+    //     const p1Tangent = unitTangentVector.dotProduct(p1MoveVector)
+    //     const p2Tangent = unitTangentVector.dotProduct(p2MoveVector)
+
+    //     const newP1NormalVector = unitNormalVector.multiply(p2Normal)
+    //     const newP2NormalVector = unitNormalVector.multiply(p1Normal)
+    //     const newP1TangentVector = unitTangentVector.multiply(p1Tangent)
+    //     const newP2TangentVector = unitTangentVector.multiply(p2Tangent)
+
+    //     const newP1Vector = newP1NormalVector.add(newP1TangentVector)
+    //     const newP2Vector = newP2NormalVector.add(newP2TangentVector)
+
+    //     return({
+    //         'p1': newP1Vector,
+    //         'p2': newP2Vector
+    //     })
+    // }
+
+    // testchangeObjectCollisionTrajectory(p1,p2){
+    //     const newMoves = this.getVectorsAfterCollision(p1,p2)
+    //     const newP1Vector = newMoves.p1
+    //     const newP2Vector = newMoves.p2
+
+    //     this.calculateNewDxDy(p1,newP1Vector.x,newP1Vector.y)
+    //     this.calculateNewDxDy(p2,newP2Vector.x,newP2Vector.y)
+    // }
+    
+    changeObjectCollisionTrajectory(p1,p2){
+        const p1Dx = p1.dx
+        const p2Dx = p2.dx
+        const p1Dy = p1.dy
+        const p2Dy = p2.dy
+
+        const numerator1 = ( (p1.xMove - p2.xMove)*(p1.x-p2.x) + 
+            (p1.yMove - p2.yMove)*(p1.y - p2.y) )
+        const numerator2 = ( (p2.xMove - p1.xMove)*(p2.x-p1.x) + 
+            (p2.yMove - p1.yMove)*(p2.y - p1.y) )
+        const denominator = (p1.radius+p2.radius)**2
+
+        const p1XChange = numerator1/denominator*(p1.x-p2.x)
+        const p1YChange = numerator1/denominator*(p1.y-p2.y)
+        const p2XChange = numerator2/denominator*(p2.x-p1.x)
+        const p2YChange = numerator2/denominator*(p2.y-p1.y)
+        
+        const p1XFinal = p1.xMove - p1XChange 
+        const p1YFinal = p1.yMove - p1YChange
+        const p2XFinal = p2.xMove - p2XChange 
+        const p2YFinal = p2.yMove - p2YChange
+
+        this.calculateNewDxDy(p1,p1XFinal,p1YFinal)
+        this.calculateNewDxDy(p2,p2XFinal,p2YFinal)
+        this.didSomethingChange(p1,p2,p1Dx,p2Dx,p1Dy,p2Dy)
     }
 
+    didSomethingChange(p1,p2,p1Dx,p2Dx,p1Dy,p2Dy){
+        if(p1.dx == p1Dx && p2.dx == p2Dx && p1.dy == p1Dy && p2.dy == p2Dy){
+            console.log(p1,p2)
+            strictEqual(0,1)
+        }
+    }
+
+    calculateNewDxDy(player,xFinal,yFinal){
+        this.setNewDx(player,xFinal)
+        this.setNewDy(player,yFinal)
+    }
+
+    setNewDy(player,yFinal){
+        if( (player.moveD || player.moveU) && yFinal == 0){
+            //do nothing
+        }
+        // resisting push
+        else if( (player.moveD && yFinal < 0) || (player.moveU && yFinal > 0)){
+            player.dy += yFinal
+        }
+        // move boost
+        else if(player.moveD && yFinal > 0){
+            player.dy = Math.max(yFinal - player.playerSpeed,0)
+        }
+        else if(player.moveU && yFinal < 0){
+            player.dy = Math.min(yFinal + player.playerSpeed,0)
+        }
+        else{
+            player.dy = yFinal
+        }
+    }
+
+    setNewDx(player,xFinal){
+        if( (player.moveR || player.moveL) && xFinal == 0){
+            //do nothing
+        }
+        // resisting push
+        else if( (player.moveR && xFinal < 0) || (player.moveL && xFinal > 0)){
+            player.dx += xFinal
+        }
+        // move boosted
+        else if(player.moveR && xFinal > 0){
+            player.dx = Math.max(xFinal - player.playerSpeed,0)
+        }
+        else if(player.moveL && xFinal < 0){
+            player.dx = Math.min(xFinal + player.playerSpeed,0)
+        }
+        else{
+            player.dx = xFinal
+        }
+    }
 
     // CALCULATOR
 
-    findDiscriminant(a,b,c){
-        if(!a && !b){
-            return(-1)
+    roundSmallToZero(number){
+        if(number < 0 && number >= -1*ROUNDING_ERROR){
+            return(0)
         }
+        return(number)
+    }
+
+    findDiscriminant(a,b,c){
         return(b**2 - 4*a*c)
     }
 
     findQuadraticRoot(a,b,c){
-        const small = ( -b-Math.sqrt(b**2 - 4*a*c) ) / (2*a)
-        const big = ( -b+Math.sqrt(b**2 - 4*a*c) ) / (2*a)
-        if(small < 0){
-            return(big)
+        const discriminantRoot = Math.sqrt(b**2 - 4*a*c)
+        const denominator = 2*a
+        var small = (-b - discriminantRoot ) / denominator
+        var big = (-b + discriminantRoot ) / denominator
+        
+        //cant divide by 0
+        if(a == 0){
+            return([])
         }
-        return(Math.min(small,big))
+
+        for(var root of [small,big]){
+            root = this.roundSmallToZero(root)
+        }
+
+        // non-negative time only
+        if(small < -1*ROUNDING_ERROR){
+            return([big])
+        }
+
+        return([small,big])
     }
 }
     
