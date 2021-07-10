@@ -226,35 +226,35 @@ var move = {
 }
 
 function newMove(key){
-    if(key == 'w'){
+    if(key == 'w' || key == 'W'){
         move['up'] = true
         move['action'] = true
     }
-    if(key == 'a'){
+    if(key == 'a' || key == 'A'){
         move['left'] = true
         move['action'] = true
     }
-    if(key == 's'){
+    if(key == 's' || key == 'S'){
         move['down'] = true
         move['action'] = true
     }
-    if(key == 'd'){
+    if(key == 'd' || key == 'D'){
         move['right'] = true
         move['action'] = true
     }    
 }
 
 function noMove(key){
-    if(key == 'w'){
+    if(key == 'w' || key == 'W'){
         move['up'] = false
     }
-    if(key == 'a'){
+    if(key == 'a' || key == 'A'){
         move['left'] = false
     }
-    if(key == 's'){
+    if(key == 's' || key == 'S'){
         move['down'] = false
     }
-    if(key == 'd'){
+    if(key == 'd' || key == 'D'){
         move['right'] = false
     }    
     for(var a of Object.keys(move)){
@@ -315,7 +315,7 @@ socket.on('stopGamePower', ()=>{
 window.addEventListener('resize', resizeCanvas)
 
 window.addEventListener('keydown', (event)=>{
-    if(['w','a','s','d'].includes(event.key)){
+    if(['w','W','a','A','s','S','d','D'].includes(event.key)){
         // console.log('pressed',event.key)
         newMove(event.key)
     }
@@ -324,7 +324,7 @@ window.addEventListener('keydown', (event)=>{
     }
 })
 window.addEventListener('keyup', (event)=>{
-    if(['w','a','s','d'].includes(event.key)){
+    if(['w','W','a','A','s','S','d','D'].includes(event.key)){
         // console.log('let go of',event.key)
         noMove(event.key)
     }

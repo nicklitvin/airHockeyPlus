@@ -6,6 +6,7 @@ export default class Ball{
         this.dx = 0
         this.dy = 0
         this.radius = .25
+        this.mass = 0.5
 
         this.xMove = 0
         this.yMove = 0
@@ -16,7 +17,8 @@ export default class Ball{
             'x': this.x + this.xMove*time,
             'y': this.y + this.yMove*time,
             'xMove': this.xMove,
-            'yMove': this.yMove
+            'yMove': this.yMove,
+            'radius': this.radius
         })
     }
 }

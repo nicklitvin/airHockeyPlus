@@ -6,6 +6,7 @@ class Player{
         this.radius = playerRadius
         this.team = team
         this.goals = 0
+        this.mass = 1
         
         this.x = 0
         this.y = 0
@@ -29,7 +30,8 @@ class Player{
             'x': this.x + this.xMove*time,
             'y': this.y + this.yMove*time,
             'xMove': this.xMove,
-            'yMove': this.yMove
+            'yMove': this.yMove,
+            'radius': this.radius
         })
     }
 }

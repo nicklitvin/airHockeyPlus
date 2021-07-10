@@ -55,7 +55,7 @@ export default class PhysicsManager{
         }
     }
 
-    giveWallImpulse(player){
+    impulseOffWall(player){
         const impulseMagnitude = this.impulseMagnitude
 
         //closest to which wall
@@ -84,14 +84,14 @@ export default class PhysicsManager{
         }
     }
 
-    giveTargetBounce(giver,target,ballImpulseMagnitude=0){
-        const impulseMagnitude = (ballImpulseMagnitude || this.impulseMagnitude)
+    giveTargetBounce(giver,target){
+        const impulseMagnitude = this.impulseMagnitude
     
         //1st quadrant angle
         const angle = Math.abs(Math.atan((target.y-giver.y)/(target.x-giver.x)))
         
-        target.dy += Math.sign(target.y-giver.y)*Math.sin(angle)*impulseMagnitude
-        target.dx += Math.sign(target.x-giver.x)*Math.cos(angle)*impulseMagnitude
+        target.dy += Math.sign(target.y-giver.y)*Math.sin(angle)*impulseMagnitude/target.mass
+        target.dx += Math.sign(target.x-giver.x)*Math.cos(angle)*impulseMagnitude/target.mass
     }
 
     giveBallImpulse(player,lobby){
@@ -107,7 +107,9 @@ export default class PhysicsManager{
     moveObject(obj,time){
         obj.x += obj.xMove*time
         obj.y += obj.yMove*time
-        // this.roundXyPositions(obj)
+        // obj.x = this.roundValue(obj.x)
+        // obj.y = this.roundValue(obj.y)
+
         this.keepObjectWithinBoundary(obj)
     }
 
@@ -124,30 +126,6 @@ export default class PhysicsManager{
         if(obj.y - obj.radius < 0){
             obj.y = obj.radius
         }
-    }
-
-    // TODO: consider refactoring.
-    // roundSinglePosition(p) {
-    //     return Math.round( p * 100 + Number.EPSILON ) / 100
-    // }
-
-    // roundXyPositionx(obj) {
-    //     obj.x = self.roundSinglePosition(obj.x)
-    //     obj.y = self.roundSinglePosition(obj.y)
-    // }
-
-    roundXyPositions(obj){
-        // (obj.x, obj.y) = self.roundPosition(obj.x, obj.y)
-        const digits = 4 
-        const number = 10**digits
-
-        obj.x = Math.round( obj.x * number + Number.EPSILON ) / number
-        obj.y = Math.round( obj.y * number + Number.EPSILON ) / number
-    }
-
-    roundObjectDxDy(obj){
-        obj.dx = Math.round( obj.dx * 100 + Number.EPSILON ) / 100
-        obj.dy = Math.round( obj.dy * 100 + Number.EPSILON ) / 100
     }
 
     applyPlayerMoveInput(player){
@@ -204,11 +182,13 @@ export default class PhysicsManager{
     resolveFriction(obj){
         obj.dx = this.applyFriction(obj.dx)
         obj.dy = this.applyFriction(obj.dy)
-        this.roundObjectDxDy(obj)
+
+        // obj.dx = this.roundValue(obj.dx)
+        // obj.dy = this.roundValue(obj.dy)
     }
 
     applyFriction(objDxDy){
-        if(Math.abs(objDxDy) < 0.01){
+        if(Math.abs(objDxDy) < ROUNDING_ERROR){
             objDxDy = 0
         }
         if(objDxDy){
@@ -249,6 +229,7 @@ export default class PhysicsManager{
         
         var legitTimes = []
         for(var time of [upTime,downTime,leftTime,rightTime]){
+            time = this.roundSmallNegativeToZero(time)
             if(time >= 0){
                 legitTimes.push(time)
             }
@@ -312,10 +293,8 @@ export default class PhysicsManager{
     }
     
     getObjectCollisionTime(obj1,obj2){
-        // Speed differences.
         const Vx = obj2.xMove - obj1.xMove
         const Vy = obj2.yMove - obj1.yMove
-        // Position differences.
         const Px = obj2.x-obj1.x
         const Py = obj2.y-obj1.y
         const squaredSumOfRadii = (obj1.radius + obj2.radius)**2
@@ -325,7 +304,7 @@ export default class PhysicsManager{
         const c = Px**2 + Py**2 - squaredSumOfRadii
         const discriminant = this.findDiscriminant(a,b,c)
         // console.log('discriminant',a,b,c)
-        
+
         if(discriminant < 0){return}
 
         const times = this.findQuadraticRoot(a,b,c)
@@ -333,36 +312,57 @@ export default class PhysicsManager{
         if(times.length == 0){return}
 
         var time = this.whenIsNextRealObjectCollision(obj1,obj2,times)
-        time = this.roundSmallToZero(time)
+        time = this.roundSmallNegativeToZero(time)
         
-        if(time >= 0){
+        if(time != null && time >= 0){
+            // console.log('timeForNextCollision')
             return(time)
         }
     }
 
     whenIsNextRealObjectCollision(obj1,obj2,times){
         for(var time of times){
-            const p1 = obj1.getInfoIn(time)
-            const p2 = obj2.getInfoIn(time)
+            var p1 = obj1.getInfoIn(time)
+            var p2 = obj2.getInfoIn(time)
+
+            if(this.isNotWithinBoundary(p1) || this.isNotWithinBoundary(p2)){
+                // console.log('denied')
+                continue
+            }
+            // var distance = this.getDistanceBetweenTwoPoints(p1,p2)
+            // console.log('prediction',p1,p2)
 
             const normalMoves = this.getNormalVectorsForCollision(p1,p2)
             const p1Info = {'position':p1,'normal':normalMoves.p1,'magnitude':normalMoves.p1Magnitude}
             const p2Info = {'position':p2,'normal':normalMoves.p2,'magnitude':normalMoves.p2Magnitude}
-            
+
             if(
                 this.isCollisionPossible(p1Info,p2Info) ||
                 this.isCollisionPossible(p2Info,p1Info))
             {
+                // console.log('timeOfCollision',time)
                 return(time)
             }
         }
+        return(null)
+    }
+
+    isNotWithinBoundary(obj){
+        if( obj.x + obj.radius > this.serverW ||
+            obj.x - obj.radius < 0 ||
+            obj.y + obj.radius > this.serverH ||
+            obj.y - obj.radius < 0)
+        {
+            return(1)
+        }
+        return(0)
     }
 
     // check if p1 normal greater than p2 normal speed
     isCollisionPossible(p1,p2){
         var timeX = -1
         var timeY = -1
-        
+        //sus
         if(p1.normal.x){
             timeX = (p2.position.x - p1.position.x)/p1.normal.x
         }
@@ -372,8 +372,8 @@ export default class PhysicsManager{
         }
 
         if( (timeX > 0 || timeY > 0) && 
-            ((p1.magnitude > 0 && p1.magnitude > p2.magnitude) ||
-            (p1.magnitude < 0 && p1.magnitude < p2.magnitude)) )
+            ((p1.magnitude > 0 && p1.magnitude > p2.magnitude + ROUNDING_ERROR) ||
+            (p1.magnitude < 0 && p1.magnitude < p2.magnitude + ROUNDING_ERROR)) )
         {
             return(1)
         }
@@ -382,14 +382,14 @@ export default class PhysicsManager{
     // CHANGE TRAJECTORY
 
     changeWallCollisionTrajectory(p1){
-        if( Math.abs(p1.x + p1.radius - this.serverW) < ROUNDING_ERROR ||
-            Math.abs(p1.x - p1.radius) < ROUNDING_ERROR)
+        if( (Math.abs(p1.x + p1.radius - this.serverW) < ROUNDING_ERROR && p1.dx > 0) ||
+            (Math.abs(p1.x - p1.radius) < ROUNDING_ERROR && p1.dx < 0) )
         {
             p1.dx *= -1
         }
         
-        if( Math.abs(p1.y + p1.radius - this.serverH) < ROUNDING_ERROR ||
-            Math.abs(p1.y - p1.radius) < ROUNDING_ERROR)
+        if( (Math.abs(p1.y + p1.radius - this.serverH) < ROUNDING_ERROR && p1.dy > 0) ||
+            (Math.abs(p1.y - p1.radius) < ROUNDING_ERROR && p1.dy < 0))
         {
             p1.dy *= -1
         }
@@ -428,66 +428,60 @@ export default class PhysicsManager{
         })
     }
 
-    // getVectorsAfterCollision(p1,p2){
-    //     const unitNormalVector = this.getUnitNormalVector(p1,p2)
-    //     const unitTangentVector = this.getUnitTangentVector(unitNormalVector)
+    getVectorsAfterCollision(p1,p2){
+        const unitNormalVector = this.getUnitNormalVector(p1,p2)
+        const unitTangentVector = this.getUnitTangentVector(unitNormalVector)
 
-    //     const p1MoveVector = new Vector(p1.xMove,p1.yMove)
-    //     const p2MoveVector = new Vector(p2.xMove,p2.yMove)
+        const p1MoveVector = new Vector(p1.xMove,p1.yMove)
+        const p2MoveVector = new Vector(p2.xMove,p2.yMove)
 
-    //     const p1Normal = unitNormalVector.dotProduct(p1MoveVector)
-    //     const p2Normal = unitNormalVector.dotProduct(p2MoveVector)
-    //     const p1Tangent = unitTangentVector.dotProduct(p1MoveVector)
-    //     const p2Tangent = unitTangentVector.dotProduct(p2MoveVector)
+        const p1Normal = unitNormalVector.dotProduct(p1MoveVector)
+        const p2Normal = unitNormalVector.dotProduct(p2MoveVector)
+        const p1Tangent = unitTangentVector.dotProduct(p1MoveVector)
+        const p2Tangent = unitTangentVector.dotProduct(p2MoveVector)
 
-    //     const newP1NormalVector = unitNormalVector.multiply(p2Normal)
-    //     const newP2NormalVector = unitNormalVector.multiply(p1Normal)
-    //     const newP1TangentVector = unitTangentVector.multiply(p1Tangent)
-    //     const newP2TangentVector = unitTangentVector.multiply(p2Tangent)
+        const newNormals = this.getElasticCollisionNewSpeeds(p1,p2,p1Normal,p2Normal)
 
-    //     const newP1Vector = newP1NormalVector.add(newP1TangentVector)
-    //     const newP2Vector = newP2NormalVector.add(newP2TangentVector)
+        const newP1NormalVector = unitNormalVector.multiply(newNormals.p1)
+        const newP2NormalVector = unitNormalVector.multiply(newNormals.p2)
+        const newP1TangentVector = unitTangentVector.multiply(p1Tangent)
+        const newP2TangentVector = unitTangentVector.multiply(p2Tangent)
 
-    //     return({
-    //         'p1': newP1Vector,
-    //         'p2': newP2Vector
-    //     })
-    // }
+        const newP1Vector = newP1NormalVector.add(newP1TangentVector)
+        const newP2Vector = newP2NormalVector.add(newP2TangentVector)
 
-    // testchangeObjectCollisionTrajectory(p1,p2){
-    //     const newMoves = this.getVectorsAfterCollision(p1,p2)
-    //     const newP1Vector = newMoves.p1
-    //     const newP2Vector = newMoves.p2
+        // console.log(newP1Vector,newP2Vector)
 
-    //     this.calculateNewDxDy(p1,newP1Vector.x,newP1Vector.y)
-    //     this.calculateNewDxDy(p2,newP2Vector.x,newP2Vector.y)
-    // }
-    
-    changeObjectCollisionTrajectory(p1,p2){
-        const p1Dx = p1.dx
-        const p2Dx = p2.dx
-        const p1Dy = p1.dy
-        const p2Dy = p2.dy
+        return({
+            'p1': newP1Vector,
+            'p2': newP2Vector
+        })
+    }
 
-        const numerator1 = ( (p1.xMove - p2.xMove)*(p1.x-p2.x) + 
-            (p1.yMove - p2.yMove)*(p1.y - p2.y) )
-        const numerator2 = ( (p2.xMove - p1.xMove)*(p2.x-p1.x) + 
-            (p2.yMove - p1.yMove)*(p2.y - p1.y) )
-        const denominator = (p1.radius+p2.radius)**2
+    getElasticCollisionNewSpeeds(p1,p2,p1Speed,p2Speed){
+        const numerator = 2*p1.mass*p1Speed + p2.mass*p2Speed - p1.mass*p2Speed
+        const denominator = p1.mass + p2.mass
 
-        const p1XChange = numerator1/denominator*(p1.x-p2.x)
-        const p1YChange = numerator1/denominator*(p1.y-p2.y)
-        const p2XChange = numerator2/denominator*(p2.x-p1.x)
-        const p2YChange = numerator2/denominator*(p2.y-p1.y)
+        const p2NewNormal = numerator / denominator
+        const p1NewNormal = p2Speed - p1Speed + p2NewNormal
         
-        const p1XFinal = p1.xMove - p1XChange 
-        const p1YFinal = p1.yMove - p1YChange
-        const p2XFinal = p2.xMove - p2XChange 
-        const p2YFinal = p2.yMove - p2YChange
+        // just change speeds, if same mass
+        // const p1NewNormal = p2Speed
+        // const p2NewNormal = p1Speed
 
-        this.calculateNewDxDy(p1,p1XFinal,p1YFinal)
-        this.calculateNewDxDy(p2,p2XFinal,p2YFinal)
-        this.didSomethingChange(p1,p2,p1Dx,p2Dx,p1Dy,p2Dy)
+        return({
+            'p1': p1NewNormal,
+            'p2': p2NewNormal
+        })
+    }
+
+    changeObjectCollisionTrajectory(p1,p2){
+        const newMoves = this.getVectorsAfterCollision(p1,p2)
+        const newP1Vector = newMoves.p1
+        const newP2Vector = newMoves.p2
+
+        this.calculateNewDxDy(p1,newP1Vector)
+        this.calculateNewDxDy(p2,newP2Vector)
     }
 
     didSomethingChange(p1,p2,p1Dx,p2Dx,p1Dy,p2Dy){
@@ -497,9 +491,9 @@ export default class PhysicsManager{
         }
     }
 
-    calculateNewDxDy(player,xFinal,yFinal){
-        this.setNewDx(player,xFinal)
-        this.setNewDy(player,yFinal)
+    calculateNewDxDy(player,newVector){
+        this.setNewDx(player,newVector.x)
+        this.setNewDy(player,newVector.y)
     }
 
     setNewDy(player,yFinal){
@@ -533,6 +527,7 @@ export default class PhysicsManager{
         // move boosted
         else if(player.moveR && xFinal > 0){
             player.dx = Math.max(xFinal - player.playerSpeed,0)
+
         }
         else if(player.moveL && xFinal < 0){
             player.dx = Math.min(xFinal + player.playerSpeed,0)
@@ -544,7 +539,18 @@ export default class PhysicsManager{
 
     // CALCULATOR
 
-    roundSmallToZero(number){
+    getDistanceBetweenTwoPoints(p1,p2){
+        return( ( (p1.x-p2.x)**2 + (p1.y-p2.y)**2 )**(1/2) )
+    }
+
+    roundValue(value){
+        const digits = 4
+        const number = 10**digits
+
+        return(Math.round( value * number + Number.EPSILON ) / number)
+    }
+
+    roundSmallNegativeToZero(number){
         if(number < 0 && number >= -1*ROUNDING_ERROR){
             return(0)
         }
@@ -560,14 +566,12 @@ export default class PhysicsManager{
         const denominator = 2*a
         var small = (-b - discriminantRoot ) / denominator
         var big = (-b + discriminantRoot ) / denominator
+        small = this.roundSmallNegativeToZero(small)
+        big = this.roundSmallNegativeToZero(big)
         
         //cant divide by 0
         if(a == 0){
             return([])
-        }
-
-        for(var root of [small,big]){
-            root = this.roundSmallToZero(root)
         }
 
         // non-negative time only

@@ -10,18 +10,20 @@ const MINUTES_TO_SECONDS = 60
 const ROUNDING_ERROR = 0.001
 
 class Game{
-    constructor(userIds,contacts,teams,lobbyId,countdown,playerRadius,
-            gameTimer){
-        this.lobbyId = lobbyId
-        this.userIds = userIds
-        this.contacts = contacts
-        this.playerRadius = playerRadius
+    constructor(lobby){
+        this.userIds = lobby.userIds
+        this.contacts = this.makeContacts()
+        this.teams = lobby.teams
+        this.lobbyId = lobby.lobbyId
+
+        this.playerRadius = 0
         this.playersToDelete = []
 
         // in seconds
         this.gameTime = 0
-        this.countdown = countdown
-        this.gameTimer = gameTimer
+        this.gameTimer = Number(lobby.gameTimer[0])*
+            MINUTES_TO_SECONDS //[0] is X from "Xmin"
+        this.countdown = 0
         // in miliseconds
         this.lastTime = Date.now()
         this.timeDiff = 0
@@ -29,8 +31,25 @@ class Game{
         this.inGame = 1
         this.ball = 0
         this.goals = 0
-        this.teams = teams
+
+        this.lastCollision = []
     }
+
+    makeContacts(){
+        const count = this.userIds.length
+        var contacts = []
+        for(var i=0; i<count; i++){
+            var ballContact = [this.userIds[i],'ball']
+            contacts.push(ballContact)
+
+            for(var p = i+1; p<count; p++){
+                var contact = [this.userIds[i],this.userIds[p]]
+                contacts.push(contact)
+            }
+        }
+        return(contacts)
+    }
+
 }
 
 export default class Game1Control{
@@ -52,8 +71,8 @@ export default class Game1Control{
         this.goalWidth = 0.2
         
         this.spawnRadius = 4
-        this.playerRadiusA = 0.6
-        this.playerRadiusB = 0.95
+        this.maxPlayerRadius = 0.6
+        this.maxPlayerRadiusDecay = 0.99
         
         this.scorerListLength = 5
         this.scorerTextDelimeter = '!'
@@ -474,21 +493,6 @@ export default class Game1Control{
         return(memberCounts)
     }
 
-    makeContacts(userIds){
-        const count = userIds.length
-        var contacts = []
-        for(var i=0; i<count; i++){
-            var ballContact = [userIds[i],'ball']
-            contacts.push(ballContact)
-
-            for(var p = i+1; p<count; p++){
-                var contact = [userIds[i],userIds[p]]
-                contacts.push(contact)
-            }
-        }
-        return(contacts)
-    }
-
     addBall(lobby){
         const x = this.serverW/2
         const y = this.serverH/2
@@ -514,27 +518,32 @@ export default class Game1Control{
             this.goalWidth,this.goalHeight, lobby.teams[1])
     }
 
-    newGame(roomLobby){
-        const userIds = roomLobby.userIds
-        const lobbyId = roomLobby.lobbyId
-        const teams = roomLobby.teams
-        const gameTimer = Number(roomLobby.gameTimer[0])*MINUTES_TO_SECONDS
-        const contacts = this.makeContacts(userIds)
-        const playerRadius = this.playerRadiusA*
-            this.playerRadiusB**userIds.length
+    makePlayerRadius(lobby){
+        const teamCounts = this.countTeamMembers(lobby)
+        const biggestTeamCount = Math.max(...Object.values(teamCounts))
+        const angleInterval = Math.PI/(biggestTeamCount+1)
+        var radius = this.maxPlayerRadius*this.maxPlayerRadiusDecay**lobby.userIds.length
 
-        this.games[lobbyId] = new Game(
-            userIds,
-            contacts,
-            teams,
-            lobbyId,
-            this.gameCountdown,
-            playerRadius,
-            gameTimer
-        )
-            
+        while(1){
+            const p1 = this.makePosition(0)
+            const p2 = this.makePosition(angleInterval)
+            const distance = ((p1.x - p2.x)**2 + (p1.y-p2.y)**2)**(1/2)
+            if( distance > 4*radius + ROUNDING_ERROR){
+                break
+            }
+            radius *= 0.95
+        }
+        lobby.playerRadius = radius
+    }
+
+    newGame(roomLobby){
+        const lobbyId = roomLobby.lobbyId 
+        this.games[lobbyId] = new Game(roomLobby)
+
         const gameLobby = this.games[lobbyId]
+        gameLobby.gameCountdown = this.gameCountdown
         
+        this.makePlayerRadius(gameLobby)
         this.addGoals(gameLobby)
         this.addPlayers(gameLobby)
         this.addBall(gameLobby)
@@ -574,7 +583,7 @@ export default class Game1Control{
     }
 
     impulsePlayer(player,lobby){
-        this.physics.giveWallImpulse(player)
+        this.physics.impulseOffWall(player)
         this.physics.givePlayersImpulse(player,lobby)
         this.physics.giveBallImpulse(player,lobby)
     }
@@ -609,13 +618,15 @@ export default class Game1Control{
     // MOVE
 
     moveGameObjects(lobby,time){
-        const p1 = this.players.getInfo('p1')
-        const p2 = this.physics.getObjectById(lobby,'ball')
-        // console.log(p1,p2)
         this.movePlayers(lobby,time)
         if(lobby.ball){
             this.moveBall(lobby,time)
         }
+        const contact = lobby.contacts[0]
+        const p1 = this.physics.getObjectById(lobby,contact[0])
+        const p2 = this.physics.getObjectById(lobby,contact[1])
+        const distance = this.physics.getDistanceBetweenTwoPoints(p1,p2)
+        // console.log('movedPlayers',distance,p1,p2)
     }
 
     movePlayers(lobby,time){
@@ -674,19 +685,22 @@ export default class Game1Control{
         const nextCollision = this.getNextCollision(lobby)
         const remainingTime = 1/this.refreshRate - timePassed
         this.isOverlap(lobby)
+        this.isBounceReasonable(lobby)
+
+        lobby.lastCollision = nextCollision
 
         if(!nextCollision || nextCollision.time > remainingTime){
-            // console.log('noCollision')
+            console.log('noCollision')
             this.moveGameObjects(lobby,remainingTime)
             return
         }
 
         if (nextCollision.type == 'wall'){
-            // console.log('wallCollision')
+            console.log('wallCollision')
             this.wallCollisionProcedure(lobby,timePassed,nextCollision)
         }
         else if(nextCollision.type == 'player'){
-            // console.log('playerCollision')
+            console.log('playerCollision')
             this.objectCollisionProcedure(lobby,timePassed,nextCollision)
         }
     }
@@ -696,13 +710,13 @@ export default class Game1Control{
         const wallCollision = this.physics.getGameNextWallCollision(lobby)
 
         if(wallCollision &&
-            (!playerCollision || wallCollision.time < playerCollision.time) )
+            (!playerCollision || wallCollision.time <= playerCollision.time) )
         {
             return(wallCollision)
         }
 
         else if(playerCollision &&
-            (!wallCollision || playerCollision.time <= wallCollision.time) )
+            (!wallCollision || playerCollision.time < wallCollision.time) )
         {
             return(playerCollision)
         }
@@ -742,28 +756,18 @@ export default class Game1Control{
         this.collisionProcedure(lobby,timePassed)
     }
 
-    // TESTS
-
-    runTest(){
-        this.testPlayerPushesBallRight()
-        this.testPlayerPushesBallLeft()
-        this.testPlayerPushesBallDownToTheSide()
-        this.testPlayerPushesBallUpToTheSide()
-        this.testPlayerPushesBallDown()
-        this.testPlayerPushesBallDiagonally()
-    }
-
     isOverlap(lobby){
         for(var contact of lobby.contacts){
             const p1 = this.physics.getObjectById(lobby,contact[0])
             const p2 = this.physics.getObjectById(lobby,contact[1])
-            const distance = ((p1.x-p2.x)**2 + (p1.y-p2.y)**2)**(1/2)
+            const distance = this.physics.getDistanceBetweenTwoPoints(p1,p2)
 
             if(distance < p1.radius + p2.radius - ROUNDING_ERROR){
-                console.log(distance,p1,p2)
+                p1.dx = 100 //TEMPORARY FIX
+                p2.dx = -100
                 strictEqual(0,1)
             }
-        }
+        }   
     }
 
     isBounceReasonable(lobby){
@@ -774,10 +778,28 @@ export default class Game1Control{
         for(var objectId of objects){
             const object = this.physics.getObjectById(lobby,objectId)
             if( Math.abs(object.dx) > 500 || Math.abs(object.dy) > 500){
-                console.log(object)
+                console.log(object,lobby.ball)
                 strictEqual(0,1)
             }
         }
+    }
+
+    // TESTS
+
+    runTest(){
+        this.testPlayerPushesBallRight()
+        this.testPlayerPushesBallLeft()
+        this.testPlayerPushesBallDownToTheSide()
+        this.testPlayerPushesBallUpToTheSide()
+        this.testPlayerPushesBallDown()
+        this.testPlayerPushesBallDiagonally()
+        this.testPlayerNotDriftingFromWall()
+        this.testPlayerPushesBallIntoCorner()
+        this.testRadiusMaking()
+        this.testPlayerPushesBallUpOnEdge()
+        this.testPlayerPushesBallIntoOnEdge()
+        this.testPlayerPushesBallIntoCorner()
+        this.testPlayerPushesBallIntoRightWall()
     }
 
     logPlayer(id, p){
@@ -796,17 +818,20 @@ export default class Game1Control{
     testRunGameWithP1Ball(lobby,moveCommand,moveCommand1){
         const p1 = this.players.getInfo('p1')
         const ball = lobby.ball
-        const cycles = 10
+        const cycles = 6
 
         for(var count = 0; count < cycles; count++){
             // console.log('cycle=%i', count)
-            this.updateGame(lobby)
+            // console.log('== before cycle')
+
             p1[moveCommand] = 1
             p1[moveCommand1] = 1
-
-            // this.isOverlap(lobby)
-            this.isBounceReasonable(lobby)
             
+            // this.logPlayer('p1', p1)
+            // this.logPlayer('p2', ball)
+            // console.log('distance',this.physics.getDistanceBetweenTwoPoints(p1,ball)-p1.radius-ball.radius)
+            this.updateGame(lobby)
+
             // console.log('== after cycle')
             // this.logPlayer('p1', p1)
             // this.logPlayer('p2', ball)
@@ -817,14 +842,12 @@ export default class Game1Control{
     testPlayerPushesBallRight(){
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
-        p1.x = 7.450000000000016
+        p1.x = this.serverW - 1
         // p1.dx = -12.75
-        p1.y = 4.500000000000001 
-        p1.moveR = 1
+        p1.y = 4.5
 
-        const ball = new Ball(8.200000000000015,4.5)
-        ball.dx = 12.75
-        console.log( ((ball.x-p1.x)**2+(ball.y-p1.y)**2)**(1/2))
+        const ball = new Ball(p1.x + 0.75,4.5)
+        // ball.dx = 12.75
         const lobby = this.testMakeLobbyWithP1Ball(ball)
         this.testRunGameWithP1Ball(lobby,'moveR')
     }
@@ -835,7 +858,6 @@ export default class Game1Control{
         p1.x = 1.1
         // p1.dx = -12.75
         p1.y = 4
-        p1.moveL = 1
 
         const ball = new Ball(0.3,4)
         const lobby = this.testMakeLobbyWithP1Ball(ball)
@@ -843,13 +865,11 @@ export default class Game1Control{
     }
 
     testPlayerPushesBallDown(){
-        console.log('testPlayerPushesBallDown')
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 4
         p1.dx = 0
         p1.y = 4
-        p1.moveD = 1
 
         const ball = new Ball(p1.x,p1.y+.8)
         const lobby = this.testMakeLobbyWithP1Ball(ball)
@@ -857,13 +877,11 @@ export default class Game1Control{
     }
 
     testPlayerPushesBallDownToTheSide(){
-        console.log('testPlayerPushesBallDownToSide')
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.411066224684294
         p1.y = 3.1821407971619977
         p1.dx = -0.38
-        p1.moveD = 1
 
         const ball = new Ball(15.430037101626137,4.001921320124124)
         ball.dx = 0.32
@@ -873,12 +891,10 @@ export default class Game1Control{
     }
 
     testPlayerPushesBallUpToTheSide(){
-        console.log('testPlayerPushesBallUpToSide')
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 3
         p1.y = 6
-        p1.moveU = 1
 
         const ball = new Ball(p1.x - .36,p1.y - .66)
         const lobby = this.testMakeLobbyWithP1Ball(ball)
@@ -886,19 +902,117 @@ export default class Game1Control{
     }
 
     testPlayerPushesBallDiagonally(){
+        this.players.addPlayer('p1',0,0,0.57)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 7.725964643494802
+        p1.y = 4.60443719555104
+
+        const ball = new Ball(8.428204916256615,4.181047777507303)
+        ball.dx = 11.913300583068112
+        ball.dy = -8.439290659802205
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveR','moveU')
+    }
+
+    testPlayerNotDriftingFromWall(){
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
-        p1.x = 13.38426696672149
-        p1.y = 2.820446733112996
-        // p1.dx = 15
-        // p1.dy = 15
-        p1.moveL = 1
+        p1.x = 5
+        p1.y = this.serverH - p1.radius
+        p1.newImpulse = 1
+
+        const ball = new Ball(8.428204916256615,4.181047777507303)
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby)
+    }
+
+    testPlayerPushesBallIntoCorner(){
+        this.players.addPlayer('p1',0,0,0.57)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 14.7203
+        p1.y = 0.57
+        p1.dx = -631.177250048974
+        p1.dy = -42.820705603356124
+        p1.moveR = 1
         p1.moveU = 1
 
-        const ball = new Ball(12.89285420882964,2.164006711952552)
-        ball.dx = -9.26
-        ball.dy = -11.61
+        const ball = new Ball(15.5098, 0.3486)
+        ball.dx = -691.5095101315077
+        ball.dy = 191.3079142925617
         const lobby = this.testMakeLobbyWithP1Ball(ball)
-        this.testRunGameWithP1Ball(lobby,'moveL')
+        this.testRunGameWithP1Ball(lobby,'moveR','moveU')
+    }
+
+    testPlayerPushesBallUpOnEdge(){
+        this.players.addPlayer('p1',0,0,0.594)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 15.406
+        p1.y = 5.224264068711929
+        p1.dx = 3.6469744855394026
+        
+        const ball = new Ball(15.171467395321821,4.413170753025239) 
+        ball.dx = -3.646974485539403
+        ball.dy = -14.053592686597527
+        
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveU')
+    }
+
+    testRadiusMaking(){
+        const teamLength = 100
+
+        var lobby = {
+            lobbyId: 'a',
+            userIds: []
+        }
+        for(var count = 0; count < teamLength; count++){
+            const user = this.users.newUser(0,lobby)
+            user.team = 'orange'
+            lobby.userIds.push(user.userId)
+        }
+        this.makePlayerRadius(lobby)
+        console.log(lobby.playerRadius)
+    }
+
+    testPlayerPushesBallIntoOnEdge(){
+        this.players.addPlayer('p1',0,0,0.594)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 15.404110198984208
+        p1.y = 5.124116293439814
+        
+        const ball = new Ball(15.723174151169607,5.9054831691235945) 
+        ball.dx = 4.224276642624691
+        ball.dy = 13.212765257601191
+        
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveR','moveD')
+    }
+
+    testPlayerPushesBallIntoCorner(){
+        this.players.addPlayer('p1',0,0,0.594)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 15.180286098347343
+        p1.y = 7.957906153748709
+        p1.dx = -11.8447
+        p1.dy = -23.1158
+        
+        const ball = new Ball(15.749918798120003,8.75) 
+        ball.dx = -12.9866
+        ball.dy = 10.3567
+        
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby)
+    }
+
+    testPlayerPushesBallIntoRightWall(){
+        this.players.addPlayer('p1',0,0,0.5)
+        const p1 = this.players.getInfo('p1')
+        p1.x = 15
+        p1.y = 5
+        
+        const ball = new Ball(15.75,5) 
+        
+        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        this.testRunGameWithP1Ball(lobby,'moveR')
     }
 }
