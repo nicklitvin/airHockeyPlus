@@ -18,7 +18,6 @@ export default class PhysicsManager{
         this.impulseRadius = 1.5
     }
 
-    // TODO: use private method
     getObjectById(lobby,objectId){
         let object
         if(objectId == 'ball'){
@@ -30,183 +29,67 @@ export default class PhysicsManager{
         return(object)
     }
 
-    // BOUNCE
-
-    limitObjectBounceSpeed(player){
-        const angle = Math.atan(player.dy/player.dx)
-        player.dx = Math.sign(player.dx || 1)*Math.cos(angle)*
-            this.objectBounceSpeedLimit
-        player.dy = Math.sign(player.dx || 1)*Math.sin(angle)*
-            this.objectBounceSpeedLimit
-    }
-
-    isObjectBounceTooFast(object){
-        return( (object.dx**2+object.dy**2)**(1/2) >
-            this.objectBounceSpeedLimit
-        )
-    }
-
     // IMPULSE
 
-    isWithinImpulseRange(obj0,obj1){
-        const dist = ( (obj0.x-obj1.x)**2 + (obj0.y-obj1.y)**2 )**(1/2)
+    isWithinImpulseRange(obj1,obj2){
+        const dist = this.getDistanceBetweenTwoPoints(obj1,obj2)
         if(dist < this.impulseRadius){
             return(1)
         }
     }
 
     impulseOffWall(player){
-        const impulseMagnitude = this.impulseMagnitude
-
         //closest to which wall
         const yDist = Math.min(this.serverH-player.y,player.y)
         const xDist = Math.min(this.serverW-player.x,player.x)
 
+        var bounceChange = new Vector(0,0)
+
         if(Math.abs(yDist-player.radius) < ROUNDING_ERROR){
-            player.dy += Math.sign(this.serverH-2*player.y)*impulseMagnitude 
+            bounceChange.y = Math.sign(this.serverH-2*player.y)*this.impulseMagnitude 
         }
         if(Math.abs(xDist-player.radius) < ROUNDING_ERROR){
-            player.dx += Math.sign(this.serverW-2*player.x)*impulseMagnitude 
+            bounceChange.x = Math.sign(this.serverW-2*player.x)*this.impulseMagnitude
         }
+
+        player.addBounce(bounceChange)
     }
 
-    givePlayersImpulse(player,lobby){
-        const targetIds = lobby.userIds
+    giveBallsBounceFromImpulse(player,lobby){
+        const ballIds = lobby.getAllBallIds()
 
-        for(var targetId of targetIds){
+        for(var targetId of ballIds){
             if(targetId == player.userId){
                 continue
             }
-            const target = this.players.getInfo(targetId)
+            const target = this.getObjectById(lobby,targetId)
+
             if(this.isWithinImpulseRange(player,target)){
                 this.giveTargetBounce(player,target)
             }
         }
     }
-
+    
     giveTargetBounce(giver,target){
         const impulseMagnitude = this.impulseMagnitude
     
         //1st quadrant angle
         const angle = Math.abs(Math.atan((target.y-giver.y)/(target.x-giver.x)))
         
-        target.dy += Math.sign(target.y-giver.y)*Math.sin(angle)*impulseMagnitude/target.mass
-        target.dx += Math.sign(target.x-giver.x)*Math.cos(angle)*impulseMagnitude/target.mass
-    }
+        const bounceY = Math.sign(target.y-giver.y)*Math.sin(angle)*impulseMagnitude/target.mass
+        const bounceX = Math.sign(target.x-giver.x)*Math.cos(angle)*impulseMagnitude/target.mass
 
-    giveBallImpulse(player,lobby){
-        const ball = lobby.ball
-
-        if(this.isWithinImpulseRange(player,ball)){
-            this.giveTargetBounce(player,ball)
-        }
-    }
-
-    // MOVE
-
-    moveObject(obj,time){
-        obj.x += obj.xMove*time
-        obj.y += obj.yMove*time
-        // obj.x = this.roundValue(obj.x)
-        // obj.y = this.roundValue(obj.y)
-
-        this.keepObjectWithinBoundary(obj)
-    }
-
-    keepObjectWithinBoundary(obj){
-        if(obj.x + obj.radius > this.serverW){
-            obj.x = this.serverW - obj.radius
-        }
-        if(obj.x - obj.radius < 0){
-            obj.x = obj.radius
-        }
-        if(obj.y + obj.radius > this.serverH){
-            obj.y = this.serverH - obj.radius
-        }
-        if(obj.y - obj.radius < 0){
-            obj.y = obj.radius
-        }
-    }
-
-    applyPlayerMoveInput(player){
-        const playerSpeed = player.playerSpeed
-
-        if(player.moveU && player.y - player.radius > ROUNDING_ERROR){
-            player.yMove -= playerSpeed
-        }
-        else if(player.moveD &&
-            player.y + player.radius < this.serverH - ROUNDING_ERROR)
-        {
-            player.yMove += playerSpeed
-        }
-
-        if(player.moveL && player.x - player.radius > ROUNDING_ERROR){
-            player.xMove -= playerSpeed
-        }
-        else if(player.moveR &&
-            player.x + player.radius < this.serverW - ROUNDING_ERROR)
-        {
-            player.xMove += playerSpeed
-        }
-    }
-
-    makeXyMove(object){
-        // only for player
-        if(object.userId){
-            this.applyPlayerMoveInput(object)
-        }
-        object.xMove += object.dx
-        object.yMove += object.dy
-    }
-
-    setMoveSpeed(player){
-        player.playerSpeed = this.playerMoveSpeed
-        if( (player.moveU || player.moveD) && (player.moveL || player.moveR) ){
-            player.playerSpeed *= Math.sqrt(2)/2
-        }
-    }
-
-    deleteMoveContradictions(player){
-        if(player.moveU && player.moveD){
-            player.moveU = 0
-            player.moveD = 0
-        }
-        if(player.moveL && player.moveR){
-            player.moveL = 0
-            player.moveR = 0
-        }
-    }
-
-    // FRICTION
-    
-    resolveFriction(obj){
-        obj.dx = this.applyFriction(obj.dx)
-        obj.dy = this.applyFriction(obj.dy)
-
-        // obj.dx = this.roundValue(obj.dx)
-        // obj.dy = this.roundValue(obj.dy)
-    }
-
-    applyFriction(objDxDy){
-        if(Math.abs(objDxDy) < ROUNDING_ERROR){
-            objDxDy = 0
-        }
-        if(objDxDy){
-            objDxDy *= this.frictionConst
-        }
-        return(objDxDy)
+        var bounce = new Vector(bounceX,bounceY)
+        target.addBounce(bounce)
     }
 
     // WALL COLLISION
 
     getGameNextWallCollision(lobby){
-        var objects = lobby.userIds.slice()
-        if(lobby.ball){
-            objects.push('ball')
-        }
+        var ballIds = lobby.getAllBallIds()
+        var nextCollision = null
 
-        let nextCollision
-        for(var objectId of objects){
+        for(var objectId of ballIds){
             const object = this.getObjectById(lobby,objectId)
             const time = this.getNextObjectWallCollisionTime(object)
 
@@ -329,8 +212,6 @@ export default class PhysicsManager{
                 // console.log('denied')
                 continue
             }
-            // var distance = this.getDistanceBetweenTwoPoints(p1,p2)
-            // console.log('prediction',p1,p2)
 
             const normalMoves = this.getNormalVectorsForCollision(p1,p2)
             const p1Info = {'position':p1,'normal':normalMoves.p1,'magnitude':normalMoves.p1Magnitude}
@@ -362,7 +243,7 @@ export default class PhysicsManager{
     isCollisionPossible(p1,p2){
         var timeX = -1
         var timeY = -1
-        //sus
+        
         if(p1.normal.x){
             timeX = (p2.position.x - p1.position.x)/p1.normal.x
         }
@@ -380,20 +261,6 @@ export default class PhysicsManager{
     }
 
     // CHANGE TRAJECTORY
-
-    changeWallCollisionTrajectory(p1){
-        if( (Math.abs(p1.x + p1.radius - this.serverW) < ROUNDING_ERROR && p1.dx > 0) ||
-            (Math.abs(p1.x - p1.radius) < ROUNDING_ERROR && p1.dx < 0) )
-        {
-            p1.dx *= -1
-        }
-        
-        if( (Math.abs(p1.y + p1.radius - this.serverH) < ROUNDING_ERROR && p1.dy > 0) ||
-            (Math.abs(p1.y - p1.radius) < ROUNDING_ERROR && p1.dy < 0))
-        {
-            p1.dy *= -1
-        }
-    }
 
     getUnitNormalVector(p1,p2){
         const xDistance = p2.x-p1.x
@@ -484,57 +351,9 @@ export default class PhysicsManager{
         this.calculateNewDxDy(p2,newP2Vector)
     }
 
-    didSomethingChange(p1,p2,p1Dx,p2Dx,p1Dy,p2Dy){
-        if(p1.dx == p1Dx && p2.dx == p2Dx && p1.dy == p1Dy && p2.dy == p2Dy){
-            console.log(p1,p2)
-            strictEqual(0,1)
-        }
-    }
-
     calculateNewDxDy(player,newVector){
-        this.setNewDx(player,newVector.x)
-        this.setNewDy(player,newVector.y)
-    }
-
-    setNewDy(player,yFinal){
-        if( (player.moveD || player.moveU) && yFinal == 0){
-            //do nothing
-        }
-        // resisting push
-        else if( (player.moveD && yFinal < 0) || (player.moveU && yFinal > 0)){
-            player.dy += yFinal
-        }
-        // move boost
-        else if(player.moveD && yFinal > 0){
-            player.dy = Math.max(yFinal - player.playerSpeed,0)
-        }
-        else if(player.moveU && yFinal < 0){
-            player.dy = Math.min(yFinal + player.playerSpeed,0)
-        }
-        else{
-            player.dy = yFinal
-        }
-    }
-
-    setNewDx(player,xFinal){
-        if( (player.moveR || player.moveL) && xFinal == 0){
-            //do nothing
-        }
-        // resisting push
-        else if( (player.moveR && xFinal < 0) || (player.moveL && xFinal > 0)){
-            player.dx += xFinal
-        }
-        // move boosted
-        else if(player.moveR && xFinal > 0){
-            player.dx = Math.max(xFinal - player.playerSpeed,0)
-
-        }
-        else if(player.moveL && xFinal < 0){
-            player.dx = Math.min(xFinal + player.playerSpeed,0)
-        }
-        else{
-            player.dx = xFinal
-        }
+        player.setNewDx(newVector.x)
+        player.setNewDy(newVector.y)
     }
 
     // CALCULATOR

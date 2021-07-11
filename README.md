@@ -1,6 +1,7 @@
-Description: Website for group gaming
+Description: Website for online group gaming
+Game1: Air hockey with no boundaries and impulses
 
-last stable release: 0.1.19
+last stable release: 0.1.19 (goals disabled)
 
 install node.js: https://nodejs.org/en/download/
 

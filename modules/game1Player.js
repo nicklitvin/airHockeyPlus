@@ -1,60 +1,148 @@
 'use strict'
-class Player{
+import Ball from './game1Ball.js'
+
+const ROUNDING_ERROR = 0.001
+
+export default class Player extends Ball{
     constructor(userId,team,userName,playerRadius){
+        super(0,0)
+        this.radius = playerRadius
         this.userId = userId
         this.userName = userName
-        this.radius = playerRadius
         this.team = team
-        this.goals = 0
-        this.mass = 1
-        
-        this.x = 0
-        this.y = 0
-        this.dx = 0
-        this.dy = 0
 
         this.moveL = 0
         this.moveR = 0
         this.moveU = 0
         this.moveD = 0
-        this.xMove = 0
-        this.yMove = 0
-        
+        this.speed = 0
+
+        this.goals = 0
         this.newImpulse = 0
         this.impulseCooldown = 0
-        this.playerSpeed = 0
+
+        this.maxSpeed = 15 //must get from configuration
     }
 
-    getInfoIn(time){
-        return({
-            'x': this.x + this.xMove*time,
-            'y': this.y + this.yMove*time,
-            'xMove': this.xMove,
-            'yMove': this.yMove,
-            'radius': this.radius
-        })
-    }
-}
-
-export default class PlayerManager{
-    constructor(users){
-        this.users = users
-        this.players = {}
+    recordPlayerMove(move){
+        if(move.left){
+            this.moveL = 1
+        }
+        if(move.right){
+            this.moveR = 1
+        }
+        if(move.up){
+            this.moveU = 1
+        }
+        if(move.down){
+            this.moveD = 1
+        }
     }
 
-    getAllInfo(){
-        return(this.players)
+    resetPlayerMoveCommands(){
+        this.moveL = 0
+        this.moveR = 0
+        this.moveU = 0
+        this.moveD = 0
     }
 
-    addPlayer(userId,team,userName,playerRadius){
-        this.players[userId] = new Player(userId,team,userName,playerRadius)
+    deleteMoveContradictions(){
+        if(this.moveU && this.moveD){
+            this.moveU = 0
+            this.moveD = 0
+        }
+        if(this.moveL && this.moveR){
+            this.moveL = 0
+            this.moveR = 0
+        }
     }
 
-    deletePlayer(playerId){
-        delete this.players[playerId]
+    setMoveSpeed(){
+        this.speed = this.maxSpeed
+        if( (this.moveU || this.moveD) && (this.moveL || this.moveR) ){
+            this.speed *= Math.sqrt(2)/2
+        }
     }
 
-    getInfo(playerId){
-        return(this.players[playerId])
+    makeXyMove(){
+        this.applyPlayerMoveInput()
+        this.makeXyMoveFromDxDy()
+    }
+
+    applyPlayerMoveInput(){
+        if(this.moveU && this.y - this.radius > ROUNDING_ERROR){
+            this.yMove -= this.speed
+        }
+        else if(this.moveD &&
+            this.y + this.radius < this.serverH - ROUNDING_ERROR)
+        {
+            this.yMove += this.speed
+        }
+
+        if(this.moveL && this.x - this.radius > ROUNDING_ERROR){
+            this.xMove -= this.speed
+        }
+        else if(this.moveR &&
+            this.x + this.radius < this.serverW - ROUNDING_ERROR)
+        {
+            this.xMove += this.speed
+        }
+    }
+
+    activateImpulse(cooldown){
+        this.newImpulse = 1
+        this.impulseCooldown = cooldown
+    }
+
+    decreaseImpulseCooldown(timeDiff){
+        this.impulseCooldown -= timeDiff
+            
+        if(this.impulseCooldown < 0){
+            this.impulseCooldown = 0
+        }
+    }
+
+    deactivateImpulse(){
+        this.newImpulse = 0
+    }
+
+    setNewDy(yFinal){
+        if( (this.moveD || this.moveU) && yFinal == 0){
+            //do nothing
+        }
+        // resisting push
+        else if( (this.moveD && yFinal < 0) || (this.moveU && yFinal > 0)){
+            this.dy += yFinal
+        }
+        // move boost
+        else if(this.moveD && yFinal > 0){
+            this.dy = Math.max(yFinal - this.speed,0)
+        }
+        else if(this.moveU && yFinal < 0){
+            this.dy = Math.min(yFinal + this.speed,0)
+        }
+        else{
+            this.dy = yFinal
+        }
+    }
+
+    setNewDx(xFinal){
+        if( (this.moveR || this.moveL) && xFinal == 0){
+            //do nothing
+        }
+        // resisting push
+        else if( (this.moveR && xFinal < 0) || (this.moveL && xFinal > 0)){
+            this.dx += xFinal
+        }
+        // move boosted
+        else if(this.moveR && xFinal > 0){
+            this.dx = Math.max(xFinal - this.speed,0)
+        }
+        else if(this.moveL && xFinal < 0){
+            this.dx = Math.min(xFinal + this.speed,0)
+        }
+        else{
+            this.dx = xFinal
+        }
     }
 }
