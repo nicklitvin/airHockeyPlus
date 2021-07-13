@@ -14,22 +14,24 @@ https://www.youtube.com/watch?v=CFbo_nBdBco
 isCollisionPossible: p1.magnitude > p2.magnitude + ROUNDING_ERROR, may cause overlap
 
 TODO
-V0.1.21 refactoring (tests, game independent)
-V0.1.22 function cleanup
-make Tests actual lobbies
-
-make all functions usegetobjectbyId()
- (gameControl,players,physics,tests)
-timePassed for collision hold in game
+split game into time manager, info manager, collision manager
+Tests are functional
+Vector to transition
+Function cleanup
+configuration dictionary (for player speed limit...)
 
 V0.2.X customization (modes, instructions, kicking players)
 
+timePassed for collision hold in game
+have ball remember starting position, no need to recalculate
+game countdown takes away from game time
+set player position using class and vector
 combine x,y and dx,dy into vector, transition to vectors
 make ballIds part of game
 default fix if all fails for collision control
 if overlap, pusher may still be faster, what is effect?
 optimize calculations
-scorers not counting properly?
+make Game1Control an instance part of the room?
 
 FOR LATER
 no friction mode

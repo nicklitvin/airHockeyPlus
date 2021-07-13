@@ -2,6 +2,7 @@
 import Game1Control from "./game1Control.js"
 import Game from './game1Game.js'
 import Ball from './game1Ball.js'
+import Goals from './game1Goal.js'
 
 export default class Game1Testing extends Game1Control{
     constructor(io,users,lobbies,refreshRate){
@@ -9,7 +10,8 @@ export default class Game1Testing extends Game1Control{
     }
 
     runTests(){
-        this.testPlayerPushesBallRight()
+        this.makeNewGame()
+        // this.testPlayerPushesBallRight()
         // this.testPlayerPushesBallLeft()
         // this.testPlayerPushesBallDownToTheSide()
         // this.testPlayerPushesBallUpToTheSide()
@@ -24,16 +26,17 @@ export default class Game1Testing extends Game1Control{
         // this.testPlayerPushesBallIntoRightWall()
         // this.testPlayerImpulsesOffWall()
         // this.testPlayerLimitingSpeed()
+        // this.testMakeWinnerText()
     }
 
-    testMakeLobbyWithP1Ball(ball){
+    testMakeLobbyWithP1Ball(){
         const roomLobby = {
             userIds: ['p1'],
             teams: 0,
             gameTimer: '1min',
             lobbyId: 'test'
         }
-        const lobby = new Game(roomLobby)
+        const lobby = new Game(roomLobby,this.users)
         lobby.addBall()
 
         return(lobby)
@@ -81,108 +84,136 @@ export default class Game1Testing extends Game1Control{
     }
 
     testPlayerPushesBallLeft(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 1.1
         // p1.dx = -12.75
         p1.y = 4
 
-        const ball = new Ball(0.3,4)
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        const ball = lobby.ball
+        ball.x = 0.3
+        ball.y = 4
+
         this.testRunGameWithP1Ball(lobby,'moveL')
     }
 
     testPlayerPushesBallDown(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 4
         p1.dx = 0
         p1.y = 4
 
-        const ball = new Ball(p1.x,p1.y+.8)
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        const ball = lobby.ball
+        ball.x = p1.x
+        ball.y = p1.y + .8
         this.testRunGameWithP1Ball(lobby,'moveD')
     }
 
     testPlayerPushesBallDownToTheSide(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.411066224684294
         p1.y = 3.1821407971619977
         p1.dx = -0.38
 
-        const ball = new Ball(15.430037101626137,4.001921320124124)
+        const ball = lobby.ball
+        ball.x = 15.430037101626137
+        ball.y = 4.001921320124124
         ball.dx = 0.32
         ball.dy = 14.98
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        
         this.testRunGameWithP1Ball(lobby,'moveD')
     }
 
     testPlayerPushesBallUpToTheSide(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 3
         p1.y = 6
 
-        const ball = new Ball(p1.x - .36,p1.y - .66)
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        const ball = lobby.ball
+        ball.x = p1.x - .36
+        ball.y = p1.y - .66
+
         this.testRunGameWithP1Ball(lobby,'moveU')
     }
 
     testPlayerPushesBallDiagonally(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.57)
         const p1 = this.players.getInfo('p1')
         p1.x = 7.725964643494802
         p1.y = 4.60443719555104
 
-        const ball = new Ball(8.428204916256615,4.181047777507303)
+        const ball = lobby.ball
+        ball.x = 8.428204916256615
+        ball.y = 4.181047777507303
         ball.dx = 11.913300583068112
         ball.dy = -8.439290659802205
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        
         this.testRunGameWithP1Ball(lobby,'moveR','moveU')
     }
 
     testPlayerNotDriftingFromWall(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 5
         p1.y = this.serverH - p1.radius
         p1.newImpulse = 1
 
-        const ball = new Ball(8.428204916256615,4.181047777507303)
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        const ball = lobby.ball
+        ball.x = 8.428204916256615
+        ball.y = 4.181047777507303
+
         this.testRunGameWithP1Ball(lobby)
     }
 
     testPlayerPushesBallIntoCorner(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.57)
         const p1 = this.players.getInfo('p1')
         p1.x = 14.7203
         p1.y = 0.57
         p1.dx = -631.177250048974
         p1.dy = -42.820705603356124
-        p1.moveR = 1
-        p1.moveU = 1
 
-        const ball = new Ball(15.5098, 0.3486)
+        const ball = lobby.ball
+        ball.x = 15.5098
+        ball.y = 0.3486
         ball.dx = -691.5095101315077
         ball.dy = 191.3079142925617
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+
         this.testRunGameWithP1Ball(lobby,'moveR','moveU')
     }
 
     testPlayerPushesBallUpOnEdge(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.594)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.406
         p1.y = 5.224264068711929
         p1.dx = 3.6469744855394026
         
-        const ball = new Ball(15.171467395321821,4.413170753025239) 
+        const ball = lobby.ball
+        ball.x = 15.171467395321821
+        ball.y = 4.413170753025239
         ball.dx = -3.646974485539403
         ball.dy = -14.053592686597527
         
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
         this.testRunGameWithP1Ball(lobby,'moveU')
     }
 
@@ -203,20 +234,25 @@ export default class Game1Testing extends Game1Control{
     }
 
     testPlayerPushesBallIntoOnEdge(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.594)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.404110198984208
         p1.y = 5.124116293439814
         
-        const ball = new Ball(15.723174151169607,5.9054831691235945) 
+        const ball = lobby.ball
+        ball.x = 15.723174151169607
+        ball.y = 5.9054831691235945
         ball.dx = 4.224276642624691
         ball.dy = 13.212765257601191
         
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
         this.testRunGameWithP1Ball(lobby,'moveR','moveD')
     }
 
     testPlayerPushesBallIntoCorner(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.594)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.180286098347343
@@ -224,48 +260,85 @@ export default class Game1Testing extends Game1Control{
         p1.dx = -11.8447
         p1.dy = -23.1158
         
-        const ball = new Ball(15.749918798120003,8.75) 
+        const ball = lobby.ball
+        ball.x = 15.749918798120003
+        ball.y = 8.75
         ball.dx = -12.9866
         ball.dy = 10.3567
         
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
         this.testRunGameWithP1Ball(lobby)
     }
 
     testPlayerPushesBallIntoRightWall(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 15
         p1.y = 5
         
-        const ball = new Ball(15.75,5) 
+        const ball = lobby.ball
+        ball.x = 15.75
+        ball.y = 5
         
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
         this.testRunGameWithP1Ball(lobby,'moveR')
     }
 
     testPlayerImpulsesOffWall(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.5
         p1.y = 5
         p1.newImpulse = 1
 
-        const ball = new Ball(2,5) 
+        const ball = lobby.ball
+        ball.x = 2
+        ball.y = 5
         
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
         this.testRunGameWithP1Ball(lobby)
     }
 
     testPlayerLimitingSpeed(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+
         this.players.addPlayer('p1',0,0,0.5)
         const p1 = this.players.getInfo('p1')
         p1.x = 15.5
         p1.y = 5
         p1.dx = -10000
 
-        const ball = new Ball(2,5) 
-        const lobby = this.testMakeLobbyWithP1Ball(ball)
+        const ball = lobby.ball
+        ball.x = 2
+        ball.y = 5
+
         this.testRunGameWithP1Ball(lobby)
+    }
+
+    testMakeWinnerText(){
+        const lobby = this.testMakeLobbyWithP1Ball()
+        lobby.goals = new Goals()
+
+        lobby.goals.addGoal(0,0,0,0,'orange')
+        lobby.goals.addGoal(0,0,0,0,'blue')
+        const goal = lobby.goals.getGoals()['orange']
+        goal.goalsScored = 4
+
+        lobby.players.addPlayer('p1','orange','myUserName',0.5)
+        const p1 = lobby.players.getInfo('p1')
+        p1.goals = 4
+
+        console.log(lobby.makeEndInfo())
+    }
+
+    makeNewGame(){ // need user
+        const lobby = this.testMakeLobbyWithP1Ball()
+        const game = new Game(lobby,this.users)
+        game.makePlayerRadius()
+        game.addGoals()
+        game.addPlayers()
+        game.addBall()
+        console.log(game)
     }
 }

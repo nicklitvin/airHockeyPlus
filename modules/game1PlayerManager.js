@@ -2,8 +2,7 @@
 import Player from './game1Player.js'
 
 export default class PlayerManager{
-    constructor(users){
-        this.users = users
+    constructor(){
         this.players = {}
     }
 

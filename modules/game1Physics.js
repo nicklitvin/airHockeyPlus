@@ -153,6 +153,10 @@ export default class PhysicsManager{
 
     // 2 OBJECT COLLISION
 
+    testgetObjectCollisionTime(p1,p2){
+        
+    }
+
     getGameNext2ObjectCollision(lobby){
         const contacts = lobby.contacts
         var nextCollision = null

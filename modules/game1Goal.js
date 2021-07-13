@@ -1,10 +1,11 @@
 'use strict'
 class Goal{
-    constructor(x,y,width,height,color){
+    constructor(x,color){
         this.x = x
-        this.y = y
-        this.width = width
-        this.height = height
+        this.y = 3
+
+        this.height = 3
+        this.width = 0.2
         this.color = color
         this.goalsScored = 0
         this.lastBallToucher = ''
@@ -14,10 +15,16 @@ class Goal{
 export default class Goals{
     constructor(){
         this.goals = {}
+        this.rightGoalX = 15.8
     }
 
-    addGoal(x,y,width,height,color){
-        this.goals[color] = new Goal(x,y,width,height,color)
+    addGoal(side,color){
+        if(side == 'left'){
+            this.goals[color] = new Goal(0,color)
+        }
+        else if(side == 'right'){
+            this.goals[color] = new Goal(this.rightGoalX,color)
+        }
     }
 
     getGoals(){

@@ -72,9 +72,12 @@ export default class Ball{
     }
 
     isBounceTooFast(){
-        return( (this.dx**2 + this.dy**2)**(1/2) >
-            this.objectBounceSpeedLimit
-        )
+        const bounceMagnitude = this.getBounceMagnitude()
+        return(bounceMagnitude > this.objectBounceSpeedLimit)
+    }
+
+    getBounceMagnitude(){
+        return( (this.dx**2 + this.dy**2)**(1/2) )
     }
 
     limitBounceSpeed(){
@@ -125,5 +128,14 @@ export default class Ball{
 
     setNewDy(yFinal){
         this.dy = yFinal
+    }
+
+    resetPositionAndMotion(){
+        this.x = this.serverW/2
+        this.y = this.serverH/2
+        this.dx = 0
+        this.dy = 0
+        this.xMove = 0
+        this.yMove = 0
     }
 }
