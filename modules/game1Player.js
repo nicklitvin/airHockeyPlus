@@ -64,28 +64,28 @@ export default class Player extends Ball{
         }
     }
 
-    makeXyMove(){
-        this.applyPlayerMoveInput()
-        this.makeXyMoveFromDxDy()
+    makeMotionVector(){
+        this.addMoveInputToMotion()
+        this.addBounceToMotion()
     }
 
-    applyPlayerMoveInput(){
-        if(this.moveU && this.y - this.radius > ROUNDING_ERROR){
-            this.yMove -= this.speed
+    addMoveInputToMotion(){
+        if(this.moveU && this.position.y - this.radius > ROUNDING_ERROR){
+            this.motion.y -= this.speed
         }
         else if(this.moveD &&
-            this.y + this.radius < this.serverH - ROUNDING_ERROR)
+            this.position.y + this.radius < this.serverH - ROUNDING_ERROR)
         {
-            this.yMove += this.speed
+            this.motion.y += this.speed
         }
 
-        if(this.moveL && this.x - this.radius > ROUNDING_ERROR){
-            this.xMove -= this.speed
+        if(this.moveL && this.position.x - this.radius > ROUNDING_ERROR){
+            this.motion.x -= this.speed
         }
         else if(this.moveR &&
-            this.x + this.radius < this.serverW - ROUNDING_ERROR)
+            this.position.x + this.radius < this.serverW - ROUNDING_ERROR)
         {
-            this.xMove += this.speed
+            this.motion.x += this.speed
         }
     }
 
@@ -112,17 +112,17 @@ export default class Player extends Ball{
         }
         // resisting push
         else if( (this.moveD && yFinal < 0) || (this.moveU && yFinal > 0)){
-            this.dy += yFinal
+            this.bounce.y += yFinal
         }
         // move boost
         else if(this.moveD && yFinal > 0){
-            this.dy = Math.max(yFinal - this.speed,0)
+            this.bounce.y = Math.max(yFinal - this.speed,0)
         }
         else if(this.moveU && yFinal < 0){
-            this.dy = Math.min(yFinal + this.speed,0)
+            this.bounce.y = Math.min(yFinal + this.speed,0)
         }
         else{
-            this.dy = yFinal
+            this.bounce.y = yFinal
         }
     }
 
@@ -132,25 +132,25 @@ export default class Player extends Ball{
         }
         // resisting push
         else if( (this.moveR && xFinal < 0) || (this.moveL && xFinal > 0)){
-            this.dx += xFinal
+            this.bounce.x += xFinal
         }
         // move boosted
         else if(this.moveR && xFinal > 0){
-            this.dx = Math.max(xFinal - this.speed,0)
+            this.bounce.x = Math.max(xFinal - this.speed,0)
         }
         else if(this.moveL && xFinal < 0){
-            this.dx = Math.min(xFinal + this.speed,0)
+            this.bounce.x = Math.min(xFinal + this.speed,0)
         }
         else{
-            this.dx = xFinal
+            this.bounce.x = xFinal
         }
     }
 
     resetPlayerMotion(){
-        this.xMove = 0
-        this.yMove = 0
-        this.dx = 0
-        this.dy = 0
+        this.motion.x = 0
+        this.motion.y = 0
+        this.bounce.x = 0
+        this.bounce.y = 0
         this.impulseCooldown = 0
     }
 

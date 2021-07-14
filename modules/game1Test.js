@@ -1,8 +1,6 @@
 'use strict'
 import Game1Control from "./game1Control.js"
 import Game from './game1Game.js'
-import Ball from './game1Ball.js'
-import Goals from './game1Goal.js'
 
 export default class Game1Testing extends Game1Control{
     constructor(io,users,lobbies,refreshRate){
@@ -29,7 +27,7 @@ export default class Game1Testing extends Game1Control{
         // this.testMakeWinnerText()
     }
 
-    testMakeLobbyWithP1Ball(){
+    testMakeGame(){
         const roomLobby = {
             userIds: ['p1'],
             teams: 0,
@@ -330,15 +328,5 @@ export default class Game1Testing extends Game1Control{
         p1.goals = 4
 
         console.log(lobby.makeEndInfo())
-    }
-
-    makeNewGame(){ // need user
-        const lobby = this.testMakeLobbyWithP1Ball()
-        const game = new Game(lobby,this.users)
-        game.makePlayerRadius()
-        game.addGoals()
-        game.addPlayers()
-        game.addBall()
-        console.log(game)
     }
 }

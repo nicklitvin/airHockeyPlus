@@ -12,42 +12,40 @@ https://en.wikipedia.org/wiki/Elastic_collision
 http://cobweb.cs.uga.edu/~maria/classes/4070-Spring-2017/Adam%20Brookes%20Elastic%20collision%20Code.pdf
 https://www.youtube.com/watch?v=CFbo_nBdBco 
 isCollisionPossible: p1.magnitude > p2.magnitude + ROUNDING_ERROR, may cause overlap
+wall - p1 - ball <- p2 collision crashes game (Maximum call stack size exceeded)
 
 TODO
-split game into time manager, info manager, collision manager
 Tests are functional
-Vector to transition
+objects remember starting position
+make functions public and private, commentate
+sending info simplify
+goals independent
+split game into time manager, info manager, collision manager
 Function cleanup
 configuration dictionary (for player speed limit...)
-
-V0.2.X customization (modes, instructions, kicking players)
-
-timePassed for collision hold in game
-have ball remember starting position, no need to recalculate
 game countdown takes away from game time
-set player position using class and vector
-combine x,y and dx,dy into vector, transition to vectors
 make ballIds part of game
 default fix if all fails for collision control
 if overlap, pusher may still be faster, what is effect?
 optimize calculations
-make Game1Control an instance part of the room?
 
 FOR LATER
+V0.2.X customization (modes, instructions, kicking players)
+mouse control
+mobile control
+colorblind feature
+close room power in lobby
+name change limit per minute
+specify error using cookies, roomcontrol save cookie w/ error
+lobby button appearance changes when ready (green/red)
 no friction mode
 multiple balls, lobby.balls = [Ball,Ball], balls need to have id
-colorblind feature
 movement multiplier based on time passed (accuracy)
 set timer to delete last ball toucher 
 losers advantage is size
 make how to play page w/ instructions + navigate site
-make mobile version on browser
 maintenance to remove inactive users (who forgot about tab)
 3+ teams (corner goals)
-close room power in lobby
 configuration contains all preset values {x:?,y:?,radius:? ...}
 separate game.js(canvas stuff) from index.js
-specify error using cookies, roomcontrol save cookie w/ error
-lobby button appearance changes when ready (green/red)
-name change limit per minute
 send survey to players after game (game quality, site in general)

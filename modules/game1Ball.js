@@ -1,18 +1,17 @@
 'use strict'
 
+import Vector from "./vector.js"
+
 const ROUNDING_ERROR = 0.001
 
 export default class Ball{
     constructor(x,y){
-        this.x = x
-        this.y = y
-        this.dx = 0
-        this.dy = 0
+        this.position = new Vector(x,y)
+        this.bounce = new Vector(0,0)
+        this.motion = new Vector(0,0)
+
         this.radius = .25
         this.mass = 0.5
-
-        this.xMove = 0
-        this.yMove = 0
 
         // to get from Game settings
         this.serverW = 16
@@ -22,52 +21,59 @@ export default class Ball{
     }
 
     getInfoIn(time){
-        return({
-            'x': this.x + this.xMove*time,
-            'y': this.y + this.yMove*time,
-            'xMove': this.xMove,
-            'yMove': this.yMove,
-            'radius': this.radius
-        })
+        const future = new Ball(this.position.x,this.position.y)
+
+        future.position.x += this.motion.x*time
+        future.position.y += this.motion.y*time
+        future.motion.x = this.motion.x
+        future.motion.y = this.motion.y
+        
+        return(future)
     }
 
     logInfo(){
-        console.log('%s x=%f y=%f dx=%f dy=%f', (this.userId || 'ball'), this.x, this.y, this.dx, this.dy)
+        console.log('%s x=%f y=%f dx=%f dy=%f',
+            (this.userId || 'ball'),
+            this.position.x,
+            this.position.y,
+            this.bounce.x,
+            this.bounce.y
+        )
     }
 
     resetXyMoves(){
-        this.xMove = 0
-        this.yMove = 0
+        this.motion.x = 0
+        this.motion.y = 0
     }
 
-    makeXyMove(){
-        this.makeXyMoveFromDxDy()
+    makeMotionVector(){
+        this.addBounceToMotion()
     }
 
-    makeXyMoveFromDxDy(){
-        this.xMove += this.dx
-        this.yMove += this.dy
+    addBounceToMotion(){
+        this.motion.x += this.bounce.x
+        this.motion.y += this.bounce.y
     }
 
     move(time){
-        this.x += this.xMove*time
-        this.y += this.yMove*time
+        this.position.x += this.motion.x*time
+        this.position.y += this.motion.y*time
 
         this.keepObjectWithinBoundary()
     }
 
     keepObjectWithinBoundary(){
-        if(this.x + this.radius > this.serverW){
-            this.x = this.serverW - this.radius
+        if(this.position.x + this.radius > this.serverW){
+            this.position.x = this.serverW - this.radius
         }
-        if(this.x - this.radius < 0){
-            this.x = this.radius
+        if(this.position.x - this.radius < 0){
+            this.position.x = this.radius
         }
-        if(this.y + this.radius > this.serverH){
-            this.y = this.serverH - this.radius
+        if(this.position.y + this.radius > this.serverH){
+            this.position.y = this.serverH - this.radius
         }
-        if(this.y - this.radius < 0){
-            this.y = this.radius
+        if(this.position.y - this.radius < 0){
+            this.position.y = this.radius
         }
     }
 
@@ -77,25 +83,25 @@ export default class Ball{
     }
 
     getBounceMagnitude(){
-        return( (this.dx**2 + this.dy**2)**(1/2) )
+        return( (this.bounce.x**2 + this.bounce.y**2)**(1/2) )
     }
 
     limitBounceSpeed(){
-        const angle = Math.atan(this.dy/this.dx)
-        this.dx = Math.sign(this.dx || 1)*Math.cos(angle)*
+        const angle = Math.atan(this.bounce.y/this.bounce.x)
+        this.bounce.x = Math.sign(this.bounce.x || 1)*Math.cos(angle)*
             this.objectBounceSpeedLimit
-        this.dy = Math.sign(this.dx || 1)*Math.sin(angle)*
+        this.bounce.y = Math.sign(this.bounce.x || 1)*Math.sin(angle)*
             this.objectBounceSpeedLimit
     }
 
     addBounce(bounce){
-        this.dx += bounce.x
-        this.dy += bounce.y
+        this.bounce.x += bounce.x
+        this.bounce.y += bounce.y
     }
 
     resolveFriction(){
-        this.dx = this.applyFriction(this.dx)
-        this.dy = this.applyFriction(this.dy)
+        this.bounce.x = this.applyFriction(this.bounce.x)
+        this.bounce.y = this.applyFriction(this.bounce.y)
     }
 
     applyFriction(bounce){
@@ -109,33 +115,38 @@ export default class Ball{
     }
 
     changeTrajectoryFromWallCollision(){
-        if( (Math.abs(this.x + this.radius - this.serverW) < ROUNDING_ERROR && this.dx > 0) ||
-            (Math.abs(this.x - this.radius) < ROUNDING_ERROR && this.dx < 0) )
+        if( (Math.abs(this.position.x + this.radius - this.serverW) < ROUNDING_ERROR && this.bounce.x > 0) ||
+            (Math.abs(this.position.x - this.radius) < ROUNDING_ERROR && this.bounce.x < 0) )
         {
-            this.dx *= -1
+            this.bounce.x *= -1
         }
         
-        if( (Math.abs(this.y + this.radius - this.serverH) < ROUNDING_ERROR && this.dy > 0) ||
-            (Math.abs(this.y - this.radius) < ROUNDING_ERROR && this.dy < 0))
+        if( (Math.abs(this.position.y + this.radius - this.serverH) < ROUNDING_ERROR && this.bounce.y > 0) ||
+            (Math.abs(this.position.y - this.radius) < ROUNDING_ERROR && this.bounce.y < 0))
         {
-            this.dy *= -1
+            this.bounce.y *= -1
         }
     }
 
     setNewDx(xFinal){
-        this.dx = xFinal
+        this.bounce.x = xFinal
     }
 
     setNewDy(yFinal){
-        this.dy = yFinal
+        this.bounce.y = yFinal
+    }
+
+    setPosition(x,y){
+        this.position.x = x
+        this.position.y = y
     }
 
     resetPositionAndMotion(){
-        this.x = this.serverW/2
-        this.y = this.serverH/2
-        this.dx = 0
-        this.dy = 0
-        this.xMove = 0
-        this.yMove = 0
+        this.position.x = this.serverW/2
+        this.position.y = this.serverH/2
+        this.bounce.x = 0
+        this.bounce.y = 0
+        this.motion.x = 0
+        this.motion.y = 0
     }
 }

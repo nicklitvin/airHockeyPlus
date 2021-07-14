@@ -1,9 +1,10 @@
 'use strict'
+
+import Vector from "./vector.js"
+
 class Goal{
     constructor(x,color){
-        this.x = x
-        this.y = 3
-
+        this.position = new Vector(x,3)
         this.height = 3
         this.width = 0.2
         this.color = color

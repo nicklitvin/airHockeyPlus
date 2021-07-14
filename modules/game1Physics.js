@@ -32,7 +32,7 @@ export default class PhysicsManager{
     // IMPULSE
 
     isWithinImpulseRange(obj1,obj2){
-        const dist = this.getDistanceBetweenTwoPoints(obj1,obj2)
+        const dist = this.getDistanceBetweenTwoPoints(obj1.position,obj2.position)
         if(dist < this.impulseRadius){
             return(1)
         }
@@ -40,16 +40,16 @@ export default class PhysicsManager{
 
     impulseOffWall(player){
         //closest to which wall
-        const yDist = Math.min(this.serverH-player.y,player.y)
-        const xDist = Math.min(this.serverW-player.x,player.x)
+        const yDist = Math.min(this.serverH-player.position.y,player.position.y)
+        const xDist = Math.min(this.serverW-player.position.x,player.position.x)
 
         var bounceChange = new Vector(0,0)
 
         if(Math.abs(yDist-player.radius) < ROUNDING_ERROR){
-            bounceChange.y = Math.sign(this.serverH-2*player.y)*this.impulseMagnitude 
+            bounceChange.y = Math.sign(this.serverH-2*player.position.y)*this.impulseMagnitude 
         }
         if(Math.abs(xDist-player.radius) < ROUNDING_ERROR){
-            bounceChange.x = Math.sign(this.serverW-2*player.x)*this.impulseMagnitude
+            bounceChange.x = Math.sign(this.serverW-2*player.position.x)*this.impulseMagnitude
         }
 
         player.addBounce(bounceChange)
@@ -74,10 +74,10 @@ export default class PhysicsManager{
         const impulseMagnitude = this.impulseMagnitude
     
         //1st quadrant angle
-        const angle = Math.abs(Math.atan((target.y-giver.y)/(target.x-giver.x)))
+        const angle = Math.abs(Math.atan((target.position.y-giver.position.y)/(target.position.x-giver.position.x)))
         
-        const bounceY = Math.sign(target.y-giver.y)*Math.sin(angle)*impulseMagnitude/target.mass
-        const bounceX = Math.sign(target.x-giver.x)*Math.cos(angle)*impulseMagnitude/target.mass
+        const bounceY = Math.sign(target.position.y-giver.position.y)*Math.sin(angle)*impulseMagnitude/target.mass
+        const bounceX = Math.sign(target.position.x-giver.position.x)*Math.cos(angle)*impulseMagnitude/target.mass
 
         var bounce = new Vector(bounceX,bounceY)
         target.addBounce(bounce)
@@ -122,68 +122,42 @@ export default class PhysicsManager{
     }
 
     whenIsWallCollisionRight(p1){
-        if(p1.xMove > 0 && p1.x + p1.radius + p1.xMove > this.serverW){
-            const time = (this.serverW - p1.x - p1.radius)/p1.xMove
+        if(p1.motion.x > 0 && p1.position.x + p1.radius + p1.motion.x > this.serverW){
+            const time = (this.serverW - p1.position.x - p1.radius)/p1.motion.x
             return(time)
         }
     }
 
     whenIsWallCollisionLeft(p1){
-        if(p1.xMove < 0 && p1.x - p1.radius + p1.xMove < 0){
-            const time = (p1.radius - p1.x)/p1.xMove
+        if(p1.motion.x < 0 && p1.position.x - p1.radius + p1.motion.x < 0){
+            const time = (p1.radius - p1.position.x)/p1.motion.x
             return(time)
         }
     }
 
     whenIsWallCollisionDown(p1){
-        if(p1.yMove > 0 &&
-            p1.y + p1.radius + p1.yMove > this.serverH)
+        if(p1.motion.y > 0 &&
+            p1.position.y + p1.radius + p1.motion.y > this.serverH)
         {
-            const time = (this.serverH - p1.y - p1.radius)/p1.yMove
+            const time = (this.serverH - p1.position.y - p1.radius)/p1.motion.y
             return(time)
         }
     }
 
     whenIsWallCollisionUp(p1){
-        if(p1.yMove < 0 && p1.y - p1.radius + p1.yMove < 0){
-            const time = (p1.radius - p1.y)/p1.yMove
+        if(p1.motion.y < 0 && p1.position.y - p1.radius + p1.motion.y < 0){
+            const time = (p1.radius - p1.position.y)/p1.motion.y
             return(time)
         }
     }
 
     // 2 OBJECT COLLISION
 
-    testgetObjectCollisionTime(p1,p2){
-        
-    }
-
-    getGameNext2ObjectCollision(lobby){
-        const contacts = lobby.contacts
-        var nextCollision = null
-
-        for(var count = 0; count < contacts.length; count++){
-            const contact = contacts[count]
-            const p1 = this.getObjectById(lobby,contact[0])
-            const p2 = this.getObjectById(lobby,contact[1])
-            const time = this.getObjectCollisionTime(p1,p2)
-
-            if(time >= 0 && (!nextCollision || time < nextCollision.time) ){
-                nextCollision = {
-                    'time': time,
-                    'p1': p1,
-                    'p2': p2,
-                    'type': 'player'
-                }
-            }
-        }
-        return(nextCollision)
-    }
-    
     getObjectCollisionTime(obj1,obj2){
-        const Vx = obj2.xMove - obj1.xMove
-        const Vy = obj2.yMove - obj1.yMove
-        const Px = obj2.x-obj1.x
-        const Py = obj2.y-obj1.y
+        const Vx = obj2.motion.x - obj1.motion.x
+        const Vy = obj2.motion.y - obj1.motion.y
+        const Px = obj2.position.x-obj1.position.x
+        const Py = obj2.position.y-obj1.position.y
         const squaredSumOfRadii = (obj1.radius + obj2.radius)**2
 
         const a = Vx**2 + Vy**2
@@ -194,7 +168,7 @@ export default class PhysicsManager{
 
         if(discriminant < 0){return}
 
-        const times = this.findQuadraticRoot(a,b,c)
+        const times = this.findPositiveQuadraticRoots(a,b,c)
         
         if(times.length == 0){return}
 
@@ -218,8 +192,8 @@ export default class PhysicsManager{
             }
 
             const normalMoves = this.getNormalVectorsForCollision(p1,p2)
-            const p1Info = {'position':p1,'normal':normalMoves.p1,'magnitude':normalMoves.p1Magnitude}
-            const p2Info = {'position':p2,'normal':normalMoves.p2,'magnitude':normalMoves.p2Magnitude}
+            const p1Info = {'future':p1,'normal':normalMoves.p1,'magnitude':normalMoves.p1Magnitude}
+            const p2Info = {'future':p2,'normal':normalMoves.p2,'magnitude':normalMoves.p2Magnitude}
 
             if(
                 this.isCollisionPossible(p1Info,p2Info) ||
@@ -233,10 +207,10 @@ export default class PhysicsManager{
     }
 
     isNotWithinBoundary(obj){
-        if( obj.x + obj.radius > this.serverW ||
-            obj.x - obj.radius < 0 ||
-            obj.y + obj.radius > this.serverH ||
-            obj.y - obj.radius < 0)
+        if( obj.position.x + obj.radius > this.serverW ||
+            obj.position.x - obj.radius < 0 ||
+            obj.position.y + obj.radius > this.serverH ||
+            obj.position.y - obj.radius < 0)
         {
             return(1)
         }
@@ -249,11 +223,11 @@ export default class PhysicsManager{
         var timeY = -1
         
         if(p1.normal.x){
-            timeX = (p2.position.x - p1.position.x)/p1.normal.x
+            timeX = (p2.future.position.x - p1.future.position.x)/p1.normal.x
         }
         
         if(p1.normal.y){
-            timeY = (p2.position.y - p1.position.y)/p1.normal.y
+            timeY = (p2.future.position.y - p1.future.position.y)/p1.normal.y
         }
 
         if( (timeX > 0 || timeY > 0) && 
@@ -267,8 +241,8 @@ export default class PhysicsManager{
     // CHANGE TRAJECTORY
 
     getUnitNormalVector(p1,p2){
-        const xDistance = p2.x-p1.x
-        const yDistance = p2.y-p1.y
+        const xDistance = p2.position.x-p1.position.x
+        const yDistance = p2.position.y-p1.position.y
         var vector = new Vector(xDistance,yDistance)
         vector.normalise()
         return(vector)
@@ -283,8 +257,8 @@ export default class PhysicsManager{
     getNormalVectorsForCollision(p1,p2){
         const unitNormalVector = this.getUnitNormalVector(p1,p2)
 
-        const p1MoveVector = new Vector(p1.xMove,p1.yMove)
-        const p2MoveVector = new Vector(p2.xMove,p2.yMove)
+        const p1MoveVector = new Vector(p1.motion.x,p1.motion.y)
+        const p2MoveVector = new Vector(p2.motion.x,p2.motion.y)
 
         const p1Normal = unitNormalVector.dotProduct(p1MoveVector)
         const p2Normal = unitNormalVector.dotProduct(p2MoveVector)
@@ -303,8 +277,8 @@ export default class PhysicsManager{
         const unitNormalVector = this.getUnitNormalVector(p1,p2)
         const unitTangentVector = this.getUnitTangentVector(unitNormalVector)
 
-        const p1MoveVector = new Vector(p1.xMove,p1.yMove)
-        const p2MoveVector = new Vector(p2.xMove,p2.yMove)
+        const p1MoveVector = new Vector(p1.motion.x,p1.motion.y)
+        const p2MoveVector = new Vector(p2.motion.x,p2.motion.y)
 
         const p1Normal = unitNormalVector.dotProduct(p1MoveVector)
         const p2Normal = unitNormalVector.dotProduct(p2MoveVector)
@@ -384,7 +358,7 @@ export default class PhysicsManager{
         return(b**2 - 4*a*c)
     }
 
-    findQuadraticRoot(a,b,c){
+    findPositiveQuadraticRoots(a,b,c){
         const discriminantRoot = Math.sqrt(b**2 - 4*a*c)
         const denominator = 2*a
         var small = (-b - discriminantRoot ) / denominator

@@ -4,6 +4,7 @@ import PlayerManager from './game1PlayerManager.js'
 import PhysicsManager from './game1Physics.js'
 import Ball from './game1Ball.js'
 import Goals from './game1Goal.js'
+import { strictEqual } from 'assert'
 
 const MINUTES_TO_SECONDS = 60
 const ROUNDING_ERROR = 0.001
@@ -23,12 +24,12 @@ export default class Game{
         this.teams = lobby.teams
         this.lobbyId = lobby.lobbyId
 
-        this.playerRadius = 0
+        this.playerRadius = null
 
         // in seconds
         this.gameTime = 0
-        this.gameTimer = Number(lobby.gameTimer[0])*
-            MINUTES_TO_SECONDS //[0] is X from "Xmin"
+        //[0] is X from "Xmin"
+        this.gameTimer = Number(lobby.gameTimer[0])*MINUTES_TO_SECONDS 
         this.countdown = 0
         
         // in miliseconds
@@ -42,9 +43,6 @@ export default class Game{
         this.scorerListLength = 5
         this.scorerTextDelimeter = '!'
 
-        // this.goalHeight = 3
-        // this.goalWidth = 0.2
-        
         this.spawnRadius = 4
         this.maxPlayerRadius = 0.6
         this.maxPlayerRadiusDecay = 0.99
@@ -52,6 +50,8 @@ export default class Game{
         this.gameCountdown = 1
         this.impulseCooldown = 1
         this.refreshRate = 100
+
+        this.timePassed = 0 
     }
 
     getObjectById(objectId){
@@ -63,6 +63,14 @@ export default class Game{
             object = this.players.getInfo(objectId)
         }
         return(object)
+    }
+
+    getAllBallIds(){
+        var objects = this.userIds.slice()
+        if(this.ball){
+            objects.push('ball')
+        }
+        return(objects)
     }
 
     //TEXT
@@ -147,14 +155,6 @@ export default class Game{
             }
         }
         return(contacts)
-    }
-
-    getAllBallIds(){
-        var objects = this.userIds.slice()
-        if(this.ball){
-            objects.push('ball')
-        }
-        return(objects)
     }
 
     addBall(){
@@ -258,8 +258,8 @@ export default class Game{
             position = this.makePosition(angleInfo.orangeAngle)
             angleInfo.orangeAngle += angleInfo.orangeAngleInterval
         }
-        player.x = position.x
-        player.y = position.y
+
+        player.setPosition(position.x,position.y)
     }
 
     addGoals(){
@@ -270,19 +270,7 @@ export default class Game{
         goals.addGoal('right', this.teams[1]) //blue
     }
 
-    updateGameTime(){
-        const now = Date.now()
-        const timeDiff = now - this.lastTime
-
-        this.timeDiff = timeDiff
-        this.countdown -= timeDiff * MILISECONDS_TO_SECONDS
-        this.gameTime += timeDiff * MILISECONDS_TO_SECONDS
-        this.lastTime = Date.now()
-
-        if(this.countdown < 0){
-            this.countdown = 0
-        }
-    }
+    // GAME EVENTS
 
     endGame(){
         this.inGame = 0
@@ -313,8 +301,8 @@ export default class Game{
             
 
             playerInfo[playerId] = {
-                'x': player.x/this.serverW,
-                'y': player.y/this.serverH,
+                'x': player.position.x/this.serverW,
+                'y': player.position.y/this.serverH,
                 'radiusY': player.radius/this.serverH,
                 'team': player.team
             }
@@ -325,8 +313,8 @@ export default class Game{
     getBallInfo(){
         const ball = this.ball
         return({
-            'x': ball.x/this.serverW,
-            'y': ball.y/this.serverH,
+            'x': ball.position.x/this.serverW,
+            'y': ball.position.y/this.serverH,
             'radiusY': ball.radius/this.serverH
         })
     }
@@ -338,8 +326,8 @@ export default class Game{
         for(var team of Object.keys(allGoalInfo)){
             const goal = allGoalInfo[team]
             newGoalInfo[team] = {
-                'x': goal.x/this.serverW,
-                'y': goal.y/this.serverH,
+                'x': goal.position.x/this.serverW,
+                'y': goal.position.y/this.serverH,
                 'width': goal.width/this.serverW,
                 'height': goal.height/this.serverH,
                 'color': goal.color
@@ -381,6 +369,20 @@ export default class Game{
     }
 
     // UPDATE GAME
+
+    updateGameTime(){
+        const now = Date.now()
+        const timeDiff = now - this.lastTime
+
+        this.timeDiff = timeDiff
+        this.countdown -= timeDiff * MILISECONDS_TO_SECONDS
+        this.gameTime += timeDiff * MILISECONDS_TO_SECONDS
+        this.lastTime = Date.now()
+
+        if(this.countdown < 0){
+            this.countdown = 0
+        }
+    }
 
     updateGame(){
         this.impulseControl()
@@ -442,12 +444,12 @@ export default class Game{
             const player = this.players.getInfo(playerId)
             player.deleteMoveContradictions()
             player.setMoveSpeed()
-            player.makeXyMove()
+            player.makeMotionVector()
         }
 
         const ball = this.ball
         if(ball){
-            ball.makeXyMove()
+            ball.makeMotionVector()
         }
     }
 
@@ -477,15 +479,15 @@ export default class Game{
         const goals = this.goals.getGoals()
 
         // ball hits wall between top and bottom edge of goal
-        if( (ball.x == ball.radius) &&
-            (ball.y > goals['orange'].y) &&
-            (ball.y < goals['orange'].y + goals['orange'].height) )
+        if( (ball.position.x == ball.radius) &&
+            (ball.position.y > goals['orange'].position.y) &&
+            (ball.position.y < goals['orange'].position.y + goals['orange'].height) )
         {
             this.countGoal('blue')
         }
-        if( (ball.x == this.serverW-ball.radius) &&
-            (ball.y > goals['blue'].y) && 
-            (ball.y < goals['blue'].y+goals['blue'].height) )
+        if( (ball.position.x == this.serverW-ball.radius) &&
+            (ball.position.y > goals['blue'].position.y) && 
+            (ball.position.y < goals['blue'].position.y + goals['blue'].height) )
         {
             this.countGoal('orange')
         }
@@ -511,26 +513,29 @@ export default class Game{
 
     // COLLISION PROCEDURE
 
-    collisionProcedure(timePassed=0){
+    collisionProcedure(){
         const nextCollision = this.getNextCollision()
-        const remainingTime = 1/this.refreshRate - timePassed
+        const remainingTime = 1/this.refreshRate - this.timePassed
         this.isOverlap()
         this.isBounceReasonable()
 
         if(!nextCollision || nextCollision.time > remainingTime){
             // console.log('noCollision')
             this.moveGameObjects(remainingTime)
+            this.timePassed = 0
             return
         }
+        this.timePassed += nextCollision.time 
 
         if (nextCollision.type == 'wall'){
             // console.log('wallCollision')
-            this.wallCollisionProcedure(timePassed,nextCollision)
+            this.wallCollisionProcedure(nextCollision)
         }
         else if(nextCollision.type == 'player'){
             // console.log('playerCollision')
-            this.objectCollisionProcedure(timePassed,nextCollision)
+            this.objectCollisionProcedure(nextCollision)
         }
+        this.collisionProcedure()
     }
 
     getNextCollision(){
@@ -618,20 +623,17 @@ export default class Game{
         }
     }
 
-    wallCollisionProcedure(timePassed,nextCollision){
+    wallCollisionProcedure(nextCollision){
         const time = nextCollision.time
         const object = nextCollision.p1
 
         this.moveGameObjects(time)
         object.changeTrajectoryFromWallCollision()
         object.resetXyMoves()
-        object.makeXyMove()
-
-        timePassed += time
-        this.collisionProcedure(timePassed) 
+        object.makeMotionVector()
     }
 
-    objectCollisionProcedure(timePassed,nextCollision){
+    objectCollisionProcedure(nextCollision){
         const time = nextCollision.time
         const p1 = nextCollision.p1
         const p2 = nextCollision.p2
@@ -645,18 +647,15 @@ export default class Game{
         this.physics.changeObjectCollisionTrajectory(p1,p2)
         p1.resetXyMoves()
         p2.resetXyMoves()
-        p1.makeXyMove()
-        p2.makeXyMove()
-
-        timePassed += time
-        this.collisionProcedure(timePassed)
+        p1.makeMotionVector()
+        p2.makeMotionVector()
     }
 
     isOverlap(){
         for(var contact of this.contacts){
             const p1 = this.getObjectById(contact[0])
             const p2 = this.getObjectById(contact[1])
-            const distance = this.physics.getDistanceBetweenTwoPoints(p1,p2)
+            const distance = this.physics.getDistanceBetweenTwoPoints(p1.position,p2.position)
 
             if(distance < p1.radius + p2.radius - ROUNDING_ERROR){
                 p1.dx = 100 //TEMPORARY FIX
