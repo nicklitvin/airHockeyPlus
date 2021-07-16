@@ -10,8 +10,8 @@ export default class PlayerManager{
         return(this.players)
     }
 
-    addPlayer(userId,team,userName,playerRadius){
-        this.players[userId] = new Player(userId,team,userName,playerRadius)
+    addPlayer(userId,team,userName,radius){
+        this.players[userId] = new Player(userId,team,userName,radius)
     }
 
     deletePlayer(playerId){

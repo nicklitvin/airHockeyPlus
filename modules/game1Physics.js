@@ -241,8 +241,8 @@ export default class PhysicsManager{
     // CHANGE TRAJECTORY
 
     getUnitNormalVector(p1,p2){
-        const xDistance = p2.position.x-p1.position.x
-        const yDistance = p2.position.y-p1.position.y
+        const xDistance = p2.position.x - p1.position.x
+        const yDistance = p2.position.y - p1.position.y
         var vector = new Vector(xDistance,yDistance)
         vector.normalise()
         return(vector)
@@ -309,10 +309,6 @@ export default class PhysicsManager{
 
         const p2NewNormal = numerator / denominator
         const p1NewNormal = p2Speed - p1Speed + p2NewNormal
-        
-        // just change speeds, if same mass
-        // const p1NewNormal = p2Speed
-        // const p2NewNormal = p1Speed
 
         return({
             'p1': p1NewNormal,

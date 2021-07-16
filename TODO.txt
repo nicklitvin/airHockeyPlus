@@ -1,4 +1,4 @@
-NOTES
+NOTES/BUGS
 If right click on browser top, move doesn't reset
 server sends one game frame after game end?
 blue shadow for orange move, illusion?
@@ -13,21 +13,21 @@ http://cobweb.cs.uga.edu/~maria/classes/4070-Spring-2017/Adam%20Brookes%20Elasti
 https://www.youtube.com/watch?v=CFbo_nBdBco 
 isCollisionPossible: p1.magnitude > p2.magnitude + ROUNDING_ERROR, may cause overlap
 wall - p1 - ball <- p2 collision crashes game (Maximum call stack size exceeded)
+player1 cant choose blue side sometimes?
+-0 may affect math.sign
 
 TODO
-Tests are functional
 objects remember starting position
 make functions public and private, commentate
-sending info simplify
-goals independent
-split game into time manager, info manager, collision manager
-Function cleanup
+sending info simplify, part of class itself
+is goal part of goal class independent
 configuration dictionary (for player speed limit...)
 game countdown takes away from game time
 make ballIds part of game
 default fix if all fails for collision control
 if overlap, pusher may still be faster, what is effect?
 optimize calculations
+
 
 FOR LATER
 V0.2.X customization (modes, instructions, kicking players)
@@ -49,3 +49,52 @@ maintenance to remove inactive users (who forgot about tab)
 configuration contains all preset values {x:?,y:?,radius:? ...}
 separate game.js(canvas stuff) from index.js
 send survey to players after game (game quality, site in general)
+time: 0,
+  p1: Player {
+    position: Vector { x: 0.8965639366266409, y: 4.4393036091084745 },
+    bounce: Vector { x: -11.973286158636686, y: -8.647400296412947 },
+    motion: Vector { x: -11.973286158636686, y: -8.647400296412947 },
+    radius: 0.5880599999999999,
+    mass: 1,
+    serverW: 16,
+    serverH: 9,
+    objectBounceSpeedLimit: 100,
+    frictionConst: 0.85,
+    userId: 'rrkjmjlgro',
+    userName: 'player485',
+    team: 'orange',
+    moveL: 0,
+    moveR: 0,
+    moveU: 0,
+    moveD: 0,
+    speed: 15,
+    goals: 0,
+    newImpulse: 0,
+    impulseCooldown: 0,
+    maxSpeed: 15
+  },
+  p2: Player {
+    position: Vector { x: 1.8611779188665563, y: 5.112191504427785 },
+    bounce: Vector { x: 0, y: 0 },
+    motion: Vector { x: -10.606601717798213, y: -10.606601717798213 },
+    radius: 0.5880599999999999,
+    mass: 1,
+    serverW: 16,
+    serverH: 9,
+    objectBounceSpeedLimit: 100,
+    frictionConst: 0.85,
+    userId: 'vsuopijmjv',
+    userName: 'player711',
+    team: 'blue',
+    moveL: 1,
+    moveR: 0,
+    moveU: 1,
+    moveD: 0,
+    speed: 10.606601717798213,
+    goals: 0,
+    newImpulse: 0,
+    impulseCooldown: 0,
+    maxSpeed: 15
+  },
+  type: 'player'
+}

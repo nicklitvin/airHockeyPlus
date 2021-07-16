@@ -52,6 +52,7 @@ export default class Game{
         this.refreshRate = 100
 
         this.timePassed = 0 
+        this.collisionProcedureRepeats = 0
     }
 
     getObjectById(objectId){
@@ -266,8 +267,8 @@ export default class Game{
         this.goals = new Goals()
         const goals = this.goals
 
-        goals.addGoal('left', this.teams[0]) //orange
-        goals.addGoal('right', this.teams[1]) //blue
+        goals.addGoal('left', 'orange') //orange
+        goals.addGoal('right', 'blue') //blue
     }
 
     // GAME EVENTS
@@ -516,6 +517,7 @@ export default class Game{
     collisionProcedure(){
         const nextCollision = this.getNextCollision()
         const remainingTime = 1/this.refreshRate - this.timePassed
+        console.log(nextCollision)
         this.isOverlap()
         this.isBounceReasonable()
 
@@ -523,9 +525,18 @@ export default class Game{
             // console.log('noCollision')
             this.moveGameObjects(remainingTime)
             this.timePassed = 0
+            this.collisionProcedureRepeats = 0
             return
         }
-        this.timePassed += nextCollision.time 
+        this.collisionProcedureRepeats += 1
+        this.timePassed += nextCollision.time
+        
+        // if(this.collisionProcedureRepeats > 100){
+        //     console.log(nextCollision)
+        //     console.log(this.players)
+        //     console.log(this.ball)
+        //     strictEqual(0,1)
+        // }
 
         if (nextCollision.type == 'wall'){
             // console.log('wallCollision')

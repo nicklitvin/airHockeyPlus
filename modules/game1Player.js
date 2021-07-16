@@ -22,6 +22,7 @@ export default class Player extends Ball{
         this.impulseCooldown = 0
 
         this.maxSpeed = 15 //must get from configuration
+        this.mass = 1
     }
 
     recordPlayerMove(move){
