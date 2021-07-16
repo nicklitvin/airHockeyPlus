@@ -162,6 +162,7 @@ export default class Game{
         const x = this.serverW/2
         const y = this.serverH/2
         this.ball = new Ball(x,y)
+        this.ball.setStartPosition(x,y)
     }
 
     makePlayerRadius(){
@@ -203,12 +204,6 @@ export default class Game{
         }
     }
 
-    addBall(){
-        const x = this.serverW/2
-        const y = this.serverH/2
-        this.ball = new Ball(x,y)
-    }
-
     addPlayers(){
         for(var userId of this.userIds){
             const user = this.users.getInfo(userId)
@@ -219,20 +214,15 @@ export default class Game{
                 this.playerRadius
             )
         }
-        this.addPlayerPositions(0)
+        this.setPlayerSpawnPositions()
     }
 
-    addPlayerPositions(reset=0){
+    setPlayerSpawnPositions(){
         const angleInfo = this.getTeamAngleInfo()
 
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
-            this.setPlayerPosition(player,angleInfo)
-
-            if(reset){
-                player.resetPlayerMoveCommands()
-                player.resetPlayerMotion()
-            }
+            this.setPlayerStartPosition(player,angleInfo)
         }
     }
 
@@ -249,7 +239,7 @@ export default class Game{
         })
     }
 
-    setPlayerPosition(player,angleInfo){
+    setPlayerStartPosition(player,angleInfo){
         let position
         if(player.team == 'blue'){
             position = this.makePosition(angleInfo.blueAngle)
@@ -260,15 +250,15 @@ export default class Game{
             angleInfo.orangeAngle += angleInfo.orangeAngleInterval
         }
 
-        player.setPosition(position.x,position.y)
+        player.setStartPosition(position.x,position.y)
     }
 
     addGoals(){
         this.goals = new Goals()
         const goals = this.goals
 
-        goals.addGoal('left', 'orange') //orange
-        goals.addGoal('right', 'blue') //blue
+        goals.addGoal('left', 'orange')
+        goals.addGoal('right', 'blue')
     }
 
     // GAME EVENTS
@@ -503,13 +493,15 @@ export default class Game{
         if(scorer){
             scorer.goals += 1
         }
-        this.resetPositions()
+        this.resetBallPositions()
     }
 
-    resetPositions(){
-        const reset = 1
-        this.addPlayerPositions(reset)
-        this.ball.resetPositionAndMotion()
+    resetBallPositions(){
+        const ballIds = this.getAllBallIds()
+        for(var ballId of ballIds){
+            const ball = this.getObjectById(ballId)
+            ball.spawnAtStartPosition()
+        }
     }
 
     // COLLISION PROCEDURE
@@ -517,7 +509,7 @@ export default class Game{
     collisionProcedure(){
         const nextCollision = this.getNextCollision()
         const remainingTime = 1/this.refreshRate - this.timePassed
-        console.log(nextCollision)
+        // console.log(nextCollision)
         this.isOverlap()
         this.isBounceReasonable()
 

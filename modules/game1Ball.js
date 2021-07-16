@@ -9,6 +9,7 @@ export default class Ball{
         this.position = new Vector(x,y)
         this.bounce = new Vector(0,0)
         this.motion = new Vector(0,0)
+        this.startPosition = new Vector(0,0)
 
         this.radius = .25
         this.mass = 0.5
@@ -136,17 +137,24 @@ export default class Ball{
         this.bounce.y = yFinal
     }
 
-    setPosition(x,y){
-        this.position.x = x
-        this.position.y = y
+    setStartPosition(x,y){
+        this.startPosition.x = x
+        this.startPosition.y = y
+        this.spawnAtStartPosition()
     }
 
-    resetPositionAndMotion(){
-        this.position.x = this.serverW/2
-        this.position.y = this.serverH/2
+    spawnAtStartPosition(){
+        this.position.x = this.startPosition.x
+        this.position.y = this.startPosition.y
         this.bounce.x = 0
         this.bounce.y = 0
         this.motion.x = 0
         this.motion.y = 0
+    }
+
+    // FOR TESTING PURPOSES ONLY
+    setPosition(x,y){
+        this.position.x = x
+        this.position.y = y
     }
 }

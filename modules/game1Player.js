@@ -147,14 +147,6 @@ export default class Player extends Ball{
         }
     }
 
-    resetPlayerMotion(){
-        this.motion.x = 0
-        this.motion.y = 0
-        this.bounce.x = 0
-        this.bounce.y = 0
-        this.impulseCooldown = 0
-    }
-
     getImpulseColor(){
         if(this.impulseCooldown){
             return('red')

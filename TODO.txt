@@ -17,10 +17,11 @@ player1 cant choose blue side sometimes?
 -0 may affect math.sign
 
 TODO
-objects remember starting position
+combine move commands into one
+is goal function part of goal class
+
 make functions public and private, commentate
 sending info simplify, part of class itself
-is goal part of goal class independent
 configuration dictionary (for player speed limit...)
 game countdown takes away from game time
 make ballIds part of game
