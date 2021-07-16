@@ -12,13 +12,14 @@ https://en.wikipedia.org/wiki/Elastic_collision
 http://cobweb.cs.uga.edu/~maria/classes/4070-Spring-2017/Adam%20Brookes%20Elastic%20collision%20Code.pdf
 https://www.youtube.com/watch?v=CFbo_nBdBco 
 isCollisionPossible: p1.magnitude > p2.magnitude + ROUNDING_ERROR, may cause overlap
+
 wall - p1 - ball <- p2 collision crashes game (Maximum call stack size exceeded)
+p1 on top wall pushing p2 right down using command.right
 player1 cant choose blue side sometimes?
 -0 may affect math.sign
 
 TODO
-combine move commands into one
-is goal function part of goal class
+V0.1.26 move goal functions to class
 
 make functions public and private, commentate
 sending info simplify, part of class itself

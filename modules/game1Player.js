@@ -1,5 +1,6 @@
 'use strict'
 import Ball from './game1Ball.js'
+import MoveCommands from './game1MoveCommands.js'
 
 const ROUNDING_ERROR = 0.001
 
@@ -11,10 +12,7 @@ export default class Player extends Ball{
         this.userName = userName
         this.team = team
 
-        this.moveL = 0
-        this.moveR = 0
-        this.moveU = 0
-        this.moveD = 0
+        this.commands = new MoveCommands()
         this.speed = 0
 
         this.goals = 0
@@ -25,42 +23,9 @@ export default class Player extends Ball{
         this.mass = 1
     }
 
-    recordPlayerMove(move){
-        if(move.left){
-            this.moveL = 1
-        }
-        if(move.right){
-            this.moveR = 1
-        }
-        if(move.up){
-            this.moveU = 1
-        }
-        if(move.down){
-            this.moveD = 1
-        }
-    }
-
-    resetPlayerMoveCommands(){
-        this.moveL = 0
-        this.moveR = 0
-        this.moveU = 0
-        this.moveD = 0
-    }
-
-    deleteMoveContradictions(){
-        if(this.moveU && this.moveD){
-            this.moveU = 0
-            this.moveD = 0
-        }
-        if(this.moveL && this.moveR){
-            this.moveL = 0
-            this.moveR = 0
-        }
-    }
-
     setMoveSpeed(){
         this.speed = this.maxSpeed
-        if( (this.moveU || this.moveD) && (this.moveL || this.moveR) ){
+        if( (this.commands.up || this.commands.down) && (this.commands.left || this.commands.right) ){
             this.speed *= Math.sqrt(2)/2
         }
     }
@@ -71,19 +36,19 @@ export default class Player extends Ball{
     }
 
     addMoveInputToMotion(){
-        if(this.moveU && this.position.y - this.radius > ROUNDING_ERROR){
+        if(this.commands.up && this.position.y - this.radius > ROUNDING_ERROR){
             this.motion.y -= this.speed
         }
-        else if(this.moveD &&
+        else if(this.commands.down &&
             this.position.y + this.radius < this.serverH - ROUNDING_ERROR)
         {
             this.motion.y += this.speed
         }
 
-        if(this.moveL && this.position.x - this.radius > ROUNDING_ERROR){
+        if(this.commands.left && this.position.x - this.radius > ROUNDING_ERROR){
             this.motion.x -= this.speed
         }
-        else if(this.moveR &&
+        else if(this.commands.right &&
             this.position.x + this.radius < this.serverW - ROUNDING_ERROR)
         {
             this.motion.x += this.speed
@@ -107,19 +72,19 @@ export default class Player extends Ball{
         this.newImpulse = 0
     }
 
-    setNewDy(yFinal){
-        if( (this.moveD || this.moveU) && yFinal == 0){
+    setNewYBounce(yFinal){
+        if( (this.commands.down || this.commands.up) && yFinal == 0){
             //do nothing
         }
         // resisting push
-        else if( (this.moveD && yFinal < 0) || (this.moveU && yFinal > 0)){
+        else if( (this.commands.down && yFinal < 0) || (this.commands.up && yFinal > 0)){
             this.bounce.y += yFinal
         }
         // move boost
-        else if(this.moveD && yFinal > 0){
+        else if(this.commands.down && yFinal > 0){
             this.bounce.y = Math.max(yFinal - this.speed,0)
         }
-        else if(this.moveU && yFinal < 0){
+        else if(this.commands.up && yFinal < 0){
             this.bounce.y = Math.min(yFinal + this.speed,0)
         }
         else{
@@ -127,19 +92,19 @@ export default class Player extends Ball{
         }
     }
 
-    setNewDx(xFinal){
-        if( (this.moveR || this.moveL) && xFinal == 0){
+    setNewXBounce(xFinal){
+        if( (this.commands.right || this.commands.left) && xFinal == 0){
             //do nothing
         }
         // resisting push
-        else if( (this.moveR && xFinal < 0) || (this.moveL && xFinal > 0)){
+        else if( (this.commands.right && xFinal < 0) || (this.commands.left && xFinal > 0)){
             this.bounce.x += xFinal
         }
         // move boosted
-        else if(this.moveR && xFinal > 0){
+        else if(this.commands.right && xFinal > 0){
             this.bounce.x = Math.max(xFinal - this.speed,0)
         }
-        else if(this.moveL && xFinal < 0){
+        else if(this.commands.left && xFinal < 0){
             this.bounce.x = Math.min(xFinal + this.speed,0)
         }
         else{

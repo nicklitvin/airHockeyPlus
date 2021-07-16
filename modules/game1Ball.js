@@ -42,7 +42,7 @@ export default class Ball{
         )
     }
 
-    resetXyMoves(){
+    resetMotion(){
         this.motion.x = 0
         this.motion.y = 0
     }
@@ -60,10 +60,10 @@ export default class Ball{
         this.position.x += this.motion.x*time
         this.position.y += this.motion.y*time
 
-        this.keepObjectWithinBoundary()
+        this.keepWithinBoundary()
     }
 
-    keepObjectWithinBoundary(){
+    keepWithinBoundary(){
         if(this.position.x + this.radius > this.serverW){
             this.position.x = this.serverW - this.radius
         }
@@ -129,11 +129,11 @@ export default class Ball{
         }
     }
 
-    setNewDx(xFinal){
+    setNewXBounce(xFinal){
         this.bounce.x = xFinal
     }
 
-    setNewDy(yFinal){
+    setNewYBounce(yFinal){
         this.bounce.y = yFinal
     }
 

@@ -321,13 +321,13 @@ export default class PhysicsManager{
         const newP1Vector = newMoves.p1
         const newP2Vector = newMoves.p2
 
-        this.calculateNewDxDy(p1,newP1Vector)
-        this.calculateNewDxDy(p2,newP2Vector)
+        this.calculateNewBounce(p1,newP1Vector)
+        this.calculateNewBounce(p2,newP2Vector)
     }
 
     calculateNewDxDy(player,newVector){
-        player.setNewDx(newVector.x)
-        player.setNewDy(newVector.y)
+        player.setNewXBounce(newVector.x)
+        player.setNewYBounce(newVector.y)
     }
 
     // CALCULATOR

@@ -356,7 +356,7 @@ export default class Game{
 
     recordPlayerMove(userId,move){
         const player = this.players.getInfo(userId)
-        player.recordPlayerMove(move)
+        player.commands.recordMoveCommands(move)
     }
 
     // UPDATE GAME
@@ -433,7 +433,7 @@ export default class Game{
     calculateXyMoves(){
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
-            player.deleteMoveContradictions()
+            player.commands.deleteMoveContradictions()
             player.setMoveSpeed()
             player.makeMotionVector()
         }
@@ -447,12 +447,12 @@ export default class Game{
     resetAllMoves(){
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
-            player.resetPlayerMoveCommands()
-            player.resetXyMoves()
+            player.commands.resetPlayerMoveCommands()
+            player.resetMotion()
         }
         const ball = this.ball
         if(ball){
-            ball.resetXyMoves()
+            ball.resetMotion()
         }
     }
 
