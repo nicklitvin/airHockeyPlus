@@ -116,8 +116,7 @@ resizeCanvas()
 // DRAW GAME
 
 function drawPlayers(playerInfo, impulseTimer,ctx){
-    for(var playerId of Object.keys(playerInfo)){
-        const player = playerInfo[playerId]
+    for(var player of playerInfo){
         ctx.beginPath()
         ctx.arc(
             player.x*canvas.width,
@@ -129,7 +128,7 @@ function drawPlayers(playerInfo, impulseTimer,ctx){
         ctx.fillStyle = player.team
         ctx.fill()
 
-        if(playerId == userId){
+        if(player.userId == userId){
             drawImpulseTimer(player,impulseTimer,ctx)
         }
     }

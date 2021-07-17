@@ -21,4 +21,21 @@ export default class PlayerManager{
     getInfo(playerId){
         return(this.players[playerId])
     }
+
+    getAllPlayerSendingInfo(){
+        const playerInfo = []
+        for(var playerId of Object.keys(this.players)){
+            const player = this.players[playerId]
+            const info = player.getSendingInfo()
+            playerInfo.push(info)
+        }
+        return(playerInfo)
+    }
+
+    restartImpulseCooldowns(){
+        for(var playerId of Object.keys(this.players)){
+            const player = this.players[playerId]
+            player.decreaseImpulseCooldown(player.impulseCooldown)
+        }
+    }
 }

@@ -152,6 +152,14 @@ export default class Ball{
         this.motion.y = 0
     }
 
+    getSendingInfo(){
+        return({
+            'x': this.position.x/this.serverW,
+            'y': this.position.y/this.serverH,
+            'radiusY': this.radius/this.serverH
+        })
+    }
+
     // FOR TESTING PURPOSES ONLY
     setPosition(x,y){
         this.position.x = x

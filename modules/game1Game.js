@@ -30,7 +30,7 @@ export default class Game{
         this.gameTime = 0
         //[0] is X from "Xmin"
         this.gameTimer = Number(lobby.gameTimer[0])*MINUTES_TO_SECONDS 
-        this.countdown = 0
+        this.countdown = 1
         
         // in miliseconds
         this.lastTime = Date.now()
@@ -267,10 +267,10 @@ export default class Game{
         this.inGame = 0
     }
 
-    getAllInfo(){
-        const playerInfo = this.getAllPlayerInfo()
-        const ballInfo = this.getBallInfo()
-        const goalInfo = this.getGoalInfo()
+    getAllSendingInfo(){
+        const playerInfo = this.players.getAllPlayerSendingInfo()
+        const ballInfo = this.ball.getSendingInfo()
+        const goalInfo = this.goals.getGoalSendingInfo()
 
         const timer = Math.ceil(this.countdown)
         const timeLeft = Math.ceil(this.gameTimer - this.gameTime)
@@ -285,48 +285,6 @@ export default class Game{
         })
     }
 
-    getAllPlayerInfo(){
-        const playerInfo = {}
-        for(var playerId of this.userIds){
-            const player = this.players.getInfo(playerId)
-            
-
-            playerInfo[playerId] = {
-                'x': player.position.x/this.serverW,
-                'y': player.position.y/this.serverH,
-                'radiusY': player.radius/this.serverH,
-                'team': player.team
-            }
-        }
-        return(playerInfo)
-    }
-
-    getBallInfo(){
-        const ball = this.ball
-        return({
-            'x': ball.position.x/this.serverW,
-            'y': ball.position.y/this.serverH,
-            'radiusY': ball.radius/this.serverH
-        })
-    }
-
-    getGoalInfo(){
-        const allGoalInfo = this.goals.getGoals()
-        var newGoalInfo = {}
-
-        for(var team of Object.keys(allGoalInfo)){
-            const goal = allGoalInfo[team]
-            newGoalInfo[team] = {
-                'x': goal.position.x/this.serverW,
-                'y': goal.position.y/this.serverH,
-                'width': goal.width/this.serverW,
-                'height': goal.height/this.serverH,
-                'color': goal.color
-            }
-        }
-        return(newGoalInfo)
-    }
-    
     sendGame(allInfo){
         for(var userId of this.userIds){
             const user = this.users.getInfo(userId)
@@ -367,18 +325,19 @@ export default class Game{
 
         this.timeDiff = timeDiff
         this.countdown -= timeDiff * MILISECONDS_TO_SECONDS
-        this.gameTime += timeDiff * MILISECONDS_TO_SECONDS
-        this.lastTime = Date.now()
 
         if(this.countdown < 0){
             this.countdown = 0
+            this.gameTime += timeDiff * MILISECONDS_TO_SECONDS
         }
+
+        this.lastTime = Date.now()
     }
 
     updateGame(){
         this.impulseControl()
         this.limitObjectSpeeds()
-        this.calculateXyMoves()
+        this.calculateBallMotion()
         this.collisionProcedure()
         this.resetAllMoves()   
         this.applyFriction()
@@ -430,7 +389,7 @@ export default class Game{
         }
     }
 
-    calculateXyMoves(){
+    calculateBallMotion(){
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
             player.commands.deleteMoveContradictions()
@@ -502,6 +461,7 @@ export default class Game{
             const ball = this.getObjectById(ballId)
             ball.spawnAtStartPosition()
         }
+        this.players.restartImpulseCooldowns()
     }
 
     // COLLISION PROCEDURE
@@ -632,7 +592,7 @@ export default class Game{
 
         this.moveGameObjects(time)
         object.changeTrajectoryFromWallCollision()
-        object.resetXyMoves()
+        object.resetMotion()
         object.makeMotionVector()
     }
 
@@ -648,8 +608,8 @@ export default class Game{
 
         this.moveGameObjects(time)
         this.physics.changeObjectCollisionTrajectory(p1,p2)
-        p1.resetXyMoves()
-        p2.resetXyMoves()
+        p1.resetMotion()
+        p2.resetMotion()
         p1.makeMotionVector()
         p2.makeMotionVector()
     }

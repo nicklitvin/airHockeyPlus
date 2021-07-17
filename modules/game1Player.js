@@ -118,4 +118,14 @@ export default class Player extends Ball{
         }
         return('green')
     }
+
+    getSendingInfo(){
+        return({
+            'userId': this.userId,
+            'x': this.position.x/this.serverW,
+            'y': this.position.y/this.serverH,
+            'radiusY': this.radius/this.serverH,
+            'team': this.team
+        })
+    }
 }

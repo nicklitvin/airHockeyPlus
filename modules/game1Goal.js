@@ -17,6 +17,8 @@ export default class Goals{
     constructor(){
         this.goals = {}
         this.rightGoalX = 15.8
+        this.serverW = 16
+        this.serverH = 9
     }
 
     addGoal(side,color){
@@ -30,5 +32,21 @@ export default class Goals{
 
     getGoals(){
         return(this.goals)
+    }
+
+    getGoalSendingInfo(){
+        var newGoalInfo = {}
+
+        for(var team of Object.keys(this.goals)){
+            const goal = this.goals[team]
+            newGoalInfo[team] = {
+                'x': goal.position.x/this.serverW,
+                'y': goal.position.y/this.serverH,
+                'width': goal.width/this.serverW,
+                'height': goal.height/this.serverH,
+                'color': goal.color
+            }
+        }
+        return(newGoalInfo)
     }
 }

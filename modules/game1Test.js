@@ -10,13 +10,14 @@ export default class Game1Testing extends Game1Control{
     }
 
     runTests(){
-        this.testRadiusMaking()
-        this.testPlayerSpawn()
-        this.testBallSpawn()
+        // this.testRadiusMaking()
+        // this.testPlayerSpawn()
+        // this.testBallSpawn()
+        // this.testSendingInfo()
 
-        this.testPlayerPushesBallHorizontally()
-        this.testPlayerPushesBallVerticallyOnTheRightSide()
-        this.testPlayerPushesBallIntoPlayerIntoWall()
+        // this.testPlayerPushesBallHorizontally()
+        // this.testPlayerPushesBallVerticallyOnTheRightSide()
+        // this.testPlayerPushesBallIntoPlayerIntoWall()
     }
 
     // ESSENTIALS
@@ -125,6 +126,24 @@ export default class Game1Testing extends Game1Control{
         game.resetBallPositions()
         strictEqual(game.ball.startPosition.x, game.ball.position.x)
         delete this.games[game.lobbyId]
+    }
+
+    testSendingInfo(){
+        console.log('makingGoalInfo')
+        const game = this.makeNewGame()
+        
+        game.addBall()
+        const ballInfo = game.ball.getSendingInfo()
+        // console.log('ballInfo', ballInfo)
+        
+        const goalInfo = game.goals.getGoalSendingInfo()
+        // console.log('goalInfo',goalInfo)
+
+        const player = this.addUserAndPlayerToGame(game,'orange')
+        const playerInfo = player.getSendingInfo()
+        // console.log('playerInfo',playerInfo)
+
+        console.log(game.getAllInfo())
     }
 
     // INGAME TESTS

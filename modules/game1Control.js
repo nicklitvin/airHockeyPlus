@@ -62,7 +62,7 @@ export default class Game1Control{
             if(game.countdown == 0){
                 game.updateGame()
             }
-            const allInfo = game.getAllInfo()
+            const allInfo = game.getAllSendingInfo()
             this.sendAllInfo(game,allInfo)
         }
     }

@@ -325,7 +325,7 @@ export default class PhysicsManager{
         this.calculateNewBounce(p2,newP2Vector)
     }
 
-    calculateNewDxDy(player,newVector){
+    calculateNewBounce(player,newVector){
         player.setNewXBounce(newVector.x)
         player.setNewYBounce(newVector.y)
     }
