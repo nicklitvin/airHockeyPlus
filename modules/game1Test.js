@@ -4,6 +4,13 @@ import Game from './game1Game.js'
 import Vector from "./vector.js"
 import { strictEqual } from "assert"
 
+const move = {
+    'up': false,
+    'down': false,
+    'left': false,
+    'right': false
+}
+
 export default class Game1Testing extends Game1Control{
     constructor(io,users,lobbies,refreshRate){
         super(io,users,lobbies,refreshRate)
@@ -18,6 +25,9 @@ export default class Game1Testing extends Game1Control{
         // this.testPlayerPushesBallHorizontally()
         // this.testPlayerPushesBallVerticallyOnTheRightSide()
         // this.testPlayerPushesBallIntoPlayerIntoWall()
+        // this.testPlayerOnTopWallPushesPlayerRightOnUpperSide()
+        // this.testPlayerPushesToBug()
+        this.testPlayerPushesPlayerIntoWallBug()
     }
 
     // ESSENTIALS
@@ -67,12 +77,10 @@ export default class Game1Testing extends Game1Control{
     runTestGame(game,cycles,moveCommands){
         game.contacts = game.makeContacts()
 
-        const p1 = game.players.getInfo('p1')
+        const p1 = game.players.getInfo(game.userIds[0])
 
         for(var count = 0; count < cycles; count++){
-            for(var moveCommand of moveCommands){
-                p1[moveCommand] = 1
-            }
+            p1.commands.recordMoveCommands(moveCommands)
 
             console.log('cycle %i before)',count)
             this.logAllBallInfo(game)
@@ -177,7 +185,7 @@ export default class Game1Testing extends Game1Control{
         ball.setPosition(player.position.x - 0.2, player.position.y - 0.8)
         ball.addBounce(new Vector(0,-10))
 
-        const moveCommands = ['moveU']
+        const moveCommands = ['up']
         const cycles = 5
         this.runTestGame(game,cycles,moveCommands)
 
@@ -204,13 +212,88 @@ export default class Game1Testing extends Game1Control{
         ball.setPosition(14,6)
         ball.addBounce(new Vector(0,0))
 
-        const moveCommands = ['moveU','moveL']
+        const moveCommands = ['up','left']
         const cycles = 5
         this.runTestGame(game,cycles,moveCommands)
 
         // if( player.bounce.x > 0 || Math.abs(player.bounce.x) > Math.abs(ball.bounce.x)){
         //     strictEqual(0,1)
         // }
+
+        delete this.games[game.lobbyId]
+    }
+
+    testPlayerOnTopWallPushesPlayerRightOnUpperSide(){
+        const game = this.makeNewGame()
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(7.777985898234532,7.672014101765465)
+        player1.radius = 0.5880599999999999
+
+        const player2 = this.addUserAndPlayerToGame(game,'orange')
+        player2.setPosition(6.863782463805512,8.41194)
+        player2.radius = 0.5880599999999999
+        player2.addBounce( new Vector(-20.774242921223138,-1.9558623483896138) )
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(14,6)
+
+        const moveCommands = {...move}
+        moveCommands.left = true
+        moveCommands.down = true
+        
+        const cycles = 5
+        this.runTestGame(game,cycles,moveCommands)
+
+        delete this.games[game.lobbyId]
+    }
+
+    testPlayerPushesToBug(){
+        const game = this.makeNewGame()
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(13.945665682182733,8.41194)
+        player1.radius = 0.5880599999999999
+
+        const player2 = this.addUserAndPlayerToGame(game,'orange')
+        player2.setPosition(12.795260242865712,8.167347319018312)
+        player2.radius = 0.5880599999999999
+        player2.addBounce( new Vector(-10.233381474556518,-1.7601946066435974) )
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(1,6)
+
+        const moveCommands = {...move}
+        moveCommands.left = true
+        moveCommands.down = true
+        
+        const cycles = 5
+        this.runTestGame(game,cycles,moveCommands)
+
+        delete this.games[game.lobbyId]
+    }
+
+    testPlayerPushesPlayerIntoWallBug(){
+        const game = this.makeNewGame()
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(1.674954506627116, 8.41194)
+        player1.radius = 0.5880599999999999
+
+        const player2 = this.addUserAndPlayerToGame(game,'orange')
+        player2.setPosition(0.5880599999999999,7.962586480080775)
+        player2.radius = 0.5880599999999999
+        player2.addBounce( new Vector(0.24863280630604123,-25.053814003146183) )
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(15,6)
+
+        const moveCommands = {...move}
+        moveCommands.left = true
+        moveCommands.down = true
+        
+        const cycles = 5
+        this.runTestGame(game,cycles,moveCommands)
 
         delete this.games[game.lobbyId]
     }

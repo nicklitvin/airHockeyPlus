@@ -469,7 +469,7 @@ export default class Game{
     collisionProcedure(){
         const nextCollision = this.getNextCollision()
         const remainingTime = 1/this.refreshRate - this.timePassed
-        // console.log(nextCollision)
+        
         this.isOverlap()
         this.isBounceReasonable()
 
@@ -483,12 +483,10 @@ export default class Game{
         this.collisionProcedureRepeats += 1
         this.timePassed += nextCollision.time
         
-        // if(this.collisionProcedureRepeats > 100){
-        //     console.log(nextCollision)
-        //     console.log(this.players)
-        //     console.log(this.ball)
-        //     strictEqual(0,1)
-        // }
+        if(this.collisionProcedureRepeats > 60){
+            console.log(nextCollision)
+            strictEqual(0,1)
+        }
 
         if (nextCollision.type == 'wall'){
             // console.log('wallCollision')
@@ -621,8 +619,10 @@ export default class Game{
             const distance = this.physics.getDistanceBetweenTwoPoints(p1.position,p2.position)
 
             if(distance < p1.radius + p2.radius - ROUNDING_ERROR){
-                p1.dx = 100 //TEMPORARY FIX
-                p2.dx = -100
+                p1.spawnAtStartPosition()
+                p2.spawnAtStartPosition()
+                // p1.dx = 100 //TEMPORARY FIX
+                // p2.dx = -100
                 strictEqual(0,1)
             }
         }   
@@ -636,6 +636,7 @@ export default class Game{
             const bounceMagnitude = object.getBounceMagnitude()
 
             if(bounceMagnitude > 500){
+                object.spawnAtStartPosition()
                 console.log(object,this.ball)
                 strictEqual(0,1)
             }

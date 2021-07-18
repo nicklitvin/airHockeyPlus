@@ -3,6 +3,7 @@
 import Vector from './vector.js'
 
 const ROUNDING_ERROR = 0.001
+const SMALL_ROUNDING_ERROR = 10**(-6)
 
 export default class PhysicsManager{
     constructor(serverW,serverH,players){
@@ -163,8 +164,10 @@ export default class PhysicsManager{
         const a = Vx**2 + Vy**2
         const b = 2*(Px*Vx + Py*Vy)
         const c = Px**2 + Py**2 - squaredSumOfRadii
-        const discriminant = this.findDiscriminant(a,b,c)
+        var discriminant = this.findDiscriminant(a,b,c)
         // console.log('discriminant',a,b,c)
+
+        // discriminant = this.roundSmallNegativeToZero(discriminant)
 
         if(discriminant < 0){return}
 
@@ -217,7 +220,7 @@ export default class PhysicsManager{
         return(0)
     }
 
-    // check if p1 normal greater than p2 normal speed
+    // p1 will collide with p2 if p1.magnitude is less by very little to avoid overlap from rounding error
     isCollisionPossible(p1,p2){
         var timeX = -1
         var timeY = -1
@@ -231,8 +234,8 @@ export default class PhysicsManager{
         }
 
         if( (timeX > 0 || timeY > 0) && 
-            ((p1.magnitude > 0 && p1.magnitude > p2.magnitude + ROUNDING_ERROR) ||
-            (p1.magnitude < 0 && p1.magnitude < p2.magnitude + ROUNDING_ERROR)) )
+            ((p1.magnitude > 0 && p1.magnitude + SMALL_ROUNDING_ERROR > p2.magnitude) ||
+            (p1.magnitude < 0 && p1.magnitude < p2.magnitude + SMALL_ROUNDING_ERROR)) )
         {
             return(1)
         }
@@ -285,7 +288,8 @@ export default class PhysicsManager{
         const p1Tangent = unitTangentVector.dotProduct(p1MoveVector)
         const p2Tangent = unitTangentVector.dotProduct(p2MoveVector)
 
-        const newNormals = this.getElasticCollisionNewSpeeds(p1,p2,p1Normal,p2Normal)
+        var newNormals = this.getElasticCollisionNewSpeeds(p1,p2,p1Normal,p2Normal)
+        newNormals = this.makeNormalsDifferentIfNecessary(newNormals,p1,p2)
 
         const newP1NormalVector = unitNormalVector.multiply(newNormals.p1)
         const newP2NormalVector = unitNormalVector.multiply(newNormals.p2)
@@ -294,8 +298,6 @@ export default class PhysicsManager{
 
         const newP1Vector = newP1NormalVector.add(newP1TangentVector)
         const newP2Vector = newP2NormalVector.add(newP2TangentVector)
-
-        // console.log(newP1Vector,newP2Vector)
 
         return({
             'p1': newP1Vector,
@@ -314,6 +316,34 @@ export default class PhysicsManager{
             'p1': p1NewNormal,
             'p2': p2NewNormal
         })
+    }
+
+    makeNormalsDifferentIfNecessary(newNormals,p1,p2){
+        const normalDifference = newNormals.p1 - newNormals.p2
+        if( Math.abs(normalDifference) < ROUNDING_ERROR){
+            var timeX = 0 
+            var timeY = 0
+
+            const normalVectors = this.getNormalVectorsForCollision(p1,p2)
+
+            if(normalVectors.p1.x){
+                timeX = (p2.position.x - p1.position.x)/normalVectors.p1.x
+            }
+            if(normalVectors.p1.y){
+                timeY = (p2.position.y - p1.position.y)/normalVectors.p1.y
+            }
+
+            // p1 is pushing
+            if(timeX > 0 || timeY > 0){
+                newNormals.p1 -= Math.sign(newNormals.p1)*ROUNDING_ERROR
+                newNormals.p2 += Math.sign(newNormals.p1)*ROUNDING_ERROR
+            }
+            else{
+                newNormals.p2 -= Math.sign(newNormals.p2)*ROUNDING_ERROR
+                newNormals.p1 += Math.sign(newNormals.p2)*ROUNDING_ERROR
+            }
+        }
+        return(newNormals)
     }
 
     changeObjectCollisionTrajectory(p1,p2){
