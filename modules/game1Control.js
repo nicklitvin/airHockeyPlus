@@ -96,10 +96,6 @@ export default class Game1Control{
         const lobbyId = this.users.getInfo(userId).lobbyId
         const roomLobby = this.lobbies.getInfo(lobbyId)
 
-        if(userId != roomLobby.owner){
-            return
-        }
-        
         const game = this.games[lobbyId]        
         const endInfo = game.makeEndInfo()
 
@@ -110,7 +106,8 @@ export default class Game1Control{
     }
 
     sendEndStuff(lobby,endInfo){
-        for(var userId of lobby.userIds){
+        const userIds = [...lobby.userIds]
+        for(var userId of userIds){
             const user = this.users.getInfo(userId)
             const socket = user.socket
             if(socket && user.inGame == 1){
@@ -129,6 +126,10 @@ export default class Game1Control{
             if(userIds[a] == user.userId){
                 userIds.splice(a,1)
             }
+        }
+        // MAKE LOBBY FUNCTION TO TAKE CARE OF THIS AFTER ORGANIZING ROOM_CONTROL
+        if(lobby.owner == user.userId){
+            lobby.owner = lobby.userIds[0]
         }
         this.users.deleteUser(user)
     }

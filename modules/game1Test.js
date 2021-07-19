@@ -21,13 +21,13 @@ export default class Game1Testing extends Game1Control{
         // this.testPlayerSpawn()
         // this.testBallSpawn()
         // this.testSendingInfo()
+        // this.testScorerTextMaking()
 
-        // this.testPlayerPushesBallHorizontally()
+        this.testPlayerPushesBallHorizontally()
         // this.testPlayerPushesBallVerticallyOnTheRightSide()
-        // this.testPlayerPushesBallIntoPlayerIntoWall()
         // this.testPlayerOnTopWallPushesPlayerRightOnUpperSide()
         // this.testPlayerPushesToBug()
-        this.testPlayerPushesPlayerIntoWallBug()
+        // this.testPlayerPushesPlayerIntoWallBug()
     }
 
     // ESSENTIALS
@@ -154,6 +154,16 @@ export default class Game1Testing extends Game1Control{
         console.log(game.getAllInfo())
     }
 
+    testScorerTextMaking(){
+        console.log('makingScorerText')
+        const game = this.makeNewGame()
+        
+        game.goals.getGoals().orange.goalsScored = 4
+        game.goals.getGoals().blue.goalsScored = 4
+
+        game.makeWinnerTeamText()
+    }
+
     // INGAME TESTS
 
     testPlayerPushesBallHorizontally(){
@@ -165,8 +175,9 @@ export default class Game1Testing extends Game1Control{
         const ball = this.addBallToGame(game)
         ball.setPosition(player.position.x + 0.8, player.position.y)
 
-        const moveCommands = ['moveR']
-        const cycles = 1
+        const moveCommands = {...move}
+        moveCommands.right = true
+        const cycles = 5
         this.runTestGame(game,cycles,moveCommands)
 
         if( player.bounce.x > 0 || Math.abs(player.bounce.x) > Math.abs(ball.bounce.x)){
@@ -185,41 +196,14 @@ export default class Game1Testing extends Game1Control{
         ball.setPosition(player.position.x - 0.2, player.position.y - 0.8)
         ball.addBounce(new Vector(0,-10))
 
-        const moveCommands = ['up']
+        const moveCommands = {...move}
+        moveCommands.up = true
         const cycles = 5
         this.runTestGame(game,cycles,moveCommands)
 
         if( player.bounce.x < 0 || Math.abs(player.bounce.x) > Math.abs(ball.bounce.x)){
             strictEqual(0,1)
         }
-        delete this.games[game.lobbyId]
-    }
-    
-    testPlayerPushesBallIntoPlayerIntoWall(){
-        //TODO: study chain collisions in cycle 2
-        console.log('pushingBallUpToTheSide')
-        const game = this.makeNewGame()
-
-        const player1 = this.addPlayerToGame(game,'p1','orange',0.5880599999999999)
-        player1.setPosition(1.8611779188665563,5.112191504427785)
-        player1.addBounce(new Vector(0,0))
-
-        const player2 = this.addPlayerToGame(game,'p2','orange',0.5880599999999999)
-        player2.setPosition(0.8965639366266409,4.4393036091084745)
-        player2.addBounce(new Vector(-11.973286158636686,-8.647400296412947))
-
-        const ball = this.addBallToGame(game)
-        ball.setPosition(14,6)
-        ball.addBounce(new Vector(0,0))
-
-        const moveCommands = ['up','left']
-        const cycles = 5
-        this.runTestGame(game,cycles,moveCommands)
-
-        // if( player.bounce.x > 0 || Math.abs(player.bounce.x) > Math.abs(ball.bounce.x)){
-        //     strictEqual(0,1)
-        // }
-
         delete this.games[game.lobbyId]
     }
 

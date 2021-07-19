@@ -84,34 +84,14 @@ export default class Game{
     }
 
     makeWinnerTeamText(){
-        var text = ''
-        const goals = this.goals.getGoals()
-        const orangeGoals = goals['orange'].goalsScored
-        const blueGoals = goals['blue'].goalsScored
+        const teamScores = this.goals.getTeamScoresOrdered(this.teams)
 
-        if(blueGoals > orangeGoals){
-            text = 'blue team has won (' + blueGoals + '-' + orangeGoals +')'
-        }
-        else if(orangeGoals > blueGoals){
-            text = 'orange team has won (' + orangeGoals + '-' + blueGoals +')'
+        if(teamScores[0].score == teamScores[1].score){
+            return(`both teams tied (${teamScores[0].score} - ${teamScores[1].score})`)
         }
         else{
-            text = 'both teams tied (' + orangeGoals + '-' + blueGoals +')'
+            return(`${teamScores[0].team} team has won (${teamScores[0].score} - ${teamScores[1].score})`)
         }
-
-        return(text)
-    }
-
-    getScorersOrdered(){
-        var scorers = []
-        for(var userId of this.userIds){
-            const player = this.players.getInfo(userId)
-            if(player.goals){
-                scorers.push(player)
-            }
-        }
-        scorers.sort( (a,b) => b.goals - a.goals)
-        return(scorers)
     }
 
     getScorerText(scorers){
@@ -136,7 +116,7 @@ export default class Game{
     }
 
     makeScorerText(){
-        const scorers = this.getScorersOrdered()
+        const scorers = this.players.getScorersOrdered()
         const text = this.getScorerText(scorers)
         return(text)
     }
@@ -426,33 +406,31 @@ export default class Game{
 
     isGoal(){
         const ball = this.ball
-        const goals = this.goals.getGoals()
+        const goalWithBall = this.goals.isGoal(ball)
 
-        // ball hits wall between top and bottom edge of goal
-        if( (ball.position.x == ball.radius) &&
-            (ball.position.y > goals['orange'].position.y) &&
-            (ball.position.y < goals['orange'].position.y + goals['orange'].height) )
-        {
-            this.countGoal('blue')
-        }
-        if( (ball.position.x == this.serverW-ball.radius) &&
-            (ball.position.y > goals['blue'].position.y) && 
-            (ball.position.y < goals['blue'].position.y + goals['blue'].height) )
-        {
-            this.countGoal('orange')
+        if(goalWithBall){
+            this.countGoal(goalWithBall)
         }
     }
 
-    countGoal(scoringTeam){
-        const goal = this.goals.getGoals()[scoringTeam]
-        goal.goalsScored += 1
-        this.countdown = this.gameCountdown
-
-        const scorer = this.players.getInfo(goal.lastBallToucher)
-        if(scorer){
-            scorer.goals += 1
+    countGoal(goalWithBall){
+        var scorerId = null
+        if(goalWithBall == 'orange'){
+            scorerId = this.goals.getGoals().blue.lastBallToucher
+            this.goals.countGoal('blue')
         }
+        else if(goalWithBall == 'blue'){
+            scorerId = this.goals.getGoals().orange.lastBallToucher
+            this.goals.countGoal('orange')
+        }
+        if(scorerId){
+            const scorer = this.players.getInfo(scorerId)
+            scorer.addGoalScored()
+        }
+       
+        this.countdown = this.gameCountdown
         this.resetBallPositions()
+        this.goals.resetTouchers()
     }
 
     resetBallPositions(){
@@ -483,9 +461,10 @@ export default class Game{
         this.collisionProcedureRepeats += 1
         this.timePassed += nextCollision.time
         
-        if(this.collisionProcedureRepeats > 60){
+        if(this.collisionProcedureRepeats > 100){
             console.log(nextCollision)
-            strictEqual(0,1)
+            nextCollision.p1.spawnAtStartPosition()
+            this.stopEverything()
         }
 
         if (nextCollision.type == 'wall'){
@@ -496,7 +475,6 @@ export default class Game{
             // console.log('playerCollision')
             this.objectCollisionProcedure(nextCollision)
         }
-        this.collisionProcedure()
     }
 
     getNextCollision(){
@@ -592,6 +570,7 @@ export default class Game{
         object.changeTrajectoryFromWallCollision()
         object.resetMotion()
         object.makeMotionVector()
+        this.collisionProcedure()
     }
 
     objectCollisionProcedure(nextCollision){
@@ -600,8 +579,7 @@ export default class Game{
         const p2 = nextCollision.p2
 
         if(!p2.userId && this.goals){
-            const goal = this.goals.getGoals()[p1.team]
-            goal.lastBallToucher = p1.userId
+            this.goals.newBallToucher(p1)
         }
 
         this.moveGameObjects(time)
@@ -610,6 +588,7 @@ export default class Game{
         p2.resetMotion()
         p1.makeMotionVector()
         p2.makeMotionVector()
+        this.collisionProcedure()
     }
 
     isOverlap(){
@@ -621,9 +600,7 @@ export default class Game{
             if(distance < p1.radius + p2.radius - ROUNDING_ERROR){
                 p1.spawnAtStartPosition()
                 p2.spawnAtStartPosition()
-                // p1.dx = 100 //TEMPORARY FIX
-                // p2.dx = -100
-                strictEqual(0,1)
+                this.stopEverything()
             }
         }   
     }
@@ -638,8 +615,12 @@ export default class Game{
             if(bounceMagnitude > 500){
                 object.spawnAtStartPosition()
                 console.log(object,this.ball)
-                strictEqual(0,1)
+                this.stopEverything()
             }
         }
+    }
+
+    stopEverything(){
+        // strictEqual(0,1)
     }
 }

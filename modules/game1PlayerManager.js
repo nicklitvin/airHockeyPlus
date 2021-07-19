@@ -38,4 +38,16 @@ export default class PlayerManager{
             player.decreaseImpulseCooldown(player.impulseCooldown)
         }
     }
+
+    getScorersOrdered(){
+        var scorers = []
+        for(var playerId of Object.keys(this.players) ){
+            const player = this.getInfo(playerId)
+            if(player.goals){
+                scorers.push(player)
+            }
+        }
+        scorers.sort( (a,b) => b.goals - a.goals)
+        return(scorers)
+    }
 }

@@ -128,4 +128,8 @@ export default class Player extends Ball{
             'team': this.team
         })
     }
+
+    addGoalScored(){
+        this.goals += 1 
+    }
 }

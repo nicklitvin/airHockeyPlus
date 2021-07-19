@@ -299,6 +299,7 @@ socket.on('game1Update', (gameInfo)=>{
 })
 
 socket.on('endStuff', (info)=>{
+    console.log(info)
     endInfo = info
     displayEndText()
     showReturn()

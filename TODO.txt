@@ -16,18 +16,17 @@ remove strict equal when website is setup, log mistakes
 
 player1 cant choose blue side sometimes?
 -0 may affect math.sign
+if overlap, pusher may still be faster, what is effect?
+make functions public and private, commentate
+socket.emit not work when debugging 1 step at time
 
 TODO
-V0.1.28 leader leaves, game end bug
-
-consider no bounce if player pushing ball into wall?
-make functions public and private, commentate
-configuration dictionary (for player speed limit...)
-make ballIds part of game
-if overlap, pusher may still be faster, what is effect?
+change ball class to hold last toucher from each team instead of goals
+always verify if user action possible to avoid crash cause room not exist for example
 optimize calculations
 
 V0.2.X customization (modes, instructions, kicking players)
+roomControl organize into independent classes
 mouse control
 mobile control
 colorblind feature
@@ -37,6 +36,7 @@ specify error using cookies, roomcontrol save cookie w/ error
 lobby button appearance changes when ready (green/red)
 no friction mode
 multiple balls, lobby.balls = [Ball,Ball], balls need to have id
+many teams and a moving goal
 balls are on black team
 movement multiplier based on time passed (accuracy)
 set timer to delete last ball toucher 
@@ -47,3 +47,5 @@ maintenance to remove inactive users (who forgot about tab)
 configuration contains all preset values {x:?,y:?,radius:? ...}
 separate game.js(canvas stuff) from index.js
 send survey to players after game (game quality, site in general)
+configuration dictionary (for player speed limit...)
+consider no bounce if player pushing ball into wall?
