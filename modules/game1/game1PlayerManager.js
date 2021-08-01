@@ -1,4 +1,5 @@
 'use strict'
+
 import Player from './game1Player.js'
 
 export default class PlayerManager{

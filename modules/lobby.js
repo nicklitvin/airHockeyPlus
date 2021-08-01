@@ -1,58 +1,61 @@
 'use strict'
-class Lobby{
+
+export default class Lobby{
     constructor(lobbyId){
         this.lobbyId = lobbyId
         this.userIds = []
         this.owner = 0
-        this.game = 0
+        this.game = 0  //change to gameName
         this.inGame = 0
         this.gameTimer = 0
         this.teams = []
         this.awaitingUsers = []
     }
-}
 
-export default class LobbyManager{
-    constructor(){
-        this.lobbies = {}
-        this.idLength = 1
-    }
-
-    getAllInfo(){
-        return(this.lobbies)
-    }
-
-    getInfo(lobbyId){
-        return(this.lobbies[lobbyId])
-    }
-
-    doesLobbyExist(lobbyId){
-        if(Object.keys(this.lobbies).includes(lobbyId)){
-            return(1)
-        }
-    }
-
-    makeId(){
-        var hex = '0123456789abcdef'
-        while (true){
-            var id = ''
-            for(var a=0; a<this.idLength; a++){
-                id += hex[Math.floor(Math.random()*16)]
-            }
-            if(!Object.keys(this.lobbies).includes(id)){
-                return (id)
-            }
-        }
+    setNewGame(gameInfo){
+        this.teams = gameInfo.teamChoices
+        this.gameTimer = gameInfo.defaultGameTime
+        this.game = gameInfo.title
     }
     
-    newLobby(){
-        const lobbyId = this.makeId()
-        this.lobbies[lobbyId] = new Lobby(lobbyId)
-        return(this.lobbies[lobbyId])
+    removeAwaitingUser(userId){
+        var awaitingUsers = this.awaitingUsers
+        for(var a in awaitingUsers){
+            if(awaitingUsers[a] == userId){
+                awaitingUsers.splice(a,1)
+            }
+        }
     }
 
-    deleteLobby(lobby){
-        delete this.lobbies[lobby.lobbyId]
+    addNewUser(userId){
+        this.userIds.push(userId)
+        
+        if(!this.owner){
+            this.makeNewOwner(userId)
+        }
+    }
+
+    deleteUser(userId){
+        for(var a in this.userIds){
+            if(this.userIds[a] == userId){
+                this.userIds.splice(a,1)
+            }
+        }
+        if(this.owner == userId){
+            this.owner = ''   
+        }
+    }
+
+    makeNewOwner(userId=0){
+        if(userId){
+            this.owner = userId
+        }
+        else{
+            this.owner = this.userIds[0]
+        }
+    }
+
+    endGame(){
+        this.inGame = 0
     }
 }
-

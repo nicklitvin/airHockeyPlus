@@ -1,6 +1,6 @@
 'use strict'
 
-import Vector from "./vector.js"
+import Vector from "../vector.js"
 
 const ROUNDING_ERROR = 0.001
 

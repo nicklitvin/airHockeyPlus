@@ -3,7 +3,7 @@
 import PlayerManager from './game1PlayerManager.js'
 import PhysicsManager from './game1Physics.js'
 import Ball from './game1Ball.js'
-import Goals from './game1Goal.js'
+import GoalManager from './game1GoalManager.js'
 import { strictEqual } from 'assert'
 
 const MINUTES_TO_SECONDS = 60
@@ -234,7 +234,7 @@ export default class Game{
     }
 
     addGoals(){
-        this.goals = new Goals()
+        this.goals = new GoalManager()
         const goals = this.goals
 
         goals.addGoal('left', 'orange')

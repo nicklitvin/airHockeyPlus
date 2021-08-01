@@ -26,3 +26,6 @@ setInterval(()=>{
 
 // runGameTest
 // control.runGame1Test()
+
+//runRoomTest
+// control.runRoomTest()

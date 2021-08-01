@@ -1,5 +1,6 @@
 'use strict'
-export default class SockManager{
+
+export default class SocketManager{
     constructor(){
         this.socks = {}
     }

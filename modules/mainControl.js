@@ -1,12 +1,12 @@
 'use strict'
-import RoomControl from './roomControl.js'
-import Game1Control from './game1Control.js'
-import Game1Testing from './game1Test.js'
+import RoomManager from './roomManager.js'
+import Game1Manager from './game1/game1GameManager.js'
+import Game1Testing from './game1/game1Test.js'
+import RoomTester from './roomTest.js' 
 
-import LobbyManager from './lobby.js'
-import SockManager from './sock.js'
-import UserManager from './users.js'
-import gameLibrary from './gameLib.js'
+import LobbyManager from './lobbyManager.js'
+import SocketManager from './socketManager.js'
+import UserManager from './userManager.js'
 
 export default class MainControl{
     constructor(io,refreshRate){
@@ -15,28 +15,26 @@ export default class MainControl{
 
         this.lobbies = new LobbyManager()
         this.users = new UserManager()
-        this.socks = new SockManager()
-        this.gameLib = new gameLibrary()
+        this.socks = new SocketManager()
 
-        this.game1Control = new Game1Control(
+        this.game1Manager = new Game1Manager(
             this.io,
             this.users,
             this.lobbies,
             this.refreshRate
         )
 
-        this.room = new RoomControl(
+        this.room = new RoomManager(
             this.io,
-            this.game1Control,
+            this.game1Manager,
             this.lobbies,
             this.users,
-            this.socks,
-            this.gameLib
+            this.socks
         )
     }
 
     runGame1(){
-        this.game1Control.runGame1()
+        this.game1Manager.runGame1()
     }
 
     runGame1Test(){
@@ -47,5 +45,10 @@ export default class MainControl{
             this.refreshRate
         )
         game1Test.runTests()
+    }
+
+    runRoomTest(){
+        const roomTest = new RoomTester()
+        roomTest.runTests()
     }
 }

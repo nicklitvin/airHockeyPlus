@@ -1,7 +1,7 @@
 'use strict'
 import Game from './game1Game.js'
 
-export default class Game1Control{
+export default class Game1Manager{
     constructor(io,users,lobbies,refreshRate){
         this.users = users
         this.lobbies = lobbies
@@ -100,7 +100,7 @@ export default class Game1Control{
         const endInfo = game.makeEndInfo()
 
         game.endGame()
-        roomLobby.inGame = 0
+        roomLobby.endGame()
 
         this.sendEndStuff(roomLobby,endInfo)
     }
@@ -110,8 +110,9 @@ export default class Game1Control{
         for(var userId of userIds){
             const user = this.users.getInfo(userId)
             const socket = user.socket
+
             if(socket && user.inGame == 1){
-                user.ready = 0
+                user.unready()
                 socket.emit('endStuff',endInfo)  
             }
             else{
@@ -121,15 +122,10 @@ export default class Game1Control{
     }
 
     deleteUserExistence(lobby,user){
-        var userIds = lobby.userIds
-        for(var a in userIds){
-            if(userIds[a] == user.userId){
-                userIds.splice(a,1)
-            }
-        }
-        // MAKE LOBBY FUNCTION TO TAKE CARE OF THIS AFTER ORGANIZING ROOM_CONTROL
+        this.lobbies.deleteUser(user.userId)
+
         if(lobby.owner == user.userId){
-            lobby.owner = lobby.userIds[0]
+            this.lobbies.makeNewOwner()
         }
         this.users.deleteUser(user)
     }

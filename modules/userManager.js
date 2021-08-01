@@ -1,16 +1,6 @@
 'use strict'
-class User{
-    constructor(userId,socket,lobbyId,userName){
-        this.userId = userId
-        this.socket = socket
-        this.lobbyId = lobbyId
-        this.userName = userName
-        this.ready = 0
-        this.team = 0
 
-        this.inGame = 0
-    }
-}
+import User from "./user.js"
 
 export default class UserManager{
     constructor (){

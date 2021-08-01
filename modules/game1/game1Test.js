@@ -1,7 +1,7 @@
 'use strict'
-import Game1Control from "./game1Control.js"
+import Game1Manager from "./game1GameManager.js"
 import Game from './game1Game.js'
-import Vector from "./vector.js"
+import Vector from "../vector.js"
 import { strictEqual } from "assert"
 
 const move = {
@@ -11,7 +11,7 @@ const move = {
     'right': false
 }
 
-export default class Game1Testing extends Game1Control{
+export default class Game1Testing extends Game1Manager{
     constructor(io,users,lobbies,refreshRate){
         super(io,users,lobbies,refreshRate)
     }
@@ -23,11 +23,12 @@ export default class Game1Testing extends Game1Control{
         // this.testSendingInfo()
         // this.testScorerTextMaking()
 
-        this.testPlayerPushesBallHorizontally()
+        // this.testPlayerPushesBallHorizontally()
         // this.testPlayerPushesBallVerticallyOnTheRightSide()
         // this.testPlayerOnTopWallPushesPlayerRightOnUpperSide()
         // this.testPlayerPushesToBug()
         // this.testPlayerPushesPlayerIntoWallBug()
+        this.testPlayerScoresGoal()
     }
 
     // ESSENTIALS
@@ -279,6 +280,27 @@ export default class Game1Testing extends Game1Control{
         const cycles = 5
         this.runTestGame(game,cycles,moveCommands)
 
+        delete this.games[game.lobbyId]
+    }
+
+    testPlayerScoresGoal(){
+        const game = this.makeNewGame()
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(15.74,8)
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(ball.position.x - 0.75,ball.position.y)
+        player1.radius = 0.5
+
+        game.addGoals()
+
+        const moveCommands = {...move}
+        moveCommands.right = true
+        
+        const cycles = 5 
+
+        this.runTestGame(game,cycles,moveCommands)
         delete this.games[game.lobbyId]
     }
 }

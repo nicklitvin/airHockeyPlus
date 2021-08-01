@@ -1,15 +1,28 @@
 'use strict'
-export default class RoomControl{
-    constructor(io,gameControl,lobbies,users,socks,gameLib){
+
+import gameLibrary from "./gameLibrary.js"
+
+const MAX_USERNAME_LENGTH = 12
+const MAX_CHAT_LENGTH = 500
+
+export default class RoomManager{
+    constructor(io,gameControl,lobbies,users,socks){
         this.gameControl = gameControl
         this.lobbies = lobbies
         this.users = users
         this.socks = socks
-        this.gameLib = gameLib
+        this.gameLib = new gameLibrary()
         this.timerChoices = ['1min','3min','5min']
         this.teamChoices = ['orange','blue']
 
         io.on('connection', (socket)=>{
+            socket.on('createLobby', () => {
+                this.createLobby(socket)
+            })
+            socket.on('joinLobby', (lobbyId,userId) =>{
+                this.joinLobby(socket,lobbyId,userId)
+            })
+            
             socket.on('joinGame', (userId,lobbyId,gameId)=>{
                 this.joinGame(socket,userId,lobbyId,gameId)
             })
@@ -28,12 +41,6 @@ export default class RoomControl{
             socket.on('nameUpdate', (userName) =>{
                 this.updateName(socket,userName)
             })
-            socket.on('joinLobby', (lobbyId,userId) =>{
-                this.joinLobby(socket,lobbyId,userId)
-            })
-            socket.on('createLobby', () => {
-                this.createLobby(socket)
-            })
             socket.on('joinTeam', (team)=>{
                 this.joinTeam(socket,team)
             })
@@ -44,6 +51,125 @@ export default class RoomControl{
                 this.returnFromGame(userId)
             })
         })
+    }
+
+    createLobby(socket=0){
+        const lobby = this.lobbies.makeNewLobby()
+
+        if(socket){
+            this.socks.toLobby(socket,lobby)
+        }
+    }
+
+    joinLobby(socket,lobbyId,userId){
+        if(this.lobbies.isLobbyOpen(lobbyId)){
+            const lobby = this.lobbies.getInfo(lobbyId)
+            
+            //returning user
+            if(userId && lobby.userIds.includes(userId)){
+                this.rememberUser(socket,lobby,userId)
+                this.deleteGameIfAllUsersReturned(lobby)
+            }
+            //new user
+            else{
+                this.addUser(socket,lobby)
+            }
+        }
+        else{
+            this.socks.errorPage(socket)
+        }
+    }
+
+    rememberUser(socket,lobby,userId){
+        const user = this.users.getInfo(userId)
+        user.updateReturnToLobby(socket)
+
+        lobby.removeAwaitingUser(userId)
+
+        if(lobby.owner == userId){
+            this.giveOwnerView(lobby)
+        }
+
+        this.socks.joinLobby(user,lobby)
+        this.socks.deleteCookie(socket)
+        this.updatePlayerList(lobby)
+    }
+
+    deleteGameIfAllUsersReturned(lobby){
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                return
+            }
+        }
+        this.gameControl.deleteGame(lobby)
+    }
+
+    addUser(socket,lobby){
+        const user = this.users.newUser(socket,lobby)
+
+        this.socks.deleteCookie(user.socket)
+        this.socks.joinLobby(user,lobby) 
+
+        lobby.addNewUser(user.userId)
+        if(user.userId == lobby.owner){
+            this.giveOwnerView(lobby)
+        }
+
+        this.updatePlayerList(lobby)
+    }
+
+    giveOwnerView(lobby){
+        const allGames = this.gameLib.getNames()
+        const socket = this.users.getInfo(lobby.owner).socket
+        const gameInfo = this.gameLib.getGameInfo(lobby.game)
+
+        this.socks.newOwner(
+            socket,
+            allGames,
+            lobby.game,
+            lobby.gameTimer,
+            gameInfo.timeChoices
+        )
+    }
+
+    updatePlayerList(lobby){
+        const text = this.makeLobbyText(lobby)
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+            if(user.inGame){
+                continue
+            }
+            const socket = user.socket
+            this.socks.playerUpdate(socket,text)
+        }
+    }
+
+    makeLobbyText(lobby){
+        var text = ['players: <br>','black']
+        for(var userId of lobby.userIds){
+            const user = this.users.getInfo(userId)
+
+            var lineText = `${user.userName}`
+            lineText += user.ready ? ' (✓)' : ' (X)'
+
+            if(lobby.owner == userId){
+                lineText += ' [party leader]'
+            }
+            if(user.inGame){
+                lineText += ' [not returned]'
+            }
+            lineText += '<br>'
+            text.push(lineText)
+
+            if(user.team){
+                text.push(user.team)
+            }
+            else{
+                text.push('black')
+            }
+        }
+        return(text)
     }
 
     // UPDATE STATUS
@@ -144,7 +270,6 @@ export default class RoomControl{
         }
     }
 
-    // continue func check here
     sendGameChange(lobby){
         for(var userId of lobby.userIds){
             const user = this.users.getInfo(userId)
@@ -218,60 +343,25 @@ export default class RoomControl{
         }
     }
 
-    updatePlayerList(lobby){
-        const text = this.makeLobbyText(lobby)
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-            if(user.inGame){
-                continue
-            }
-            const socket = user.socket
-            this.socks.playerUpdate(socket,text)
+    isUsernameValid(userName){
+        if(userName.length == 0 || userName.length > MAX_USERNAME_LENGTH){
+            return(0)
         }
-    }
 
-    makeLobbyText(lobby){
-        var text = ['players: <br>','black']
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-
-            var lineText = `${user.userName}`
-            if(user.ready){
-                lineText += ' (✓)'
-            }
-            else{
-                lineText += ' (X)'
-            }
-            if(lobby.owner == userId){
-                lineText += ' [party leader]'
-            }
-            if(user.inGame){
-                lineText += '[not returned]'
-            }
-            lineText += '<br>'
-            text.push(lineText)
-
-            if(user.team){
-                text.push(user.team)
-            }
-            else{
-                text.push('black')
+        for(var a in userName){
+            var code = userName.charCodeAt(a)
+            //UTF8 selection includes only a-z, A-Z, 0-9 
+            if((code < 48) || (code < 65 && code > 57) || (code > 122)){
+                return(0)
             }
         }
-        return(text)
+        return(1)
     }
     
     updateName(socket,userName){
-        if(userName.length==0 || userName.length>12){
+        if(!this.isUsernameValid(userName)){
             this.socks.nameError(socket)
             return
-        }
-        for(var a in userName){
-            var code = userName.charCodeAt(a)
-            if((code < 48) || (code < 65 && code > 57) || (code > 122)){
-                this.socks.nameError(socket)
-                return
-            }
         }
         const userId = this.socks.getUserId(socket.id)
         const lobbyId = this.users.getInfo(userId).lobbyId
@@ -288,7 +378,7 @@ export default class RoomControl{
     }
 
     newChat(socket,chat){
-        if(chat.length == 0 || chat.length >500){
+        if(chat.length == 0 || chat.length > MAX_CHAT_LENGTH){
             this.socks.chatError(socket)
         }
         const userId = this.socks.getUserId(socket.id)
@@ -321,103 +411,6 @@ export default class RoomControl{
         this.socks.toLobby(user.socket,lobby)
     }
 
-    giveOwnerView(lobby){
-        const allGames = this.gameLib.getNames()
-        const socket = this.users.getInfo(lobby.owner).socket
-        this.socks.newOwner(
-            socket,
-            allGames,
-            lobby.game,
-            lobby.gameTimer,
-            this.timerChoices
-        )
-    }
-
-    returningUser(socket,lobby,userId){
-        const user = this.users.getInfo(userId)
-        user.inGame = 0
-        user.socket = socket
-
-        var awaitingUsers = lobby.awaitingUsers
-        for(var a in awaitingUsers){
-            if(awaitingUsers[a] == userId){
-                awaitingUsers.splice(a,1)
-            }
-        }
-
-        if(lobby.owner == userId){
-            this.giveOwnerView(lobby)
-        }
-
-        this.socks.joinLobby(user,lobby)
-        this.socks.deleteCookie(socket)
-        this.updatePlayerList(lobby)
-    }
-
-    addUser(socket,lobby){
-        const user = this.users.newUser(socket,lobby)
-
-        this.socks.deleteCookie(user.socket)
-        this.socks.joinLobby(user,lobby)
-        lobby.userIds.push(user.userId)
-
-        if(!lobby.owner){
-            lobby.owner = user.userId
-            this.giveOwnerView(lobby)
-        }
-
-        this.updatePlayerList(lobby)
-    }
-
-    isLobbyOpen(lobbyId){
-        const exist = this.lobbies.doesLobbyExist(lobbyId)
-        if(exist){
-            if(!this.lobbies.getInfo(lobbyId).inGame){
-                return(1)
-            }
-        }
-    }
-
-    allReturnedCheck(lobby){
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-            if(user.inGame){
-                return
-            }
-        }
-        this.gameControl.deleteGame(lobby)
-    }
-
-    joinLobby(socket,lobbyId,userId){
-        if(this.isLobbyOpen(lobbyId)){
-            const lobby = this.lobbies.getInfo(lobbyId)
-            
-            //returning user
-            if(userId && lobby.userIds.includes(userId)){
-                this.returningUser(socket,lobby,userId)
-                this.allReturnedCheck(lobby)
-            }
-            //new user
-            else{
-                this.addUser(socket,lobby)
-            }
-        }
-        else{
-            this.socks.errorPage(socket)
-        }
-    }
-
-    createLobby(socket=0){
-        const lobby = this.lobbies.newLobby()
-        lobby.gameTimer = this.timerChoices[0]
-        lobby.game = this.gameLib.getNames()[0]
-        lobby.teams = this.teamChoices
-
-        if(socket){
-            this.socks.toLobby(socket,lobby)
-        }
-    }
-
     disconnect(socket){
         const userId = this.socks.getUserId(socket.id)
         if(userId){
@@ -444,10 +437,10 @@ export default class RoomControl{
                 return
             }
         }
-        this.deleteGameRoom(lobby)
+        this.deleteGameAndRoom(lobby)
     }
 
-    deleteGameRoom(lobby){
+    deleteGameAndRoom(lobby){
         for(var userId of lobby.userIds){
             const user = this.users.getInfo(userId)
             this.users.deleteUser(user)
@@ -457,17 +450,14 @@ export default class RoomControl{
     }
 
     deleteRoomUser(user,lobby){
-        for(var a in lobby.userIds){
-            if(lobby.userIds[a] == user.userId){
-                lobby.userIds.splice(a,1)
-            }
-        }
+        lobby.deleteUser(user.userId)
+
         if(lobby.userIds.length == 0){
             this.lobbies.deleteLobby(lobby)
             return
         }
-        if(lobby.owner == user.userId){
-            lobby.owner = lobby.userIds[0]
+        if(!lobby.owner){
+            lobby.makeNewOwner()
             this.giveOwnerView(lobby)
         }
 
