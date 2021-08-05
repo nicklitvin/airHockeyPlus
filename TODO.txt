@@ -21,19 +21,13 @@ make functions public and private, commentate
 socket.emit not work when debugging 1 step at time
 
 TODO
-V0.1.30 make Game an object belonging to lobby
-    set interval for running game inside game object
-
-different settings depending on game
-change ball class to hold last toucher from each team instead of goals
-always verify if user action possible to avoid crash cause room not exist for example
-optimize calculations
-
 V0.2.X customization (modes, instructions, kicking players)
-roomControl organize into independent classes
-mouse control
+V0.2.1 select mouse control in lobby
+
+ball collision at certain angle => infinite collisions, probably rounding error
+games being deleted when run with tests
+
 mobile control
-colorblind feature
 close room power in lobby
 name change limit per minute
 specify error using cookies, roomcontrol save cookie w/ error
@@ -53,3 +47,5 @@ separate game.js(canvas stuff) from index.js
 send survey to players after game (game quality, site in general)
 configuration dictionary (for player speed limit...)
 consider no bounce if player pushing ball into wall?
+Have Game be an obejct of Room, rename lobby as room, move room functions from roomControl
+save move command on server if player lags

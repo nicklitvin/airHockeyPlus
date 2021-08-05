@@ -12,8 +12,6 @@ export default class RoomManager{
         this.users = users
         this.socks = socks
         this.gameLib = new gameLibrary()
-        this.timerChoices = ['1min','3min','5min']
-        this.teamChoices = ['orange','blue']
 
         io.on('connection', (socket)=>{
             socket.on('createLobby', () => {
@@ -22,7 +20,6 @@ export default class RoomManager{
             socket.on('joinLobby', (lobbyId,userId) =>{
                 this.joinLobby(socket,lobbyId,userId)
             })
-            
             socket.on('joinGame', (userId,lobbyId,gameId)=>{
                 this.joinGame(socket,userId,lobbyId,gameId)
             })

@@ -4,6 +4,7 @@ import Game from './game1Game.js'
 import Vector from "../vector.js"
 import { strictEqual } from "assert"
 
+const ROUNDING_ERROR = 0.001
 const move = {
     'up': false,
     'down': false,
@@ -26,9 +27,12 @@ export default class Game1Testing extends Game1Manager{
         // this.testPlayerPushesBallHorizontally()
         // this.testPlayerPushesBallVerticallyOnTheRightSide()
         // this.testPlayerOnTopWallPushesPlayerRightOnUpperSide()
+        // this.testPlayerCollision2()
         // this.testPlayerPushesToBug()
         // this.testPlayerPushesPlayerIntoWallBug()
-        this.testPlayerScoresGoal()
+        // this.testPlayerScoresGoal()
+        // this.testPlayerMovesWithMouse()
+        this.testPlayerMovesWithMouseCollisionWithBall()
     }
 
     // ESSENTIALS
@@ -81,7 +85,12 @@ export default class Game1Testing extends Game1Manager{
         const p1 = game.players.getInfo(game.userIds[0])
 
         for(var count = 0; count < cycles; count++){
-            p1.commands.recordMoveCommands(moveCommands)
+            if(p1.commands.mouseControl){
+                p1.commands.recordMouseCommands(moveCommands)
+            }
+            else{
+                p1.commands.recordMoveCommands(moveCommands)
+            }
 
             console.log('cycle %i before)',count)
             this.logAllBallInfo(game)
@@ -151,8 +160,7 @@ export default class Game1Testing extends Game1Manager{
         const player = this.addUserAndPlayerToGame(game,'orange')
         const playerInfo = player.getSendingInfo()
         // console.log('playerInfo',playerInfo)
-
-        console.log(game.getAllInfo())
+        delete this.games[game.lobbyId]
     }
 
     testScorerTextMaking(){
@@ -163,6 +171,7 @@ export default class Game1Testing extends Game1Manager{
         game.goals.getGoals().blue.goalsScored = 4
 
         game.makeWinnerTeamText()
+        delete this.games[game.lobbyId]
     }
 
     // INGAME TESTS
@@ -233,6 +242,31 @@ export default class Game1Testing extends Game1Manager{
         delete this.games[game.lobbyId]
     }
 
+    testPlayerCollision2(){
+        const game = this.makeNewGame()
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(7.141589795166639,8.308410204833358)
+        player1.radius = 0.5880599999999999
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(14,6)
+
+        const player2 = this.addUserAndPlayerToGame(game,'orange')
+        player2.setPosition(5.794927669348877,8.311327066402924)
+        player2.radius = 0.5880599999999999
+        player2.addBounce( new Vector(-25.516441230152786,-2.401901568330526) )
+
+        const moveCommands = {...move}
+        moveCommands.left = true
+        moveCommands.down = true
+        
+        const cycles = 5
+        this.runTestGame(game,cycles,moveCommands)
+
+        delete this.games[game.lobbyId]
+    }
+
     testPlayerPushesToBug(){
         const game = this.makeNewGame()
 
@@ -287,7 +321,7 @@ export default class Game1Testing extends Game1Manager{
         const game = this.makeNewGame()
 
         const ball = this.addBallToGame(game)
-        ball.setPosition(15.74,8)
+        ball.setPosition(12,8)
 
         const player1 = this.addUserAndPlayerToGame(game,'orange')
         player1.setPosition(ball.position.x - 0.75,ball.position.y)
@@ -301,6 +335,58 @@ export default class Game1Testing extends Game1Manager{
         const cycles = 5 
 
         this.runTestGame(game,cycles,moveCommands)
+        delete this.games[game.lobbyId]
+    }
+
+    testPlayerMovesWithMouse(){
+        const game = this.makeNewGame()
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(5.74,8)
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(15.5,9/2)
+        player1.radius = 0.5
+        player1.commands.mouseControl = true
+
+        game.addGoals()
+
+        const move = new Vector(1.1,0.5)
+        
+        const cycles = 50 
+
+        this.runTestGame(game,cycles,move)
+
+        // if( Math.abs(player1.position.x - move.x*16) > ROUNDING_ERROR ||
+        //     Math.abs(player1.position.y - move.y*9) > ROUNDING_ERROR)
+        // {
+        //     strictEqual(0,1)
+        // }
+        delete this.games[game.lobbyId]
+    }
+
+    testPlayerMovesWithMouseCollisionWithBall(){
+        const game = this.makeNewGame()
+
+        const player1 = this.addUserAndPlayerToGame(game,'orange')
+        player1.setPosition(1.2388004940100241,0.6746398441292485)
+        player1.addBounce(new Vector(59.31836546913247,790.5404607857434) )
+        player1.radius = 0.594
+        player1.commands.mouseControl = false
+
+        const ball = this.addBallToGame(game)
+        ball.setPosition(0.566572202663247,1.184978089132494)
+        ball.addBounce(new Vector(-225.62482446460442,168.5342789260859))
+
+        console.log(game.physics.getDistanceBetweenTwoPoints(player1.position,ball.position))
+
+        game.addGoals()
+
+        const mouse = new Vector(5.319444444444445/16,3.6666666666666665/9)
+        const cycles = 5 
+
+        this.runTestGame(game,cycles,mouse)
+
         delete this.games[game.lobbyId]
     }
 }

@@ -223,6 +223,23 @@ var move = {
     up: false,
     down: false
 }
+var mouseMove = {
+    x: 0,
+    y: 0
+}
+
+function recordMouseMove(mouse){
+    var yMouse = (mouse.clientY - (window.innerHeight - canvas.height)/2) / canvas.height
+    yMouse = Math.max(0,yMouse)
+    yMouse = Math.min(1,yMouse)
+
+    var xMouse = (mouse.clientX - (window.innerWidth - canvas.width)/2) / canvas.width
+    xMouse = Math.max(0,xMouse)
+    xMouse = Math.min(1,xMouse)
+
+    mouseMove.x = xMouse
+    mouseMove.y = yMouse
+}
 
 function newMove(key){
     if(key == 'w' || key == 'W'){
@@ -290,6 +307,9 @@ socket.on('game1Update', (gameInfo)=>{
     if(!document.hasFocus()){
         resetMove()
     }
+
+    socket.emit('game1MouseMove',userId,mouseMove)
+    
     if(move['action']){
         socket.emit('game1Move',userId,move)
     }
@@ -299,7 +319,6 @@ socket.on('game1Update', (gameInfo)=>{
 })
 
 socket.on('endStuff', (info)=>{
-    console.log(info)
     endInfo = info
     displayEndText()
     showReturn()
@@ -311,6 +330,10 @@ socket.on('stopGamePower', ()=>{
 })
 
 // EVENTS
+
+window.addEventListener('mousemove', (mouse) =>{
+    recordMouseMove(mouse)
+})
 
 window.addEventListener('resize', resizeCanvas)
 
@@ -344,4 +367,3 @@ window.oncontextmenu = ()=> {
 document.onvisibilitychange = ()=> {
     resetMove()
 }
-

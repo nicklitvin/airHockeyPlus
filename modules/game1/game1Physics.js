@@ -167,7 +167,7 @@ export default class PhysicsManager{
         var discriminant = this.findDiscriminant(a,b,c)
         // console.log('discriminant',a,b,c)
 
-        // discriminant = this.roundSmallNegativeToZero(discriminant)
+        discriminant = this.roundSmallNegativeToZero(discriminant)
 
         if(discriminant < 0){return}
 

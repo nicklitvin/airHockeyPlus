@@ -8,8 +8,14 @@ export default class Vector{
 
     normalise(){
         const length = (this.x**2 + this.y**2)**(1/2)
-        this.x /= length
-        this.y /= length
+        if(!length){
+            this.x = 0
+            this.y = 0
+        }
+        else{
+            this.x /= length
+            this.y /= length
+        }
     }
 
     dotProduct(newVector){
@@ -22,5 +28,9 @@ export default class Vector{
 
     add(newVector){
         return(new Vector(this.x + newVector.x, this.y + newVector.y))
+    }
+
+    getMagnitude(){
+        return( (this.x**2 + this.y**2)**(1/2) )
     }
 }

@@ -1,8 +1,7 @@
 'use strict'
+import Vector from '../vector.js'
 import Ball from './game1Ball.js'
 import MoveCommands from './game1MoveCommands.js'
-
-const ROUNDING_ERROR = 0.001
 
 export default class Player extends Ball{
     constructor(userId,team,userName,playerRadius){
@@ -12,47 +11,28 @@ export default class Player extends Ball{
         this.userName = userName
         this.team = team
 
-        this.commands = new MoveCommands()
-        this.speed = 0
-
         this.goals = 0
         this.newImpulse = 0
         this.impulseCooldown = 0
 
         this.maxSpeed = 15 //must get from configuration
         this.mass = 1
+
+        this.commands = new MoveCommands(
+            this.serverW,this.serverH,this.maxSpeed,this.position,this.radius
+        )
     }
 
-    setMoveSpeed(){
-        this.speed = this.maxSpeed
-        if( (this.commands.up || this.commands.down) && (this.commands.left || this.commands.right) ){
-            this.speed *= Math.sqrt(2)/2
-        }
+    resetMotionAndMove(){
+        this.resetMotion()
+        this.commands.resetMove()
     }
 
     makeMotionVector(){
-        this.addMoveInputToMotion()
+        this.commands.makeMoveVector(this.radius)
+        this.motion = this.motion.add(this.commands.moveVector)
+
         this.addBounceToMotion()
-    }
-
-    addMoveInputToMotion(){
-        if(this.commands.up && this.position.y - this.radius > ROUNDING_ERROR){
-            this.motion.y -= this.speed
-        }
-        else if(this.commands.down &&
-            this.position.y + this.radius < this.serverH - ROUNDING_ERROR)
-        {
-            this.motion.y += this.speed
-        }
-
-        if(this.commands.left && this.position.x - this.radius > ROUNDING_ERROR){
-            this.motion.x -= this.speed
-        }
-        else if(this.commands.right &&
-            this.position.x + this.radius < this.serverW - ROUNDING_ERROR)
-        {
-            this.motion.x += this.speed
-        }
     }
 
     activateImpulse(cooldown){
@@ -73,19 +53,21 @@ export default class Player extends Ball{
     }
 
     setNewYBounce(yFinal){
-        if( (this.commands.down || this.commands.up) && yFinal == 0){
+        const yMove = this.commands.moveVector.y
+
+        if(yMove && yFinal == 0){
             //do nothing
         }
         // resisting push
-        else if( (this.commands.down && yFinal < 0) || (this.commands.up && yFinal > 0)){
+        else if( Math.sign(yMove) != Math.sign(yFinal) ){
             this.bounce.y += yFinal
         }
         // move boost
-        else if(this.commands.down && yFinal > 0){
-            this.bounce.y = Math.max(yFinal - this.speed,0)
+        else if(yMove > 0 && yFinal > 0){
+            this.bounce.y = Math.max(yFinal - yMove,0)
         }
-        else if(this.commands.up && yFinal < 0){
-            this.bounce.y = Math.min(yFinal + this.speed,0)
+        else if(yMove < 0 && yFinal < 0){
+            this.bounce.y = Math.min(yFinal - yMove,0)
         }
         else{
             this.bounce.y = yFinal
@@ -93,19 +75,21 @@ export default class Player extends Ball{
     }
 
     setNewXBounce(xFinal){
-        if( (this.commands.right || this.commands.left) && xFinal == 0){
+        const xMove = this.commands.moveVector.x
+
+        if(xMove && xFinal == 0){
             //do nothing
         }
         // resisting push
-        else if( (this.commands.right && xFinal < 0) || (this.commands.left && xFinal > 0)){
+        else if( Math.sign(xMove) != Math.sign(xFinal) ){
             this.bounce.x += xFinal
         }
         // move boosted
-        else if(this.commands.right && xFinal > 0){
-            this.bounce.x = Math.max(xFinal - this.speed,0)
+        else if(xMove > 0 && xFinal > 0){
+            this.bounce.x = Math.max(xFinal - xMove,0)
         }
-        else if(this.commands.left && xFinal < 0){
-            this.bounce.x = Math.min(xFinal + this.speed,0)
+        else if(xMove < 0 && xFinal < 0){
+            this.bounce.x = Math.min(xFinal - xMove,0)
         }
         else{
             this.bounce.x = xFinal

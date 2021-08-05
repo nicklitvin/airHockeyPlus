@@ -297,6 +297,11 @@ export default class Game{
         player.commands.recordMoveCommands(move)
     }
 
+    recordPlayerMouseMove(userId,mouse){
+        const player = this.players.getInfo(userId)
+        player.commands.recordMouseCommands(mouse)
+    }
+
     // UPDATE GAME
 
     updateGameTime(){
@@ -372,8 +377,6 @@ export default class Game{
     calculateBallMotion(){
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
-            player.commands.deleteMoveContradictions()
-            player.setMoveSpeed()
             player.makeMotionVector()
         }
 
@@ -387,11 +390,11 @@ export default class Game{
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
             player.commands.resetPlayerMoveCommands()
-            player.resetMotion()
+            player.resetMotionAndMove()
         }
         const ball = this.ball
         if(ball){
-            ball.resetMotion()
+            ball.resetMotionAndMove()
         }
     }
 
@@ -462,7 +465,7 @@ export default class Game{
         this.timePassed += nextCollision.time
         
         if(this.collisionProcedureRepeats > 100){
-            console.log(nextCollision)
+            console.log('collisionRepeatProblem',nextCollision)
             nextCollision.p1.spawnAtStartPosition()
             this.stopEverything()
         }
@@ -568,7 +571,7 @@ export default class Game{
 
         this.moveGameObjects(time)
         object.changeTrajectoryFromWallCollision()
-        object.resetMotion()
+        object.resetMotionAndMove()
         object.makeMotionVector()
         this.collisionProcedure()
     }
@@ -584,8 +587,8 @@ export default class Game{
 
         this.moveGameObjects(time)
         this.physics.changeObjectCollisionTrajectory(p1,p2)
-        p1.resetMotion()
-        p2.resetMotion()
+        p1.resetMotionAndMove()
+        p2.resetMotionAndMove()
         p1.makeMotionVector()
         p2.makeMotionVector()
         this.collisionProcedure()
@@ -598,6 +601,7 @@ export default class Game{
             const distance = this.physics.getDistanceBetweenTwoPoints(p1.position,p2.position)
 
             if(distance < p1.radius + p2.radius - ROUNDING_ERROR){
+                console.log('overlap')
                 p1.spawnAtStartPosition()
                 p2.spawnAtStartPosition()
                 this.stopEverything()
@@ -613,8 +617,8 @@ export default class Game{
             const bounceMagnitude = object.getBounceMagnitude()
 
             if(bounceMagnitude > 500){
-                object.spawnAtStartPosition()
                 console.log(object,this.ball)
+                object.spawnAtStartPosition()
                 this.stopEverything()
             }
         }

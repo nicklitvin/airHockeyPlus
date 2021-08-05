@@ -42,6 +42,10 @@ export default class Ball{
         )
     }
 
+    resetMotionAndMove(){
+        this.resetMotion()
+    }
+
     resetMotion(){
         this.motion.x = 0
         this.motion.y = 0
@@ -52,8 +56,7 @@ export default class Ball{
     }
 
     addBounceToMotion(){
-        this.motion.x += this.bounce.x
-        this.motion.y += this.bounce.y
+        this.motion = this.motion.add(this.bounce)
     }
 
     move(time){
@@ -96,8 +99,7 @@ export default class Ball{
     }
 
     addBounce(bounce){
-        this.bounce.x += bounce.x
-        this.bounce.y += bounce.y
+        this.bounce = this.bounce.add(bounce)
     }
 
     resolveFriction(){

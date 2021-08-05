@@ -12,6 +12,9 @@ export default class Game1Manager{
             socket.on('game1Move', (userId,move)=>{
                 this.recordPlayerMove(userId,move)
             })
+            socket.on('game1MouseMove', (userId,mouse) =>{
+                this.recordPlayerMouseMove(userId,mouse)
+            })
             socket.on('game1Impulse', (userId)=>{
                 this.recordPlayerImpulse(userId)
             })
@@ -41,6 +44,12 @@ export default class Game1Manager{
         const lobbyId = this.users.getInfo(userId).lobbyId
         const game = this.games[lobbyId]
         game.recordPlayerMove(userId,move)
+    }
+
+    recordPlayerMouseMove(userId,mouse){
+        const lobbyId = this.users.getInfo(userId).lobbyId
+        const game = this.games[lobbyId]
+        game.recordPlayerMouseMove(userId,mouse)
     }
 
     recordPlayerImpulse(userId){
