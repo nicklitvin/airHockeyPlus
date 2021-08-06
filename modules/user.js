@@ -10,6 +10,12 @@ export default class User{
         this.team = 0
 
         this.inGame = 0
+        this.personalGameSettings = null
+    }
+
+    sendGeneralGameSettingsText(text){
+        const socket = this.socket
+        socket.emit('generalGameSettingsText',text)
     }
 
     updateReturnToLobby(socket){
@@ -19,5 +25,15 @@ export default class User{
 
     unready(){
         this.ready = 0
+    }
+
+    setPersonalGameSettings(personalGameSettings){
+        this.personalGameSettings = personalGameSettings
+    }
+
+    setNewPersonalGameSetting(setting,value){
+        var settings = this.personalGameSettings
+
+        settings[setting].chosen = value
     }
 }

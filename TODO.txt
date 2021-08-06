@@ -19,13 +19,13 @@ player1 cant choose blue side sometimes?
 if overlap, pusher may still be faster, what is effect?
 make functions public and private, commentate
 socket.emit not work when debugging 1 step at time
+games being deleted when run with tests bug
+ball collision at certain angle => infinite collisions, probably rounding error
 
 TODO
-V0.2.X customization (modes, instructions, kicking players)
-V0.2.1 select mouse control in lobby
-
-ball collision at certain angle => infinite collisions, probably rounding error
-games being deleted when run with tests
+V0.2.X customization
+V0.2.2 apply settings to game
+V0.2.3 separate room and roomManager
 
 mobile control
 close room power in lobby

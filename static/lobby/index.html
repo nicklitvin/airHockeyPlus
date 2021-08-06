@@ -16,30 +16,8 @@
 
         <div id='playerListDiv'></div><br>
 
-        <div id='teamSelectDiv'>
-            <label for='teamSelect'>choose team: </label>
-            <select id='teamSelect' onchange='changeTeam()'>
-                <option id='teamOptionBlank'></option>
-            </select>
-        </div>
-
-        <div id='gameSettingsDiv'>
-            <div id='gameNameSelect'>
-                <label for='gameName'>select game: </label>
-                <select id='gameName' onchange='changeGame()'>
-                    <!-- <option id='gameNameBlank'></option> -->
-                </select>
-            </div>
-            <div id='gameTimeSelect'>
-                <label for='gameTimer'>select game: </label>
-                <select id='gameTimer' onchange='changeGameTimer()'></select>
-            </div>
-        </div>
-
-        <p id='gameNameP'>no game selected</p>
-        <p id='gameTimerP'>no game time selected</p>
-        </div><br>
-
+        <div id='generalGameSettings'></div><br>
+        <div id='personalGameSettings'></div><br>
 
         <p id='teamSelectError'></p>
 

@@ -224,3 +224,89 @@ socket.on('oldColor',(team)=>{
     teamOptionBlank.style.display = 'none'
     teamSelect.value = team
 })
+
+// SETTINGS SELECTION
+
+socket.on('personalGameSettings', (settings)=>{
+    setPersonalGameSettings(settings)
+})
+
+function setPersonalGameSettings(settings){
+    for(var settingName of Object.keys(settings)){
+        const setting = settings[settingName]
+
+        const label = makeSettingLabel(setting,settingName)
+        const selector = makeSettingSelector(setting,settingName)
+        
+        selector.onchange = sendNewPersonalSettings
+        
+        var blank = document.createElement('br')
+
+        personalGameSettings.appendChild(label)
+        personalGameSettings.appendChild(selector)
+        personalGameSettings.appendChild(blank)
+    }
+}
+
+function sendNewPersonalSettings(){
+    const selector = document.activeElement
+    socket.emit('newPersonalGameSetting',selector.id,selector.value)
+}
+
+socket.on('generalGameSettingsOwner', (settings)=>{
+    generalGameSettings.innerHTML = ''
+    setGeneralGameSettingsOwnerView(settings)
+})
+
+function setGeneralGameSettingsOwnerView(settings){
+    for(var settingName of Object.keys(settings)){
+        const setting = settings[settingName]
+
+        const label = makeSettingLabel(setting,settingName)
+        const selector = makeSettingSelector(setting,settingName)
+
+        selector.onchange = sendNewGeneralSettings
+        
+        var blank = document.createElement('br')
+
+        generalGameSettings.appendChild(label)
+        generalGameSettings.appendChild(selector)
+        generalGameSettings.appendChild(blank)
+    }
+}
+
+function sendNewGeneralSettings(){
+    const selector = document.activeElement
+    socket.emit('newGeneralGameSetting',selector.id,selector.value)
+}
+
+socket.on('generalGameSettingsText', (text)=>{
+    console.log(text)
+    setGeneralGameSettingsText(text)
+})
+
+function setGeneralGameSettingsText(text){
+    generalGameSettings.innerHTML = text
+}
+
+function makeSettingLabel(setting,settingName){
+    var label = document.createElement('label')
+    label.setAttribute("for",settingName)
+    label.innerHTML = setting.title
+    return(label)
+}
+
+function makeSettingSelector(setting,settingName){
+    var selector = document.createElement('select')
+    selector.id = settingName
+
+    for(var option of setting.options){
+        var choice = document.createElement('option')
+        choice.innerHTML = option
+        choice.value = option
+        selector.appendChild(choice)
+    }
+    return(selector)
+}
+
+

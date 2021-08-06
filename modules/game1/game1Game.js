@@ -189,9 +189,9 @@ export default class Game{
             const user = this.users.getInfo(userId)
             this.players.addPlayer(
                 userId,
-                user.team,
+                user.personalGameSettings,
                 user.userName,
-                this.playerRadius
+                this.playerRadius,
             )
         }
         this.setPlayerSpawnPositions()

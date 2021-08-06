@@ -1,6 +1,9 @@
 'use strict'
 
 import User from "./user.js"
+import GameLibrary from "./gameLibrary.js"
+
+const gameLibrary = new GameLibrary()
 
 export default class UserManager{
     constructor (){
@@ -65,7 +68,21 @@ export default class UserManager{
         const userId = this.makeId()
         const userName = this.makeName(lobby.userIds)
         this.users[userId] = new User(userId,socket,lobby.lobbyId,userName)
+        const user = this.users[userId]
+        
+        const settings = gameLibrary.getGameInfo(lobby.gameSettings.gameChoices.chosen).personalSettings
+        const copy = this.makeCopy(settings)
+        user.setPersonalGameSettings(copy)
+
         return(this.users[userId])
+    }
+
+    makeCopy(dict){
+        var copy = {} 
+        for(var key of Object.keys(dict)){
+            copy[key] = {...dict[key]}
+        }
+        return(copy)
     }
 
     deleteUser(user){

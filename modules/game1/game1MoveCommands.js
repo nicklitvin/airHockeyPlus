@@ -6,21 +6,33 @@ const ROUNDING_ERROR = 0.001
 const REFRESH_RATE = 100
 
 export default class MoveCommands{
-    constructor(serverW,serverH,maxSpeed,position){
+    constructor(serverW,serverH,maxSpeed,position,settings){
         this.serverW = serverW
         this.serverH = serverH
         this.maxSpeed = maxSpeed
         this.position = position
 
+        this.keyboardControl = false
         this.right = false
         this.left = false
         this.up = false
         this.down = false
 
+        this.mouseControl = false
         this.mouse = new Vector(0,0)
-        this.mouseControl = true
 
         this.moveVector = new Vector(0,0)
+
+        this.identifyMovementControlType(settings)
+    }
+
+    identifyMovementControlType(settings){
+        if(settings.control.chosen == 'wasd'){
+            this.keyboardControl = true
+        }
+        else if(settings.control.chosen == 'mouse'){
+            this.mouseControl = true
+        }
     }
 
     resetMove(){
@@ -32,7 +44,7 @@ export default class MoveCommands{
         if(this.mouseControl){
             this.makeMouseMoveVector(radius)
         }
-        else{
+        else if(this.keyboardControl){
             this.makeKeyboardMoveVector(radius)
         }
     }

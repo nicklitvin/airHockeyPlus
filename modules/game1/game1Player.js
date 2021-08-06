@@ -4,12 +4,12 @@ import Ball from './game1Ball.js'
 import MoveCommands from './game1MoveCommands.js'
 
 export default class Player extends Ball{
-    constructor(userId,team,userName,playerRadius){
+    constructor(userId,settings,userName,playerRadius){
         super(0,0)
         this.radius = playerRadius
         this.userId = userId
         this.userName = userName
-        this.team = team
+        this.team = settings.teamChoices.chosen
 
         this.goals = 0
         this.newImpulse = 0
@@ -19,7 +19,7 @@ export default class Player extends Ball{
         this.mass = 1
 
         this.commands = new MoveCommands(
-            this.serverW,this.serverH,this.maxSpeed,this.position,this.radius
+            this.serverW,this.serverH,this.maxSpeed,this.position,this.radius,settings
         )
     }
 

@@ -43,13 +43,11 @@ export default class SocketManager{
         this.newSock(user.socket.id,user.userId)
         socket.emit('lobbyUpdate',user.lobbyId)
         socket.emit('nameUpdate',user.userName)
-        socket.emit('gameUpdate',lobby.game)
-        socket.emit('teamOptions',lobby.teams)
-        socket.emit('timerUpdate',lobby.gameTimer)
+        socket.emit('personalGameSettings',user.personalGameSettings)
         
-        if(user.team){
-            socket.emit('oldColor',user.team)
-        }
+        // if(user.team){
+        //     socket.emit('oldColor',user.team)
+        // }
     }
 
     errorPage(socket){

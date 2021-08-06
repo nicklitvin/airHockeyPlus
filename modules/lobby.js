@@ -5,19 +5,35 @@ export default class Lobby{
         this.lobbyId = lobbyId
         this.userIds = []
         this.owner = 0
-        this.game = 0  //change to gameName
         this.inGame = 0
+        this.awaitingUsers = []
+
+        this.game = 0  //change to gameName
         this.gameTimer = 0
         this.teams = []
-        this.awaitingUsers = []
+
+        this.gameSettings = null
+        this.gameSettingsText = null
     }
 
-    setNewGame(gameInfo){
-        this.teams = gameInfo.teamChoices
-        this.gameTimer = gameInfo.defaultGameTime
-        this.game = gameInfo.title
+    setNewGame(gameSettings){
+        this.gameSettings = gameSettings
+        this.makeGameSettingText()
     }
-    
+
+    setNewGeneralGameSetting(setting,value){
+        this.gameSettings[setting].chosen = value
+    }
+
+    makeGameSettingText(){
+        var text = ''
+        for(var settingName of Object.keys(this.gameSettings)){
+            const setting = this.gameSettings[settingName]
+            text += setting.chosenText + setting.chosen + '<br>'
+        }
+        this.gameSettingsText = text
+    }
+
     removeAwaitingUser(userId){
         var awaitingUsers = this.awaitingUsers
         for(var a in awaitingUsers){

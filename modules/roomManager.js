@@ -14,6 +14,12 @@ export default class RoomManager{
         this.gameLib = new gameLibrary()
 
         io.on('connection', (socket)=>{
+            socket.on('newGeneralGameSetting', (setting,value)=>{
+                this.setNewGeneralGameSetting(socket,setting,value)
+            })
+            socket.on('newPersonalGameSetting', (setting,value)=>{
+                this.setNewPersonalGameSetting(socket,setting,value)
+            })
             socket.on('createLobby', () => {
                 this.createLobby(socket)
             })
@@ -48,6 +54,34 @@ export default class RoomManager{
                 this.returnFromGame(userId)
             })
         })
+    }
+
+    setNewGeneralGameSetting(socket,setting,value){
+        const userId = this.socks.getUserId(socket.id)
+        const user = this.users.getInfo(userId)
+        const lobby = this.lobbies.getInfo(user.lobbyId)
+        lobby.setNewGeneralGameSetting(setting,value)
+        
+        this.updateGameSettingsForUsers(lobby)
+    }
+
+    updateGameSettingsForUsers(lobby){
+        const text = lobby.makeGameSettingText()
+        for(var userId of lobby.userIds){
+            if(userId != lobby.owner){
+                const user = this.users.getInfo(userId)
+                user.sendGeneralGameSettingsText(text)
+            }
+        }
+    }
+
+    setNewPersonalGameSetting(socket,setting,value){
+        const userId = this.socks.getUserId(socket.id)
+        const user = this.users.getInfo(userId)
+        user.setNewPersonalGameSetting(setting,value)
+
+        const lobby = this.lobbies.getInfo(user.lobbyId)
+        this.updatePlayerList(lobby)
     }
 
     createLobby(socket=0){
@@ -112,22 +146,16 @@ export default class RoomManager{
         if(user.userId == lobby.owner){
             this.giveOwnerView(lobby)
         }
+        else{
+            user.sendGeneralGameSettingsText(lobby.gameSettingsText)
+        }
 
         this.updatePlayerList(lobby)
     }
 
     giveOwnerView(lobby){
-        const allGames = this.gameLib.getNames()
         const socket = this.users.getInfo(lobby.owner).socket
-        const gameInfo = this.gameLib.getGameInfo(lobby.game)
-
-        this.socks.newOwner(
-            socket,
-            allGames,
-            lobby.game,
-            lobby.gameTimer,
-            gameInfo.timeChoices
-        )
+        socket.emit('generalGameSettingsOwner',lobby.gameSettings)
     }
 
     updatePlayerList(lobby){
@@ -159,8 +187,8 @@ export default class RoomManager{
             lineText += '<br>'
             text.push(lineText)
 
-            if(user.team){
-                text.push(user.team)
+            if(user.personalGameSettings.teamChoices.chosen){
+                text.push(user.personalGameSettings.teamChoices.chosen)
             }
             else{
                 text.push('black')
