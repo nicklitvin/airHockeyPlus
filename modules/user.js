@@ -7,7 +7,7 @@ export default class User{
         this.lobbyId = lobbyId
         this.userName = userName
         this.ready = 0
-        this.team = 0
+        // this.team = 0
 
         this.inGame = 0
         this.personalGameSettings = null
@@ -27,6 +27,10 @@ export default class User{
         this.ready = 0
     }
 
+    readyUp(){
+        this.ready = 1
+    }
+
     setPersonalGameSettings(personalGameSettings){
         this.personalGameSettings = personalGameSettings
     }
@@ -34,6 +38,45 @@ export default class User{
     setNewPersonalGameSetting(setting,value){
         var settings = this.personalGameSettings
 
-        settings[setting].chosen = value
+        if( !Object.keys(settings).includes(setting) ||
+            (!settings[setting].options.includes(value) && value != 'null'))
+        {
+            this.sendSettingsValuesError()
+            this.sendUpToDatePersonalSettings()
+            return
+        }
+        
+        if(setting == 'teamChoices' && this.ready){
+            this.sendTeamChangeError()
+            this.sendUpToDatePersonalSettings()
+            return
+        }
+
+        if(value == 'null'){
+            settings[setting].chosen = null
+        }
+        else{
+            settings[setting].chosen = value
+        }
+    }
+
+    sendTeamChangeError(){
+        const socket = this.socket
+        socket.emit('personalGameSettingsError',"can't change teams when ready")
+    }
+
+    sendSettingsValuesError(){
+        const socket = this.socket
+        socket.emit('personalGameSettingsError','nice try')
+    }
+
+    sendNoTeamSelectedError(){
+        const socket = this.socket
+        socket.emit('personalGameSettingsError','no team selected')
+    }
+
+    sendUpToDatePersonalSettings(){
+        const socket = this.socket
+        socket.emit('personalGameSettings',this.personalGameSettings)
     }
 }

@@ -16,13 +16,25 @@ export default class Lobby{
         this.gameSettingsText = null
     }
 
+    setTeams(teams){
+        for(var team of teams){
+            if(team){
+                this.teams.push(team)
+            }
+        }
+    }
+
     setNewGame(gameSettings){
         this.gameSettings = gameSettings
         this.makeGameSettingText()
     }
 
     setNewGeneralGameSetting(setting,value){
-        this.gameSettings[setting].chosen = value
+        if( this.gameSettings[setting] &&
+            this.gameSettings[setting].options.includes(value))
+        {
+            this.gameSettings[setting].chosen = value
+        }
     }
 
     makeGameSettingText(){

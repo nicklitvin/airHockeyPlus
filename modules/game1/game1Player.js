@@ -19,7 +19,7 @@ export default class Player extends Ball{
         this.mass = 1
 
         this.commands = new MoveCommands(
-            this.serverW,this.serverH,this.maxSpeed,this.position,this.radius,settings
+            this.serverW,this.serverH,this.maxSpeed,this.position,settings
         )
     }
 

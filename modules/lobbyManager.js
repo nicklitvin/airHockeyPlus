@@ -44,8 +44,12 @@ export default class LobbyManager{
 
         const lobby = this.lobbies[lobbyId] 
         const gameName = gameLib.getDefaultGameName()
-        const gameInfo = gameLib.getGameInfo(gameName)
-        lobby.setNewGame(gameInfo.gameSettings)
+        const generalSettings = gameLib.getGameGeneralSettings(gameName)
+        lobby.setNewGame(generalSettings)
+
+        const personalSettings = gameLib.getGamePersonalSettings(gameName) 
+        const teams = personalSettings.teamChoices.options
+        lobby.setTeams(teams)
 
         return(lobby)
     }

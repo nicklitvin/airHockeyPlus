@@ -35,20 +35,11 @@ export default class RoomManager{
             socket.on('readyChange', ()=>{
                 this.readyChange(socket)
             })
-            socket.on('gameChange', (game)=>{
-                this.gameChange(socket,game)
-            })
             socket.on('newChat', (chat)=>{
                 this.newChat(socket,chat)
             })
             socket.on('nameUpdate', (userName) =>{
                 this.updateName(socket,userName)
-            })
-            socket.on('joinTeam', (team)=>{
-                this.joinTeam(socket,team)
-            })
-            socket.on('changeGameTimer', (gameTimer)=>{
-                this.changeGameTime(socket,gameTimer)
             })
             socket.on('returnFromGame', (userId)=>{
                 this.returnFromGame(userId)
@@ -60,13 +51,18 @@ export default class RoomManager{
         const userId = this.socks.getUserId(socket.id)
         const user = this.users.getInfo(userId)
         const lobby = this.lobbies.getInfo(user.lobbyId)
-        lobby.setNewGeneralGameSetting(setting,value)
-        
-        this.updateGameSettingsForUsers(lobby)
+
+        if(lobby.owner == userId){
+            lobby.setNewGeneralGameSetting(setting,value)
+            this.updateGameSettingsForUsers(lobby)
+        }
+        this.giveOwnerView(lobby)
     }
 
     updateGameSettingsForUsers(lobby){
-        const text = lobby.makeGameSettingText()
+        lobby.makeGameSettingText()
+        const text = lobby.gameSettingsText
+
         for(var userId of lobby.userIds){
             if(userId != lobby.owner){
                 const user = this.users.getInfo(userId)
@@ -121,7 +117,7 @@ export default class RoomManager{
             this.giveOwnerView(lobby)
         }
 
-        this.socks.joinLobby(user,lobby)
+        this.socks.joinLobby(user)
         this.socks.deleteCookie(socket)
         this.updatePlayerList(lobby)
     }
@@ -137,10 +133,11 @@ export default class RoomManager{
     }
 
     addUser(socket,lobby){
-        const user = this.users.newUser(socket,lobby)
+        const settings = this.gameLib.getGamePersonalSettings(lobby.gameSettings.gameChoices.chosen)
+        const user = this.users.newUser(socket,lobby,settings)
 
         this.socks.deleteCookie(user.socket)
-        this.socks.joinLobby(user,lobby) 
+        this.socks.joinLobby(user) 
 
         lobby.addNewUser(user.userId)
         if(user.userId == lobby.owner){
@@ -199,31 +196,6 @@ export default class RoomManager{
 
     // UPDATE STATUS
 
-    changeGameTime(socket,gameTimer){
-        const userId = this.socks.getUserId(socket.id)
-        const user = this.users.getInfo(userId)
-        const lobby = this.lobbies.getInfo(user.lobbyId)
-        
-        if(lobby.owner != userId){
-            return
-        }
-        
-        lobby.gameTimer = gameTimer
-        this.sendGameTimeChange(lobby)
-    }
-
-    sendGameTimeChange(lobby){
-        const timer = lobby.gameTimer
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-            if(user.inGame){
-                continue
-            }
-            const socket = user.socket
-            this.socks.timerUpdate(socket,timer)
-        }
-    }
-
     joinTeam(socket,team){
         const userId = this.socks.getUserId(socket.id)
         const user = this.users.getInfo(userId)
@@ -268,7 +240,7 @@ export default class RoomManager{
         }
 
         if(lobby.userIds.includes(userId)){
-            if(lobby.game == 'game' + gameId){
+            if(lobby.gameSettings.gameChoices.chosen == 'game' + gameId){
                 this.updateUserGameInfo(userId,lobby,socket)
             }
             // wrong game but correct room
@@ -282,7 +254,7 @@ export default class RoomManager{
     }
 
     startGame(lobby){
-        if(lobby.game){
+        if(lobby.gameSettings.gameChoices.chosen){
             lobby.inGame = 1
             this.gameControl.newGame(lobby)
 
@@ -295,41 +267,10 @@ export default class RoomManager{
         }
     }
 
-    sendGameChange(lobby){
-        for(var userId of lobby.userIds){
-            const user = this.users.getInfo(userId)
-            if(user.inGame){
-                continue
-            }
-            const socket = user.socket
-            this.socks.gameUpdate(socket,lobby.game)
-        }
-    }
-
-    gameChange(socket,game){
-        if(this.gameLib.getNames().includes(game)){
-            const userId = this.socks.getUserId(socket.id)
-            if(!userId){
-                return
-            }
-            const lobbyId = this.users.getInfo(userId).lobbyId
-            if(!lobbyId){
-                return
-            }
-            const lobby = this.lobbies.getInfo(lobbyId)
-            if(lobby.owner != userId){
-                return
-            }
-            
-            this.unreadyUsers(lobby)
-            lobby.game = game
-            this.sendGameChange(lobby)
-        }
-    }
-
     unreadyUsers(lobby){
         for(var userId of lobby.userIds){
-            this.users.getInfo(userId).ready = 0
+            const user = this.users.getInfo(userId)
+            user.unready()
         }
         this.updatePlayerList(lobby)
     }
@@ -349,17 +290,17 @@ export default class RoomManager{
         const lobby = this.lobbies.getInfo(lobbyId)
         const user = this.users.getInfo(userId)
 
-        if(!lobby.game){
+        if(!lobby.gameSettings.gameChoices.chosen){
             console.log('noGame')
         }
-        else if(!user.team){
-            this.socks.noTeamSelected(user.socket)
+        else if(!user.personalGameSettings.teamChoices.chosen){
+            user.sendNoTeamSelectedError()
         }
         else if(user.ready){
-            user.ready = 0
+            user.unready()
         }
         else{
-            user.ready = 1
+            user.readyUp()
         }
         
         this.updatePlayerList(lobby)

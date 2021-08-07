@@ -64,25 +64,15 @@ export default class UserManager{
         }
     }
 
-    newUser(socket,lobby){
+    newUser(socket,lobby,settings){
         const userId = this.makeId()
         const userName = this.makeName(lobby.userIds)
         this.users[userId] = new User(userId,socket,lobby.lobbyId,userName)
         const user = this.users[userId]
         
-        const settings = gameLibrary.getGameInfo(lobby.gameSettings.gameChoices.chosen).personalSettings
-        const copy = this.makeCopy(settings)
-        user.setPersonalGameSettings(copy)
+        user.setPersonalGameSettings(settings)
 
         return(this.users[userId])
-    }
-
-    makeCopy(dict){
-        var copy = {} 
-        for(var key of Object.keys(dict)){
-            copy[key] = {...dict[key]}
-        }
-        return(copy)
     }
 
     deleteUser(user){

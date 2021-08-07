@@ -62,9 +62,19 @@ export default class GameLibrary{
         }            
     }
 
-    getGameInfo(gameName){
-        const copy = {...this.games[gameName]}
-        copy.title = 'ree'
+    getGamePersonalSettings(gameName){
+        return(this.makeCopy(this.games[gameName].personalSettings))
+    }
+
+    getGameGeneralSettings(gameName){
+        return(this.makeCopy(this.games[gameName].gameSettings))
+    }
+
+    makeCopy(dict){
+        var copy = {} 
+        for(var key of Object.keys(dict)){
+            copy[key] = {...dict[key]}
+        }
         return(copy)
     }
 

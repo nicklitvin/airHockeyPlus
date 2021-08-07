@@ -5,15 +5,6 @@ export default class SocketManager{
         this.socks = {}
     }
 
-    noTeamSelected(socket){
-        socket.emit('noTeamSelected','noTeamSelected')
-    }
-
-    forceColor(user){
-        const socket = user.socket
-        socket.emit('forceTeam',user.team,`can't change team if ready`)
-    }
-
     deleteCookie(socket){
         socket.emit('deleteCookie')
     }
@@ -30,24 +21,20 @@ export default class SocketManager{
         socket.emit('nameError','nameError')
     }
 
-    newOwner(socket,games,game,currTimer,timers){
-        socket.emit('newOwner',games,game,currTimer,timers)
+    nameTaken(socket){
+        socket.emit('nameError','nameTaken')
     }
 
     playerUpdate(socket,text){
         socket.emit('playerUpdate',text)
     }
 
-    joinLobby(user,lobby){
+    joinLobby(user){
         const socket = user.socket
         this.newSock(user.socket.id,user.userId)
         socket.emit('lobbyUpdate',user.lobbyId)
         socket.emit('nameUpdate',user.userName)
         socket.emit('personalGameSettings',user.personalGameSettings)
-        
-        // if(user.team){
-        //     socket.emit('oldColor',user.team)
-        // }
     }
 
     errorPage(socket){
@@ -60,16 +47,8 @@ export default class SocketManager{
     }
 
     toGame(socket,lobby){
-        const url = `${lobby.game}/?a=${lobby.lobbyId}`
+        const url = `${lobby.gameSettings.gameChoices.chosen}/?a=${lobby.lobbyId}`
         socket.emit('redirect',url)
-    }
-
-    gameUpdate(socket,game){
-        socket.emit('gameUpdate',game)
-    }
-
-    timerUpdate(socket,timer){
-        socket.emit('timerUpdate',timer)
     }
 
     chatError(socket){
@@ -78,10 +57,6 @@ export default class SocketManager{
 
     newChat(socket,chat){
         socket.emit('newChat',chat)
-    }
-
-    nameTaken(socket){
-        socket.emit('nameError','nameTaken')
     }
 
     newSock(socketId,userId){

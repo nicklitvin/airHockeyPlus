@@ -9,6 +9,7 @@ import { strictEqual } from 'assert'
 const MINUTES_TO_SECONDS = 60
 const ROUNDING_ERROR = 0.001
 const MILISECONDS_TO_SECONDS = 1/1000
+const MAX_COLLISION_REPEATS = 100
 
 export default class Game{
     constructor(lobby,users){
@@ -29,7 +30,7 @@ export default class Game{
         // in seconds
         this.gameTime = 0
         //[0] is X from "Xmin"
-        this.gameTimer = Number(lobby.gameTimer[0])*MINUTES_TO_SECONDS 
+        this.gameTimer = Number(lobby.gameSettings.timeChoices.chosen[0])*MINUTES_TO_SECONDS 
         this.countdown = 1
         
         // in miliseconds
@@ -167,7 +168,7 @@ export default class Game{
         var memberCounts = {'orange':0 , 'blue':0}
         for(var userId of this.userIds){
             const user = this.users.getInfo(userId)
-            if(user.team == 'orange'){
+            if(user.personalGameSettings.teamChoices.chosen == 'orange'){
                 memberCounts['orange'] += 1
             }
             else{
@@ -464,7 +465,7 @@ export default class Game{
         this.collisionProcedureRepeats += 1
         this.timePassed += nextCollision.time
         
-        if(this.collisionProcedureRepeats > 100){
+        if(this.collisionProcedureRepeats > MAX_COLLISION_REPEATS){
             console.log('collisionRepeatProblem',nextCollision)
             nextCollision.p1.spawnAtStartPosition()
             this.stopEverything()

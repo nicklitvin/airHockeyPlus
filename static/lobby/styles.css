@@ -14,10 +14,10 @@
 #myMsgInput{
 	width: 275px;
 }
-#readyButton{
+/* #readyButton{
+	display: block;
+} */
+/* #gameSettingsDiv{
 	display: none;
-}
-#gameSettingsDiv{
-	display: none;
-}
+} */
 p { margin:0 }
