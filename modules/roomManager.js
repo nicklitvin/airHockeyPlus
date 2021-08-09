@@ -81,7 +81,7 @@ export default class RoomManager{
     }
 
     createLobby(socket=0){
-        const lobby = this.lobbies.makeNewLobby()
+        const lobby = this.lobbies.makeNewLobby(this.users,this.socks)
 
         if(socket){
             this.socks.toLobby(socket,lobby)
@@ -286,7 +286,7 @@ export default class RoomManager{
 
     readyChange(socket){
         const userId = this.socks.getUserId(socket.id)
-        const lobbyId = this.users.getInfo(userId).lobbyId
+        const lobbyId = this.users.getInfo(userId).lobbyId   
         const lobby = this.lobbies.getInfo(lobbyId)
         const user = this.users.getInfo(userId)
 

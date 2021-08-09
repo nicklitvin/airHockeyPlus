@@ -75,6 +75,17 @@ export default class UserManager{
         return(this.users[userId])
     }
 
+    newUserExperiment(socket,settings,userIds,lobbyId){
+        const userId = this.makeId()
+        const userName = this.makeName(userIds)
+        this.users[userId] = new User(userId,socket,lobbyId,userName)
+        const user = this.users[userId]
+        
+        user.setPersonalGameSettings(settings)
+
+        return(this.users[userId])
+    }
+
     deleteUser(user){
         delete this.users[user.userId]
     }

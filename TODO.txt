@@ -24,8 +24,8 @@ ball collision at certain angle => infinite collisions, probably rounding error
 
 TODO
 V0.2.X customization
-separate room and roomManager
 remove socket manager
+make game library an instance, choose settings
 
 mobile control
 close room power in lobby

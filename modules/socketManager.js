@@ -51,6 +51,11 @@ export default class SocketManager{
         socket.emit('redirect',url)
     }
 
+    toGameExperiment(socket,gameName,lobbyId){
+        const url = `${gameName}/?a=${lobbyId}`
+        socket.emit('redirect',url)
+    }
+
     chatError(socket){
         socket.emit('chatError','chatError')
     }
