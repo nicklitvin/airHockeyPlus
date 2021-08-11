@@ -9,28 +9,29 @@ import { strictEqual } from 'assert'
 const MINUTES_TO_SECONDS = 60
 const ROUNDING_ERROR = 0.001
 const MILISECONDS_TO_SECONDS = 1/1000
+const MILLISECONDS_IN_SECOND = 1000
 const MAX_COLLISION_REPEATS = 100
 
 export default class Game{
-    constructor(lobby,users){
+    constructor(users,lobbies,userIds,settings){
+        this.users = users
+        this.lobbies = lobbies
+
         this.serverH = 9
         this.serverW = 16
         
-        this.users = users
         this.players = new PlayerManager()
         this.physics = new PhysicsManager(this.serverW,this.serverH,this.players)
 
-        this.userIds = lobby.userIds
+        this.userIds = userIds
         this.contacts = this.makeContacts()
-        this.teams = lobby.teams
-        this.lobbyId = lobby.lobbyId
+        this.teams = settings.teams
 
         this.playerRadius = null
 
         // in seconds
         this.gameTime = 0
-        //[0] is X from "Xmin"
-        this.gameTimer = Number(lobby.gameSettings.timeChoices.chosen[0])*MINUTES_TO_SECONDS 
+        this.gameTimer = settings.time*MINUTES_TO_SECONDS 
         this.countdown = 1
         
         // in miliseconds
@@ -54,6 +55,56 @@ export default class Game{
 
         this.timePassed = 0 
         this.collisionProcedureRepeats = 0
+
+        // this.makeTeams(settings)
+        this.makePlayerRadius()
+        this.addGoals()
+        this.addPlayers()
+        this.addBall()
+        // this.runGame()
+    }
+
+    makeTeams(settings){
+        for(var team of settings.personalSettings.teamChoices){
+            if(team){
+                this.teams.push(team)
+            }
+        }
+    }
+
+    // runGame(){
+    //     this.updateGameTime()
+        
+    //     if(this.gameTime >= this.gameTimer){
+    //         this.endGameExperiment()
+    //         return
+    //     }
+
+    //     this.updateGame()
+    //     // setTimeout(this.runGame(), MILLISECONDS_IN_SECOND)
+    // }
+
+    endGameExperiment(){
+        const endInfo = this.makeEndInfo()
+        const userIds = [...this.userIds]
+
+        for(var userId of userIds){
+            const user = this.users.getInfo(userId)
+            const socket = user.socket
+
+            if(socket && user.inGame == 1){
+                user.unready()
+                socket.emit('endStuff',endInfo)  
+            }
+            else{
+                this.deleteUserExistence(user)
+            }
+        }
+    }
+
+    deleteUserExistence(user){
+        const lobby = this.lobbies.getInfo(user.lobbyId)
+        lobby.deleteRoomUser()
     }
 
     getObjectById(objectId){
@@ -79,8 +130,8 @@ export default class Game{
 
     makeEndInfo(){
         const info = {}
-        info['summary'] = this.makeWinnerTeamText()
-        info['scorers'] = this.makeScorerText()
+        info.summary = this.makeWinnerTeamText()
+        info.scorers = this.makeScorerText()
         return(info)
     }
 
@@ -96,7 +147,7 @@ export default class Game{
     }
 
     getScorerText(scorers){
-        var text = ['/','black','top scorers:','!']
+        var text = ['/','black','top scorers:',this.scorerTextDelimeter]
 
         for(var count = 0;
             count < Math.min(scorers.length,this.scorerListLength);
@@ -104,14 +155,14 @@ export default class Game{
         {
             const scorer = scorers[count]
             text.push('/', scorer.team, scorer.userName, ': ',
-                scorer.goals, '!')
+                scorer.goals, this.scorerTextDelimeter)
         }
 
         if(scorers.length == 0){
-            text.push('/','black','absolutely nobody', '!')
+            text.push('/','black','absolutely nobody',this.scorerTextDelimeter)
         }
         else if(scorers.length > 6){
-            text.push('/', 'black', '...', '!')
+            text.push('/', 'black', '...', this.scorerTextDelimeter)
         }
         return(text)
     }

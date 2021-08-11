@@ -24,7 +24,7 @@ export default class Game1Manager{
 
     findGame(userId){
         const user = this.users.getInfo(userId)
-        const lobby = this.users.getInfo(user.lobbyId)
+        const lobby = this.lobbies[user.lobbyId]
         return(lobby.game)
     }
 
@@ -45,15 +45,10 @@ export default class Game1Manager{
 
     endGame(userId){
         const user = this.users.getInfo(userId)
-        const lobby = this.users.getInfo(user.lobbyId)
-
         const game = this.findGame(userId)
-        // move endInfo stuff to Game
-        const endInfo = game.makeEndInfo()
 
-        game.endGame()
-        lobby.endGame()
-
-        this.sendEndStuff(lobby,endInfo)
+        if(this.lobbies[user.lobbyId].owner == userId){
+            game.endGameExperiment()
+        }
     }
 }

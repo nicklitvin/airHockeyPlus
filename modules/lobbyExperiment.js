@@ -14,37 +14,7 @@ export default class Lobby{
         this.awaitingUsers = []
 
         this.game = null  
-        this.gameTimer = 0
-        this.teams = []
-
-        this.gameSettings = null
-        this.gameSettingsText = null
         this.gameLibrary = new GameLibrary()
-
-        this.setGameSettings()
-    }
-
-    setGameSettings(){
-        const gameName = this.gameLibrary.getDefaultGameName()
-        const generalSettings = this.gameLibrary.getGameGeneralSettings(gameName)
-        this.setNewGame(generalSettings)
-
-        const personalSettings = this.gameLibrary.getGamePersonalSettings(gameName) 
-        const teams = personalSettings.teamChoices.options
-        this.setTeams(teams)
-    }
-
-    setNewGame(gameSettings){
-        this.gameSettings = gameSettings
-        this.makeGameSettingText()
-    }
-
-    setTeams(teams){
-        for(var team of teams){
-            if(team){
-                this.teams.push(team)
-            }
-        }
     }
 
     addUserToLobby(socket,userId){
@@ -74,13 +44,8 @@ export default class Lobby{
         this.awaitingUsers.push(userId)
     }
 
-    getGameName(){
-        return(this.gameSettings.gameChoices.chosen)
-    }
-
     addNewUser(socket){
-        const gameName = this.getGameName()
-        const personalSettings = this.gameLibrary.getGamePersonalSettings(gameName)
+        const personalSettings = this.gameLibrary.getGamePersonalSettings()
         const user = this.users.newUserExperiment(socket,personalSettings,this.userIds,this.lobbyId)
 
         this.socks.deleteCookie(user.socket)
@@ -88,10 +53,10 @@ export default class Lobby{
 
         this.addNewUserToList(user.userId)
         if(user.userId == this.owner){
-            this.   giveOwnerView()
+            this.giveOwnerView()
         }
         else{
-            user.sendGeneralGameSettingsText(this.gameSettingsText)
+            user.sendGeneralGameSettingsText(this.gameLibrary.gameSettingsText)
         }
 
         this.updatePlayerList()
@@ -140,7 +105,8 @@ export default class Lobby{
 
     giveOwnerView(){
         const socket = this.users.getInfo(this.owner).socket
-        socket.emit('generalGameSettingsOwner',this.gameSettings)
+        const gameSettings = this.gameLibrary.getGameGeneralSettings()
+        socket.emit('generalGameSettingsOwner',gameSettings)
     }
 
     updatePlayerList(){
@@ -193,17 +159,6 @@ export default class Lobby{
         this.game = null
     }
 
-    disconnectUserFromLobby(user){
-        // disconnecting while gaming
-        if(this.inGame && user.inGame){
-            user.inGame = 0
-        }
-        // disconnecting while no gaming
-        else if(!this.inGame && !this.awaitingUsers.includes(user.userId)){
-            this.deleteRoomUser(user)
-        }
-    }
-
     isAllDisconnectedFromGame(){
         for(var userId of this.userIds){
             const user = this.users.getInfo(userId)
@@ -214,8 +169,8 @@ export default class Lobby{
         return(true)
     }
 
-    deleteRoomUser(user){
-        this.deleteUserFromUserList(user.userId)
+    deleteRoomUser(userId){
+        this.deleteUserFromUserList(userId)
 
         if(this.userIds.length == 0){
             return
@@ -225,7 +180,6 @@ export default class Lobby{
             this.giveOwnerView()
         }
 
-        this.users.deleteUser(user)
         this.updatePlayerList()
         this.allReadyCheck()
     }
@@ -240,24 +194,49 @@ export default class Lobby{
     }
 
     startGame(){
-        if(this.gameSettings.gameChoices.chosen){
+        if(this.gameLibrary.getChosenGame()){
             this.inGame = 1
-            // this.gameLibrary.makeNewGame(gameName)
+            this.game = this.gameLibrary.makeNewGame(this.users,
+                this.lobbies,this.userIds)
 
-            for(var userId of this.userIds){
-                const user = this.users.getInfo(userId)
-                const socket = user.socket
-                this.socks.sendCookie(socket,userId)
-                this.socks.toGameExperiment(socket,this.getGameName(),this.lobbyId)
-                // this.socks.toGame(socket,lobby) // LOBBY SENDING?
+            this.sendUsersToGame()
+            this.runGameUntilEnd()
+        }
+    }
+
+    runGameUntilEnd(){
+        setInterval( () =>{
+            const game = this.game
+            const info = game.getAllSendingInfo()
+            game.sendGame(info)
+            
+            game.updateGameTime()
+
+            if(game.gameTime >= game.gameTimer){
+                game.endGameExperiment()
+                return
             }
+            game.updateGame()
+
+        },10)
+    }
+
+    sendUsersToGame(){
+        for(var userId of this.userIds){
+            const user = this.users.getInfo(userId)
+            const socket = user.socket
+            const gameName = this.gameLibrary.getChosenGame()
+
+            this.socks.sendCookie(socket,userId)
+            this.socks.toGameExperiment(socket,gameName,this.lobbyId)
         }
     }
 
     changeUserReadiness(userId){
         const user = this.users.getInfo(userId)
+        const gameName = this.gameLibrary.getChosenGame()
 
-        if(!this.gameSettings.gameChoices.chosen){
+        if(!gameName){
             console.log('noGame')
         }
         else if(!user.personalGameSettings.teamChoices.chosen){
@@ -278,23 +257,14 @@ export default class Lobby{
 
     setNewGeneralGameSetting(userId,setting,value){
         if(this.owner == userId){
-            this.updateGeneralGameSetting(setting,value)
+            this.gameLibrary.applyNewSetting(setting,value)
             this.updateGameSettingsForUsers()
         }
         this.giveOwnerView()
     }
 
-    updateGeneralGameSetting(setting,value){
-        if( this.gameSettings[setting] &&
-            this.gameSettings[setting].options.includes(value))
-        {
-            this.gameSettings[setting].chosen = value
-        }
-    }
-
     updateGameSettingsForUsers(){
-        this.makeGameSettingText()
-        const text = this.gameSettingsText
+        const text = this.gameLibrary.gameSettingsText
 
         for(var userId of this.userIds){
             if(userId != this.owner){
@@ -304,12 +274,20 @@ export default class Lobby{
         }
     }
 
-    makeGameSettingText(){
-        var text = ''
-        for(var settingName of Object.keys(this.gameSettings)){
-            const setting = this.gameSettings[settingName]
-            text += setting.chosenText + setting.chosen + '<br>'
+    updateUserToBeInGame(userId,socket,gameId){
+        if(this.gameLibrary.getChosenGame() == 'game' + gameId){
+            const user = this.users.getInfo(userId)
+            user.updateInfoOnGameJoin(socket)
+            this.socks.newSock(socket.id,userId)
+
+            if(this.owner == userId){
+                user.socket.emit('stopGamePower')
+            }
         }
-        this.gameSettingsText = text
+        // wrong game but correct room
+        else{
+            const gameName = this.gameLibrary.getChosenGame()
+            this.socks.toGameExperiment(socket,gameName,this.lobbyId)
+        }
     }
 }

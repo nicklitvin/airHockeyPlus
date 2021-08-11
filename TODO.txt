@@ -24,8 +24,15 @@ ball collision at certain angle => infinite collisions, probably rounding error
 
 TODO
 V0.2.X customization
-remove socket manager
-make game library an instance, choose settings
+
+character moves to 0,0 during countdown,mouse control
+stop game running if user ends game
+leaving during game
+awaiting users
+
+remove usage of lobbies in endGame
+have game object control all running functions
+wait for all users to connect to game before actually starting
 
 mobile control
 close room power in lobby

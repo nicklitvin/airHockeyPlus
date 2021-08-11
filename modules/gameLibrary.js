@@ -1,8 +1,17 @@
 'use strict'
 
+import Game from "./game1/game1Game.js"
+
 export default class GameLibrary{
     constructor(){
-        this.defaultGameName = 'game1',
+        this.gameSettingsText = null,
+
+        this.gameChoices = {
+            title: 'choose game: ',
+            options: null,
+            chosen: null,
+            chosenText: 'game chosen: '
+        },
 
         this.games = {
             game1: {
@@ -22,12 +31,6 @@ export default class GameLibrary{
                     }
                 },
                 gameSettings:{
-                    gameChoices: {
-                        title: 'choose game: ',
-                        options: null,
-                        chosen: null,
-                        chosenText: 'game chosen: '
-                    },
                     timeChoices:{
                         title: 'choose game time: ',
                         options: ['1min','3min','5min'],
@@ -37,11 +40,14 @@ export default class GameLibrary{
                 }
             }
         }
-        this.updateGamesWithAllNames()
+        this.updateGameList()
         this.makeChosenToBeFirstOption()
+        this.makeGameSettingText()
     }
 
     makeChosenToBeFirstOption(){
+        this.gameChoices.chosen = Object.keys(this.games)
+
         for(var gameName of Object.keys(this.games) ){
             const game = this.games[gameName]
             for(var settingName of Object.keys(game.personalSettings)){
@@ -55,19 +61,26 @@ export default class GameLibrary{
         }
     }
 
-    updateGamesWithAllNames(){
+    updateGameList(){
         const gameNames = this.getNames()
-        for(var game of gameNames){
-            this.games[game].gameSettings.gameChoices.options = gameNames
-        }            
+        this.gameChoices.options = gameNames
     }
 
-    getGamePersonalSettings(gameName){
+    getGamePersonalSettings(){
+        const gameName = this.getChosenGame()
         return(this.makeCopy(this.games[gameName].personalSettings))
     }
 
-    getGameGeneralSettings(gameName){
-        return(this.makeCopy(this.games[gameName].gameSettings))
+    getGameGeneralSettings(){
+        var dict = {}
+        dict.gameChoices = this.gameChoices
+
+        const gameName = this.getChosenGame()
+        const settings = this.makeCopy(this.games[gameName].gameSettings)
+        for(var setting of Object.keys(settings)){
+            dict[setting] = settings[setting]
+        }
+        return(dict)
     }
 
     makeCopy(dict){
@@ -78,11 +91,66 @@ export default class GameLibrary{
         return(copy)
     }
 
-    getDefaultGameName(){
-        return(this.defaultGameName)
-    }
-
     getNames(){
         return(Object.keys(this.games))
+    }
+
+    getChosenGame(){
+        return(this.gameChoices.chosen)
+    }
+
+    getImportantSettings(){
+        return({
+            teams: this.getTeamsWithoutNull(), 
+            time: this.getGameTime()
+        })
+    }
+
+    getTeamsWithoutNull(){
+        const gameName = this.getChosenGame()
+        const teams = this.games[gameName].personalSettings.teamChoices.options
+        
+        var newTeams = []
+        for(var team of teams){
+            if(team){
+                newTeams.push(team)
+            }
+        }
+        return(newTeams)
+    }
+
+    getGameTime(){
+        const gameName = this.getChosenGame()
+        return(Number(this.games[gameName].gameSettings.timeChoices.chosen[0]))
+    }
+
+    makeNewGame(users,lobbies,userIds){
+        const game = new Game(users,lobbies,userIds,this.getImportantSettings())
+        return(game)
+    }
+
+    applyNewSetting(setting,value){
+        const gameName = this.getChosenGame()
+        const settingInfo = this.games[gameName].gameSettings[setting]
+
+        if(gameName && settingInfo && settingInfo.options.includes(value)){
+            settingInfo.chosen = value
+        }
+
+        this.makeGameSettingText()
+    }
+
+    makeGameSettingText(){
+        const gameName = this.getChosenGame()
+        const gameSettings = this.games[gameName].gameSettings
+
+        var text = ''
+        text += this.gameChoices.chosenText + this.gameChoices.chosen + '<br>'
+
+        for(var settingName of Object.keys(gameSettings)){
+            const setting = gameSettings[settingName]
+            text += setting.chosenText + setting.chosen + '<br>'
+        }
+        this.gameSettingsText = text
     }
 }

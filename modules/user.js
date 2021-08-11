@@ -13,11 +13,6 @@ export default class User{
         this.personalGameSettings = null
     }
 
-    sendGeneralGameSettingsText(text){
-        const socket = this.socket
-        socket.emit('generalGameSettingsText',text)
-    }
-
     updateReturnToLobby(socket){
         this.inGame = 0 
         this.socket = socket
@@ -60,6 +55,15 @@ export default class User{
         }
     }
 
+    leaveGame(){
+        this.inGame = 0
+    }
+
+    updateInfoOnGameJoin(socket){
+        this.inGame = 1
+        this.socket = socket
+    }
+
     sendTeamChangeError(){
         const socket = this.socket
         socket.emit('personalGameSettingsError',"can't change teams when ready")
@@ -78,5 +82,10 @@ export default class User{
     sendUpToDatePersonalSettings(){
         const socket = this.socket
         socket.emit('personalGameSettings',this.personalGameSettings)
+    }
+
+    sendGeneralGameSettingsText(text){
+        const socket = this.socket
+        socket.emit('generalGameSettingsText',text)
     }
 }

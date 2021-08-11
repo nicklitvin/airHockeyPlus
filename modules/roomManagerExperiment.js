@@ -112,16 +112,36 @@ export default class RoomManager{
         if(userId){
             const user = this.users.getInfo(userId)
             const lobby = this.getLobbyInfo(user.lobbyId)
-
             this.socks.deleteSock(socket.id)
-            lobby.disconnectUserFromLobby(user)
 
-            if(lobby.inGame && lobby.isAllDisconnectedFromGame()){
-                delete this.lobbies[lobby.lobbyId]
+            //redirecting from room to game
+            if(lobby.inGame && !user.inGame){
+                // nothing
             }
-            else if(lobby.userIds.length == 0){
-                delete this.lobbies[lobby.lobbyId]
+
+            else if(lobby.inGame && user.inGame){
+                this.disconnectUserDuringGame(user,lobby)
             }
+
+            else if(!lobby.inGame && !lobby.awaitingUsers.includes(userId)){
+                this.disconnectUserFromRoom(user,lobby)
+            }
+        }
+    }
+
+    disconnectUserDuringGame(user,lobby){
+        user.leaveGame()
+        if(lobby.isAllDisconnectedFromGame()){
+            delete this.lobbies[lobby.lobbyId]
+        }
+    }
+
+    disconnectUserFromRoom(user,lobby){
+        lobby.deleteRoomUser(user.userId)
+        this.users.deleteUser(user)
+        
+        if(lobby.userIds.length == 0){
+            delete this.lobbies[lobby.lobbyId]
         }
     }
 
@@ -214,15 +234,8 @@ export default class RoomManager{
             this.socks.toLobby(socket,lobby,socket)
             return
         }
-
         if(lobby.userIds.includes(userId)){
-            if(lobby.gameSettings.gameChoices.chosen == 'game' + gameId){
-                this.updateUserGameInfo(userId,lobby,socket)
-            }
-            // wrong game but correct room
-            else{
-                this.socks.toGame(socket,lobby)
-            }
+            lobby.updateUserToBeInGame(userId,socket,gameId)
         }
         else{
             this.socks.errorPage(socket)
