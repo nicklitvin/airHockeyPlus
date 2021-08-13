@@ -1,6 +1,6 @@
 'use strict'
 
-export default class Game1Manager{
+export default class Game1MessageReceiver{
     constructor(io,lobbies,users,socks){
         this.lobbies = lobbies
         this.users = users
@@ -48,7 +48,7 @@ export default class Game1Manager{
         const game = this.findGame(userId)
 
         if(this.lobbies[user.lobbyId].owner == userId){
-            game.endGameExperiment()
+            game.endGame()
         }
     }
 }

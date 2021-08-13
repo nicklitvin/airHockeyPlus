@@ -1,6 +1,6 @@
 'use strict'
 
-import Game from "./game1/game1Game.js"
+import Game from "./game1/game.js"
 
 export default class GameLibrary{
     constructor(){

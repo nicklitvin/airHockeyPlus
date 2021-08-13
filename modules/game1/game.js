@@ -1,16 +1,18 @@
 'use strict'
 
-import PlayerManager from './game1PlayerManager.js'
-import PhysicsManager from './game1Physics.js'
-import Ball from './game1Ball.js'
-import GoalManager from './game1GoalManager.js'
+import PlayerManager from './playerManager.js'
+import PhysicsManager from './physics.js'
+import Ball from './ball.js'
+import GoalManager from './goalManager.js'
 import { strictEqual } from 'assert'
 
 const MINUTES_TO_SECONDS = 60
 const ROUNDING_ERROR = 0.001
-const MILISECONDS_TO_SECONDS = 1/1000
+const SECONDS_IN_MILISECOND = 1/1000
 const MILLISECONDS_IN_SECOND = 1000
 const MAX_COLLISION_REPEATS = 100
+const GAME_START_COUNTDOWN = 1
+const IMPULSE_COOLDOWN = 1
 
 export default class Game{
     constructor(users,lobbies,userIds,settings){
@@ -32,7 +34,7 @@ export default class Game{
         // in seconds
         this.gameTime = 0
         this.gameTimer = settings.time*MINUTES_TO_SECONDS 
-        this.countdown = 1
+        this.countdown = GAME_START_COUNTDOWN
         
         // in miliseconds
         this.lastTime = Date.now()
@@ -49,19 +51,19 @@ export default class Game{
         this.maxPlayerRadius = 0.6
         this.maxPlayerRadiusDecay = 0.99
 
-        this.gameCountdown = 1
-        this.impulseCooldown = 1
         this.refreshRate = 100
 
         this.timePassed = 0 
         this.collisionProcedureRepeats = 0
 
-        // this.makeTeams(settings)
+        this.gameOver = 0
+        this.willReturn = []
+        this.deleteUsers = []
+
         this.makePlayerRadius()
         this.addGoals()
         this.addPlayers()
         this.addBall()
-        // this.runGame()
     }
 
     makeTeams(settings){
@@ -72,19 +74,29 @@ export default class Game{
         }
     }
 
-    // runGame(){
-    //     this.updateGameTime()
-        
-    //     if(this.gameTime >= this.gameTimer){
-    //         this.endGameExperiment()
-    //         return
-    //     }
+    runGameUntilEnd(){
+        if(!this.gameOver){
+            this.updateGameTime()
 
-    //     this.updateGame()
-    //     // setTimeout(this.runGame(), MILLISECONDS_IN_SECOND)
-    // }
+            if(this.gameTime >= this.gameTimer){
+                this.endGame()
+                return
+            }
+            if(!this.countdown){
+                this.updateGame()
+            }
 
-    endGameExperiment(){
+            const info = this.getAllSendingInfo()
+            this.sendGame(info)
+
+            const runAgain = this.runGameUntilEnd.bind(this)
+            const delay = MILLISECONDS_IN_SECOND/this.refreshRate
+            setTimeout(runAgain, delay)
+        }
+    }
+
+    endGame(){
+        this.gameOver = 1
         const endInfo = this.makeEndInfo()
         const userIds = [...this.userIds]
 
@@ -93,18 +105,33 @@ export default class Game{
             const socket = user.socket
 
             if(socket && user.inGame == 1){
+                this.willReturn.push(userId)
                 user.unready()
                 socket.emit('endStuff',endInfo)  
             }
             else{
-                this.deleteUserExistence(user)
+                this.deleteGamerWhoDidNotReturn(user)
             }
         }
     }
 
-    deleteUserExistence(user){
-        const lobby = this.lobbies.getInfo(user.lobbyId)
-        lobby.deleteRoomUser()
+    // copy from roomManager
+    deleteGamerWhoDidNotReturn(user){
+        const lobby = this.lobbies[user.lobbyId]
+        lobby.deleteRoomUser(user.userId)
+        this.users.deleteUser(user)
+        
+        if(lobby.userIds.length == 0){
+            delete this.lobbies[lobby.lobbyId]
+        }
+    }
+
+    removeReturnedUser(userId){
+        for(var a = 0; a < this.willReturn.length; a++){
+            if(this.willReturn[a] == userId){
+                this.willReturn.splice(a,1)
+            }
+        }
     }
 
     getObjectById(objectId){
@@ -295,10 +322,6 @@ export default class Game{
 
     // GAME EVENTS
 
-    endGame(){
-        this.inGame = 0
-    }
-
     getAllSendingInfo(){
         const playerInfo = this.players.getAllPlayerSendingInfo()
         const ballInfo = this.ball.getSendingInfo()
@@ -341,7 +364,7 @@ export default class Game{
         if(this.countdown || player.impulseCooldown){
             return
         }
-        player.activateImpulse(this.impulseCooldown)
+        player.activateImpulse(IMPULSE_COOLDOWN)
     }
 
     recordPlayerMove(userId,move){
@@ -361,11 +384,11 @@ export default class Game{
         const timeDiff = now - this.lastTime
 
         this.timeDiff = timeDiff
-        this.countdown -= timeDiff * MILISECONDS_TO_SECONDS
+        this.countdown -= timeDiff * SECONDS_IN_MILISECOND
 
         if(this.countdown < 0){
             this.countdown = 0
-            this.gameTime += timeDiff * MILISECONDS_TO_SECONDS
+            this.gameTime += timeDiff * SECONDS_IN_MILISECOND
         }
 
         this.lastTime = Date.now()
@@ -381,7 +404,7 @@ export default class Game{
     }
 
     impulseControl(){
-        const timeDiff = this.timeDiff * MILISECONDS_TO_SECONDS
+        const timeDiff = this.timeDiff * SECONDS_IN_MILISECOND
 
         for(var playerId of this.userIds){
             const player = this.players.getInfo(playerId)
@@ -483,7 +506,7 @@ export default class Game{
             scorer.addGoalScored()
         }
        
-        this.countdown = this.gameCountdown
+        this.countdown = GAME_START_COUNTDOWN
         this.resetBallPositions()
         this.goals.resetTouchers()
     }

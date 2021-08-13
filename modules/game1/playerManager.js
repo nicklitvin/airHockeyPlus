@@ -1,6 +1,6 @@
 'use strict'
 
-import Player from './game1Player.js'
+import Player from './player.js'
 
 export default class PlayerManager{
     constructor(){

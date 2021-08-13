@@ -1,9 +1,6 @@
 'use strict'
 
 import User from "./user.js"
-import GameLibrary from "./gameLibrary.js"
-
-const gameLibrary = new GameLibrary()
 
 export default class UserManager{
     constructor (){

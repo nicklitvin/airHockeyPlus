@@ -1,7 +1,7 @@
 'use strict'
-import Vector from '../vector.js'
-import Ball from './game1Ball.js'
-import MoveCommands from './game1MoveCommands.js'
+
+import Ball from './ball.js'
+import MoveCommands from './moveCommands.js'
 
 export default class Player extends Ball{
     constructor(userId,settings,userName,playerRadius){

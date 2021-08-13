@@ -6,15 +6,16 @@ export default class User{
         this.socket = socket
         this.lobbyId = lobbyId
         this.userName = userName
+        
         this.ready = 0
-        // this.team = 0
-
         this.inGame = 0
+        this.isReturning = false
         this.personalGameSettings = null
     }
 
     updateReturnToLobby(socket){
-        this.inGame = 0 
+        this.inGame = 0
+        this.isReturning = false 
         this.socket = socket
     }
 
@@ -62,6 +63,10 @@ export default class User{
     updateInfoOnGameJoin(socket){
         this.inGame = 1
         this.socket = socket
+    }
+
+    isNowReturning(){
+        this.isReturning = true
     }
 
     sendTeamChangeError(){

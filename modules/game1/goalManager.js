@@ -1,6 +1,6 @@
 'use strict'
 
-import Goal from './game1Goal.js'
+import Goal from './goal.js'
 
 export default class GoalManager{
     constructor(){
