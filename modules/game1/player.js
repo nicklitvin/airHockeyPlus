@@ -59,7 +59,7 @@ export default class Player extends Ball{
             //do nothing
         }
         // resisting push
-        else if( Math.sign(yMove) != Math.sign(yFinal) ){
+        else if(yMove && Math.sign(yMove) != Math.sign(yFinal) ){
             this.bounce.y += yFinal
         }
         // move boost
@@ -81,7 +81,7 @@ export default class Player extends Ball{
             //do nothing
         }
         // resisting push
-        else if( Math.sign(xMove) != Math.sign(xFinal) ){
+        else if(xMove && Math.sign(xMove) != Math.sign(xFinal) ){
             this.bounce.x += xFinal
         }
         // move boosted

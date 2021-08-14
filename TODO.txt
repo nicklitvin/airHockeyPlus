@@ -25,17 +25,13 @@ ball collision at certain angle => infinite collisions, probably rounding error
 TODO
 V0.2.X customization
 
-fixed set timeout end game bug
+set timeout uses game version that hasn't ended yet bug
 send game happens after endgame sent, but userIds not changed for game, so can't find user who left
 random disconnect signal after everyone left
-disconnect randomly happens at the end of the game
-why refresh rate affect move? less is fast, make move depend on timeDiff
-bug when leaving during game
 
-make tests functional
-fix bounce ball collision bug
-remove usage of lobbies in endGame
-have game object control all running functions
+why refresh rate affect move? less is fast, make move depend on timeDiff
+dont send mouse coordinates if using keyboard
+set position should take in vector
 wait for all users to connect to game before actually starting
 
 mobile control

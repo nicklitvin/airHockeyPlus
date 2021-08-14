@@ -10,7 +10,7 @@ const MINUTES_TO_SECONDS = 60
 const ROUNDING_ERROR = 0.001
 const SECONDS_IN_MILISECOND = 1/1000
 const MILLISECONDS_IN_SECOND = 1000
-const MAX_COLLISION_REPEATS = 100
+const MAX_COLLISION_REPEATS = 500
 const GAME_START_COUNTDOWN = 1
 const IMPULSE_COOLDOWN = 1
 
@@ -26,7 +26,7 @@ export default class Game{
         this.physics = new PhysicsManager(this.serverW,this.serverH,this.players)
 
         this.userIds = userIds
-        this.contacts = this.makeContacts()
+        this.contacts = null
         this.teams = settings.teams
 
         this.playerRadius = null
@@ -60,6 +60,7 @@ export default class Game{
         this.willReturn = []
         this.deleteUsers = []
 
+        this.makeContacts()
         this.makePlayerRadius()
         this.addGoals()
         this.addPlayers()
@@ -214,7 +215,7 @@ export default class Game{
                 contacts.push(contact)
             }
         }
-        return(contacts)
+        this.contacts = contacts
     }
 
     addBall(){
@@ -700,6 +701,6 @@ export default class Game{
     }
 
     stopEverything(){
-        // strictEqual(0,1)
+        strictEqual(0,1)
     }
 }
