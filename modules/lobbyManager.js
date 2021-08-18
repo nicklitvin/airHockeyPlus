@@ -8,6 +8,7 @@ import Game1MessageReceiver from "./game1/messageReceiver.js"
 const MAX_CHAT_LENGTH = 100
 const MAX_USERNAME_LENGTH = 12
 const LOBBY_ID_LEGNTH = 1
+const REFRESH_INTERVAL = 10
 
 export default class LobbyManager{
     constructor(io){
@@ -16,6 +17,7 @@ export default class LobbyManager{
         this.lobbies = {}
 
         this.setUpMessageReceivers(io)
+        this.runGames()
 
         io.on('connection', (socket)=>{
             socket.on('createLobby', () => {
@@ -51,6 +53,19 @@ export default class LobbyManager{
         })
     }
 
+    // not best, prefer to run inside game object, but err with binding
+    runGames(){
+        setInterval( () =>{
+            for(var lobbyId of Object.keys(this.lobbies)){
+                const lobby = this.lobbies[lobbyId]
+                const game = lobby.game
+                if(game){
+                    game.runGame()
+                }
+            }
+        }, REFRESH_INTERVAL)
+    }
+
     setUpMessageReceivers(io){
         new Game1MessageReceiver(io,this.lobbies,this.users,this.socks)
     }
@@ -59,11 +74,14 @@ export default class LobbyManager{
         var hex = '0123456789abcdef'
         while (true){
             var id = ''
-            for(var a =0; a < LOBBY_ID_LEGNTH; a++){
+            for(var a = 0; a < LOBBY_ID_LEGNTH; a++){
                 id += hex[Math.floor(Math.random()*16)]
             }
             if(!Object.keys(this.lobbies).includes(id)){
                 return (id)
+            }
+            if(a == LOBBY_ID_LENGTH){
+                this.stopEverything()
             }
         }
     }
@@ -258,5 +276,9 @@ export default class LobbyManager{
             this.socks.errorPage(user.socket)
         }
         this.socks.toLobby(user.socket,lobby)
+    }
+
+    stopEverything(){
+        strictEqual(0,1)
     }
 }

@@ -75,7 +75,7 @@ export default class Game{
         }
     }
 
-    runGameUntilEnd(){
+    runGame(){
         if(!this.gameOver){
             this.updateGameTime()
 
@@ -89,10 +89,6 @@ export default class Game{
 
             const info = this.getAllSendingInfo()
             this.sendGame(info)
-
-            const runAgain = this.runGameUntilEnd.bind(this)
-            const delay = MILLISECONDS_IN_SECOND/this.refreshRate
-            setTimeout(runAgain, delay)
         }
     }
 
@@ -101,13 +97,27 @@ export default class Game{
         const endInfo = this.makeEndInfo()
         const userIds = [...this.userIds]
 
+        this.unreadyAllUsers(userIds)
+        this.makeWillReturnToLobbyList(userIds)
+        this.sendUsersEndInfoOrDelete(userIds,endInfo)
+    }
+
+    makeWillReturnToLobbyList(userIds){
         for(var userId of userIds){
             const user = this.users.getInfo(userId)
-            const socket = user.socket
 
-            if(socket && user.inGame == 1){
+            if(user.inGame){
                 this.willReturn.push(userId)
-                user.unready()
+            }
+        }
+    }
+
+    sendUsersEndInfoOrDelete(userIds,endInfo){
+        for(var userId of userIds){
+            const user = this.users.getInfo(userId)
+
+            if(user.inGame){
+                const socket = user.socket
                 socket.emit('endStuff',endInfo)  
             }
             else{
@@ -116,7 +126,14 @@ export default class Game{
         }
     }
 
-    // copy from roomManager
+    unreadyAllUsers(userIds){
+        for(var userId of userIds){
+            const user = this.users.getInfo(userId)
+            user.unready()
+        }
+    }
+
+    // copied from roomManager
     deleteGamerWhoDidNotReturn(user){
         const lobby = this.lobbies[user.lobbyId]
         lobby.deleteRoomUser(user.userId)
@@ -127,7 +144,7 @@ export default class Game{
         }
     }
 
-    removeReturnedUser(userId){
+    removeFromWillReturnList(userId){
         for(var a = 0; a < this.willReturn.length; a++){
             if(this.willReturn[a] == userId){
                 this.willReturn.splice(a,1)

@@ -94,7 +94,7 @@ export default class Lobby{
         const user = this.users.getInfo(userId)
         
         user.updateReturnToLobby(socket)
-        this.game.removeReturnedUser(userId)
+        this.game.removeFromWillReturnList(userId)
         this.sendAppropriateGameSettings(user)
         this.socks.joinLobby(user)
         this.socks.deleteCookie(socket)
@@ -168,12 +168,14 @@ export default class Lobby{
         if(this.userIds.length == 0){
             return
         }
-        if(this.game){
-            this.game.removeReturnedUser(userId)
+        if(this.game && this.game.willReturn.includes(userId)){
+            this.game.removeFromWillReturnList(userId)
         }
         if(!this.owner){
             this.makeNewOwner()
-            if(!this.game || !this.game.willReturn.includes(this.owner)){
+            const user = this.users.getInfo(this.owner)
+
+            if(!user.inGame){
                 this.giveOwnerView()
             }
         }
@@ -197,7 +199,6 @@ export default class Lobby{
             this.game = this.gameLibrary.makeNewGame(this.users,this.lobbies,this.userIds)
 
             this.sendUsersToGame()
-            this.game.runGameUntilEnd()
         }
     }
 
@@ -208,7 +209,7 @@ export default class Lobby{
             const gameName = this.gameLibrary.getChosenGame()
 
             this.socks.sendCookie(socket,userId)
-            this.socks.toGameExperiment(socket,gameName,this.lobbyId)
+            this.socks.toGame(socket,gameName,this.lobbyId)
         }
     }
 
@@ -267,7 +268,7 @@ export default class Lobby{
         // wrong game but correct room
         else{
             const gameName = this.gameLibrary.getChosenGame()
-            this.socks.toGameExperiment(socket,gameName,this.lobbyId)
+            this.socks.toGame(socket,gameName,this.lobbyId)
         }
     }
 }

@@ -46,12 +46,7 @@ export default class SocketManager{
         socket.emit('redirect',url)
     }
 
-    toGame(socket,lobby){
-        const url = `${lobby.gameSettings.gameChoices.chosen}/?a=${lobby.lobbyId}`
-        socket.emit('redirect',url)
-    }
-
-    toGameExperiment(socket,gameName,lobbyId){
+    toGame(socket,gameName,lobbyId){
         const url = `${gameName}/?a=${lobbyId}`
         socket.emit('redirect',url)
     }

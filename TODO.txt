@@ -25,10 +25,7 @@ ball collision at certain angle => infinite collisions, probably rounding error
 TODO
 V0.2.X customization
 
-set timeout uses game version that hasn't ended yet bug
-send game happens after endgame sent, but userIds not changed for game, so can't find user who left
-random disconnect signal after everyone left
-
+organize all emits to be in socket manager
 why refresh rate affect move? less is fast, make move depend on timeDiff
 dont send mouse coordinates if using keyboard
 set position should take in vector
