@@ -227,6 +227,23 @@ var mouseMove = {
     x: 0,
     y: 0
 }
+var moveTypes = {}
+
+function setMoveSettings(settings){
+    for(var type of settings.options){
+        moveTypes[type] = false
+    }
+    moveTypes[settings.chosen] = true
+}
+
+function sendMoveCommand(){
+    if(moveTypes.wasd && move.action){
+        socket.emit('game1Move',userId,move)
+    }
+    else if(moveTypes.mouse){
+        socket.emit('game1MouseMove',userId,mouseMove)
+    }
+}
 
 function recordMouseMove(mouse){
     var yMouse = (mouse.clientY - (window.innerHeight - canvas.height)/2) / canvas.height
@@ -308,11 +325,13 @@ socket.on('game1Update', (gameInfo)=>{
         resetMove()
     }
 
-    socket.emit('game1MouseMove',userId,mouseMove)
+    sendMoveCommand()
+
+    // socket.emit('game1MouseMove',userId,mouseMove)
     
-    if(move['action']){
-        socket.emit('game1Move',userId,move)
-    }
+    // if(move['action']){
+    //     socket.emit('game1Move',userId,move)
+    // }
     if(impulse){
         socket.emit('game1Impulse',userId)
     }
@@ -327,6 +346,10 @@ socket.on('endStuff', (info)=>{
 socket.on('stopGamePower', ()=>{
     const button = document.getElementById('endGameBut')
     button.style.display = 'block'
+})
+
+socket.on('currentMovementSetting', (moveSettings)=>{
+    setMoveSettings(moveSettings)
 })
 
 // EVENTS

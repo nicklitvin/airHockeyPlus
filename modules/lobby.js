@@ -260,6 +260,8 @@ export default class Lobby{
             const user = this.users.getInfo(userId)
             user.updateInfoOnGameJoin(socket)
             this.socks.newSock(socket.id,userId)
+            // have game library control what needs to be sent
+            user.sendCurrentMovementSetting() 
 
             if(this.owner == userId){
                 user.socket.emit('stopGamePower')

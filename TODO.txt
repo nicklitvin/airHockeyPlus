@@ -27,9 +27,8 @@ V0.2.X customization
 
 organize all emits to be in socket manager
 why refresh rate affect move? less is fast, make move depend on timeDiff
-dont send mouse coordinates if using keyboard
-set position should take in vector
 wait for all users to connect to game before actually starting
+have server generate all move dicts to be used by client
 
 mobile control
 close room power in lobby

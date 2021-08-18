@@ -93,4 +93,9 @@ export default class User{
         const socket = this.socket
         socket.emit('generalGameSettingsText',text)
     }
+
+    sendCurrentMovementSetting(){
+        const socket = this.socket
+        socket.emit('currentMovementSetting',this.personalGameSettings.control)
+    }
 }
