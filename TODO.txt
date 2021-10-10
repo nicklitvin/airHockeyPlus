@@ -21,6 +21,7 @@ make functions public and private, commentate
 socket.emit not work when debugging 1 step at time
 games being deleted when run with tests bug
 ball collision at certain angle => infinite collisions, probably rounding error
+move lag is probably just 60hz thing, works fine on 120hz screen
 
 TODO
 V0.2.X customization
